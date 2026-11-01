@@ -1,0 +1,32 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.python-version
+
+# Editor and notebook state
+.idea/
+.vscode/
+.ipynb_checkpoints/
+.DS_Store
+*.log
+
+# Local snapshots and generated evidence
+/data/*
+!/data/README.md
+/runs/*
+!/runs/README.md
