@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: design and repository scaffold.** There is no runnable pipeline, fitted model, dataset, or completed experiment yet. We will make implementation decisions in small, reviewable steps.
+**Status: project design and Python environment configuration.** There is no runnable pipeline, fitted model, dataset, or completed experiment yet. We will make implementation decisions in small, reviewable steps.
 
 ## Why build this?
 
@@ -66,7 +66,11 @@ Read [the architecture](docs/architecture.md) for boundaries and [the decision l
 
 ```text
 model-pipelining/
-  README.md                  project entry point
+  README.md                  project entry point and setup instructions
+  pyproject.toml             project metadata and dependency declarations
+  .python-version            recommended development interpreter
+  uv.lock                    resolved dependency versions for uv
+  requirements.txt           generated dependency export for pip
   docs/
     architecture.md          responsibilities and information boundaries
     roadmap.md               small milestones and the next design slice
@@ -82,7 +86,80 @@ model-pipelining/
     pull_request_template.md review context for each change
 ```
 
-The code, config, and test directories currently contain orientation notes. We will add modules and packaging when the first slice needs them. Exact dependencies, Python version, configuration format, and storage schemas remain open.
+The code, config, and test directories currently contain orientation notes. Python 3.14 is selected; modeling dependencies, configuration formats, and storage schemas remain open. Add package/build configuration when the first importable implementation is ready.
+
+## Development environment
+
+Use an isolated environment named `.venv`. The setup supports standard Python tooling and an optional uv workflow; the pipeline itself will not depend on uv.
+
+| Setting | Starting choice |
+|---|---|
+| Supported interpreter | Standard CPython 3.14 (`>=3.14,<3.15`) |
+| Recommended development patch | 3.14.10, recorded in `.python-version` |
+| Project version | 0.1.0, recorded in `pyproject.toml`; the API is still being designed |
+| Runtime and development dependencies | None selected yet |
+| Local environment | `.venv/`, excluded from Git |
+
+`pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
+
+Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. No numerical, modeling, notebook, test, or formatting packages are installed by the initial configuration.
+
+### Standard Python setup: venv and pip
+
+Install an approved CPython 3.14 interpreter first; use 3.14.10 to match the development pin. The following commands assume a Linux/macOS shell and that `python3.14` is on your path. Unlike uv, `venv` and pip do not automatically select an interpreter from `.python-version` or enforce `requires-python` when installing a requirements file.
+
+```bash
+cd /path/to/model-pipelining
+python3.14 --version
+python3.14 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip check
+python -c "import sys; assert sys.version_info[:2] == (3, 14); assert sys.prefix != sys.base_prefix; print(sys.version); print(sys.executable)"
+```
+
+The version check enforces the supported minor version; compare the printed patch with `.python-version` for an exact match. If your Python installation lacks `venv` or pip, obtain those components through your environment's normal provisioning process.
+
+On Windows PowerShell, replace environment creation and activation with:
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Then use the same `python -m pip` and verification commands. Select `.venv` as your editor/notebook interpreter when those tools are introduced. Run `deactivate` to leave an activated environment.
+
+At work, use the approved interpreter and package source with this pip route. A different Python minor version requires a separate compatibility decision and dependency resolution; a requirements export alone does not establish compatibility with that runtime.
+
+### Optional setup with uv
+
+If uv is installed, it can provision the pinned interpreter and create the environment from the lockfile:
+
+```bash
+cd /path/to/model-pipelining
+uv python install 3.14.10
+uv sync --locked
+uv run --locked python -c "import sys; assert sys.version_info[:3] == (3, 14, 10); assert sys.prefix != sys.base_prefix; print(sys.version); print(sys.executable)"
+```
+
+`uv run` uses the project environment without requiring shell activation. Alternatively, activate `.venv` using the standard commands above. The first sync may need network access to provision the interpreter or dependencies.
+
+### Maintaining dependency versions
+
+Use `pyproject.toml` as the editable dependency declaration. With uv available, add an agreed runtime package with `uv add PACKAGE`, or a development tool with `uv add --dev PACKAGE`. Review the resulting changes and regenerate the pip export:
+
+```bash
+uv lock
+uv export --locked --all-groups --no-emit-project --format requirements.txt --output-file requirements.txt
+```
+
+The export is tracked so a machine without uv can install the selected versions using pip. It currently contains comments only because no dependencies are selected. Do not hand-edit the generated export or use an unreviewed `pip freeze` of an unrelated environment as the project's dependency definition.
+
+A pip-only work machine can consume the committed export without uv. If it needs a different dependency set or approved versions, make an explicit configuration change and regenerate the lock/export in an environment with the resolution tools available. pip installs from the export; it does not update `uv.lock`.
+
+Use a fresh `.venv` when checking reproduction with pip: `pip install -r` does not remove unrelated packages already installed. uv's `sync --locked` reconciles the environment with the lockfile. Dependencies may also require platform support, so validate the selected stack on the actual work runtime when it becomes known.
+
+Setup references: [Python's packaging guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/), [uv project guide](https://docs.astral.sh/uv/guides/projects/), and [exporting a uv lockfile for pip](https://docs.astral.sh/uv/concepts/projects/export/).
 
 ## First useful milestone
 
@@ -98,7 +175,7 @@ Success means the experiment is understandable and repeatable, including visible
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
-See [the roadmap](docs/roadmap.md) for proposed milestones. The next step is to agree on the smallest synthetic experiment, not to build every component above at once.
+See [the roadmap](docs/roadmap.md) for proposed milestones. First recreate and verify the environment, then agree on the initial packages. Define the smallest synthetic experiment after those setup choices are settled.
 
 ## Working on the project
 
@@ -108,7 +185,7 @@ Verification should target behavior: no future information, correct target align
 
 ## GitHub setup
 
-This repository can be tracked on GitHub as a documentation-first project. After creating an empty GitHub repository, connect and push from the project directory:
+This repository can be tracked on GitHub as a design-first Python project. After creating an empty GitHub repository, connect and push from the project directory:
 
 ```bash
 git remote add origin <repository-url>

@@ -1,13 +1,19 @@
 # Roadmap
 
-These milestones describe proposed outcomes. The repository currently contains documentation and placeholders only. Nothing below has been implemented.
+These milestones describe proposed outcomes. The repository contains design documents, environment configuration, and implementation placeholders. The forecasting milestones have not been implemented.
 
-## 0. Establish the design
+## 0. Establish the design and development environment
 
 - [x] Write the project purpose and initial scope.
 - [x] Describe application, adapter, and shared-pipeline responsibilities.
 - [x] Preserve the Bayesian and non-Bayesian checking approach.
 - [x] Create a Git-ready repository layout and task/review templates.
+- [x] Select CPython 3.14 with a 3.14.10 development pin.
+- [x] Declare project metadata and the supported interpreter range in `pyproject.toml`.
+- [x] Provide a uv lockfile and a pip-compatible dependency export.
+- [x] Document both venv/pip and uv setup, with local environments excluded from Git.
+- [ ] Recreate and verify the pinned environment on the development machine.
+- [ ] Agree on the first runtime modules and development tools, then lock and verify their versions.
 - [ ] Agree on the first synthetic experiment and its observable acceptance criteria.
 
 ## 1. Small synthetic experiment
@@ -40,6 +46,6 @@ Multiple horizons, richer Bayesian models, an operational-data application, a ru
 
 ## Next design slice
 
-Write the smallest synthetic-task specification together: generated process, target, frequency, issuance/cutoff, minimum history, origins, baseline, point statistic, scores, and expected artifacts. Choose the Python/runtime and first dependencies when implementing that slice.
+Recreate the environment using the README and agree on the first dependencies. Once those are verified, write the smallest synthetic-task specification together: generated process, target, frequency, issuance/cutoff, minimum history, origins, baseline, point statistic, scores, and expected artifacts.
 
 Turn each deliverable into a small GitHub issue using the repository's task template. This roadmap is not a commitment to implement all possible extensions.
