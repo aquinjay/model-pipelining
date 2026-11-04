@@ -67,6 +67,7 @@ Read [the architecture](docs/architecture.md) for boundaries and [the decision l
 ```text
 model-pipelining/
   README.md                  project entry point and setup instructions
+  LICENSE                    Apache License 2.0
   pyproject.toml             project metadata and dependency declarations
   .python-version            recommended development interpreter
   uv.lock                    resolved dependency versions for uv
@@ -99,6 +100,8 @@ Use an isolated environment named `.venv`. The setup supports standard Python to
 | Project version | 0.1.0, recorded in `pyproject.toml`; the API is still being designed |
 | Runtime and development dependencies | None selected yet |
 | Local environment | `.venv/`, excluded from Git |
+
+The local `.venv` was verified on 2026-11-03: it runs CPython 3.14.10 and is isolated from the base interpreter. Initial dependencies and development tools remain to be selected. On a new machine, create and verify an environment using one of the setup paths below.
 
 `pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
 
@@ -175,7 +178,7 @@ Success means the experiment is understandable and repeatable, including visible
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
-See [the roadmap](docs/roadmap.md) for proposed milestones. First recreate and verify the environment, then agree on the initial packages. Define the smallest synthetic experiment after those setup choices are settled.
+See [the roadmap](docs/roadmap.md) for proposed milestones. With the local interpreter verified, the next step is to agree on the initial packages, lock and verify their versions, and define the smallest synthetic experiment.
 
 ## Working on the project
 
@@ -183,16 +186,11 @@ Use one issue or small pull request per question or deliverable. Describe the pr
 
 Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Code checks and CI will be added with executable code.
 
-## GitHub setup
+## Repository and license
 
-This repository can be tracked on GitHub as a design-first Python project. After creating an empty GitHub repository, connect and push from the project directory:
+The GitHub repository is [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining). The local `origin` remote is configured for fetch and push using `git@github.com:aquinjay/model-pipelining.git`.
 
-```bash
-git remote add origin <repository-url>
-git push -u origin main
-```
-
-Choose visibility and licensing when publishing. The scaffold has no selected open-source license or configured GitHub remote.
+The project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Background
 
