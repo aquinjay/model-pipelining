@@ -179,7 +179,7 @@ Success means the experiment is understandable and repeatable, including visible
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
-See [the roadmap](docs/roadmap.md) for proposed milestones. With the local interpreter verified, the next step is to agree on the initial packages, lock and verify their versions, and define the smallest synthetic experiment.
+See [the roadmap](docs/roadmap.md) for proposed milestones. Before implementing the baseline, review [the saved data-versioning decisions and next steps](docs/data-versioning.md). They define how input snapshots, provenance, dataset-scoped tags, validation, and replaceable storage should work. The design is recorded; versioning code has not been implemented.
 
 ## Working on the project
 

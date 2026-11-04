@@ -24,6 +24,12 @@ This log distinguishes current direction from proposals. Update it when a choice
 - **Packaging deferred:** this is currently an environment-managed project with no installable local package. The uv-specific `package = false` setting prevents attempts to install the placeholder source directory. Standard pip setup installs exported dependencies only.
 - **Work portability:** a different interpreter or platform must be checked deliberately. The current range records our development target, not a guarantee about an unknown work deployment runtime.
 
+## Data versioning decisions — 2026-11-03
+
+The agreed direction, alternatives, open details, and ordered continuation plan are saved in [Data versioning: decisions and next steps](data-versioning.md). Review that document before implementation. No versioning code has been written yet.
+
+The selected approach preserves snapshots of one or more related files, compares SHA-256 file hashes before reusing contents, and records every acquisition. Dataset-scoped tags can move only through explicit requests, including automation. Runs pin permanent snapshot IDs. Processing preserves lineage; quality failures remain visible; required failures block model runs unless an explicit experimental override is recorded. Storage starts locally behind a replaceable destination boundary.
+
 ## Working proposals
 
 - Start the Python implementation with a few files in `src/model_pipelining/`; package/build configuration follows the first importable code.

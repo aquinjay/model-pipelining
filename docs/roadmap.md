@@ -46,6 +46,8 @@ Multiple horizons, richer Bayesian models, an operational-data application, a ru
 
 ## Next design slice
 
-Recreate the environment using the README and agree on the first dependencies. Once those are verified, write the smallest synthetic-task specification together: generated process, target, frequency, issuance/cutoff, minimum history, origins, baseline, point statistic, scores, and expected artifacts.
+Resume with [Data versioning: decisions and next steps](data-versioning.md). The synthetic generator is committed, and the local interpreter has been verified. Review the saved decisions together, resolve the remaining record/storage details, and create a separate branch before implementing local snapshot registration, verification, and dataset-scoped tags. No versioning implementation is requested until that review.
+
+After reviewing the local versioning slice, define the smallest baseline experiment together: target, issuance/cutoff, minimum history, origins, point statistic, scores, required checks, and expected artifacts. Its runner must record permanent input snapshot IDs and the training selection. Select and verify packages as implementation needs become concrete.
 
 Turn each deliverable into a small GitHub issue using the repository's task template. This roadmap is not a commitment to implement all possible extensions.
