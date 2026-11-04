@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: project design and Python environment configuration.** There is no runnable pipeline, fitted model, dataset, or completed experiment yet. We will make implementation decisions in small, reviewable steps.
+**Status: project design, Python environment configuration, and synthetic data generation.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). There is no runnable pipeline, fitted model, or completed experiment yet. We will make implementation decisions in small, reviewable steps.
 
 ## Why build this?
 
@@ -80,6 +80,7 @@ model-pipelining/
   src/model_pipelining/      reserved for the future Python implementation
   configs/                   reserved for task/model/check-plan examples
   tests/                     reserved for behavioral verification
+  scripts/                   reproducible synthetic data generator
   data/                      local input snapshots; contents ignored by Git
   runs/                      local run artifacts; contents ignored by Git
   .github/

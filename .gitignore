@@ -30,7 +30,7 @@ htmlcov/
 .DS_Store
 *.log
 
-# Local snapshots and generated evidence
+# Local snapshots (including generated synthetic data) and run evidence
 /data/*
 !/data/README.md
 /runs/*
