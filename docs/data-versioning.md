@@ -2,6 +2,8 @@
 
 Recorded: 2026-11-03.
 
+Update: 2026-11-09. The [ingestion-first decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) changes the immediate sequence: start with a local-file ingestion function, plan to use git-annex for preservation, and defer dependency/stage/execution tooling. The requirements below remain saved for later; their ordered implementation plan is no longer the next code slice. See [the local-ingestion proposal](ingestion.md).
+
 Status: agreed direction from the design discussion, saved for review before implementation. The registration system, tag registry, storage interface, and model integration do not exist yet. No implementation is requested at this stopping point.
 
 ## Start here next time

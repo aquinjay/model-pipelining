@@ -30,6 +30,14 @@ The agreed direction, alternatives, open details, and ordered continuation plan 
 
 The selected approach preserves snapshots of one or more related files, compares SHA-256 file hashes before reusing contents, and records every acquisition. Dataset-scoped tags can move only through explicit requests, including automation. Runs pin permanent snapshot IDs. Processing preserves lineage; quality failures remain visible; required failures block model runs unless an explicit experimental override is recorded. Storage starts locally behind a replaceable destination boundary.
 
+## Ingestion first; preservation and execution later — 2026-11-09
+
+- **Preservation tool direction:** use git-annex for preserving and retrieving versioned file contents. Integration, repository layout, and portability checks are deferred. git-annex has not been installed or configured for this project.
+- **Execution tooling deferred:** consider DVC or another tool for dependencies, stages, execution, and caching when the runnable workflow needs it. DVC is a candidate, not a selected dependency. Avoid duplicating execution responsibilities between tools and the project runner.
+- **Immediate priority:** begin a small library of ingestion functions with one function for a local file and a companion CSV/XLSX table reader with worksheet selection by name or index. Functions for Snowflake, S3, SFTP, and other sources can follow as concrete needs arise. Acquisition remains separate from parsing, snapshot registration, validation, and model execution.
+- **Local implementation:** [Local ingestion: first slice and later enhancements](ingestion.md) describes the implemented interface and behavioral checks. pandas and openpyxl are declared, locked, and exported for table reading. Standard-library unittest is sufficient for this slice. The package is imported through `PYTHONPATH=src`; installable packaging is deferred.
+- **Sequence change:** this supersedes the earlier instruction to implement the full local snapshot/tag system before the next code slice. The snapshot identity, provenance, lineage, and validation requirements above remain future requirements; the first ingestion receipt does not satisfy them by itself.
+
 ## Working proposals
 
 - Start the Python implementation with a few files in `src/model_pipelining/`; package/build configuration follows the first importable code.

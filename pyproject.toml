@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Reproducible forecasting experiments with interchangeable model adapters."
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
-dependencies = []
+dependencies = [
+    "openpyxl>=3.1.5,<4",
+    "pandas>=3.0,<4",
+]
 
 # Manage an environment without installing an unfinished local package.
 # Add a standard build backend when the first importable implementation is ready.

@@ -1,6 +1,6 @@
 # Roadmap
 
-These milestones describe proposed outcomes. The repository contains design documents, environment configuration, and implementation placeholders. The forecasting milestones have not been implemented.
+These milestones describe proposed outcomes. The repository contains design documents, environment configuration, a synthetic generator, and local CSV/XLSX ingestion with behavioral tests. The forecasting milestones have not been implemented.
 
 ## 0. Establish the design and development environment
 
@@ -46,8 +46,10 @@ Multiple horizons, richer Bayesian models, an operational-data application, a ru
 
 ## Next design slice
 
-Resume with [Data versioning: decisions and next steps](data-versioning.md). The synthetic generator is committed, and the local interpreter has been verified. Review the saved decisions together, resolve the remaining record/storage details, and create a separate branch before implementing local snapshot registration, verification, and dataset-scoped tags. No versioning implementation is requested until that review.
+Review the local implementation of [Local ingestion: first slice and later enhancements](ingestion.md): one local-file ingestion function in a small Python module, a receipt describing the completed copy, and a companion CSV/XLSX table reader with worksheet selection. Behavioral tests cover temporary files and a multi-sheet workbook. This slice is ready for code review and remains independent of snapshot registration and model execution.
 
-After reviewing the local versioning slice, define the smallest baseline experiment together: target, issuance/cutoff, minimum history, origins, point statistic, scores, required checks, and expected artifacts. Its runner must record permanent input snapshot IDs and the training selection. Select and verify packages as implementation needs become concrete.
+The [2026-11-09 decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) selects git-annex as the direction for later preservation and defers DVC or another dependency/stage/execution tool. Do not implement a custom snapshot storage system as a prerequisite for the local ingestion function. Preserve the [data-versioning requirements](data-versioning.md) for later integration.
+
+Then define the smallest baseline experiment together: target, issuance/cutoff, minimum history, origins, point statistic, scores, required checks, and expected artifacts. Permanent input references and training selection remain runner requirements to address when that integration is designed. Select and verify packages as implementation needs become concrete.
 
 Turn each deliverable into a small GitHub issue using the repository's task template. This roadmap is not a commitment to implement all possible extensions.

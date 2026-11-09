@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: project design, Python environment configuration, and synthetic data generation.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). There is no runnable pipeline, fitted model, or completed experiment yet. We will make implementation decisions in small, reviewable steps.
+**Status: design, synthetic data generation, and local CSV/XLSX ingestion.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). The ingestion module copies local files and reads CSV or selected XLSX worksheets, with behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
 
 ## Why build this?
 
@@ -76,10 +76,11 @@ model-pipelining/
     architecture.md          responsibilities and information boundaries
     roadmap.md               small milestones and the next design slice
     decisions.md             decisions, proposals, and open questions
+    ingestion.md             local copy/read interface and later enhancements
     references.md            public background reading
-  src/model_pipelining/      reserved for the future Python implementation
+  src/model_pipelining/      local-file ingestion and CSV/XLSX reading
   configs/                   reserved for task/model/check-plan examples
-  tests/                     reserved for behavioral verification
+  tests/                     ingestion behavioral tests
   scripts/                   reproducible synthetic data generator
   data/                      local input snapshots; contents ignored by Git
   runs/                      local run artifacts; contents ignored by Git
@@ -88,7 +89,7 @@ model-pipelining/
     pull_request_template.md review context for each change
 ```
 
-The code, config, and test directories currently contain orientation notes. Python 3.14 is selected; modeling dependencies, configuration formats, and storage schemas remain open. Add package/build configuration when the first importable implementation is ready.
+Python 3.14 is selected. pandas and openpyxl support table reading; modeling dependencies, configuration formats, and storage schemas remain open. The local package is imported with `PYTHONPATH=src`; installable packaging is deferred.
 
 ## Development environment
 
@@ -99,14 +100,15 @@ Use an isolated environment named `.venv`. The setup supports standard Python to
 | Supported interpreter | Standard CPython 3.14 (`>=3.14,<3.15`) |
 | Recommended development patch | 3.14.10, recorded in `.python-version` |
 | Project version | 0.1.0, recorded in `pyproject.toml`; the API is still being designed |
-| Runtime and development dependencies | None selected yet |
+| Runtime dependencies | pandas and openpyxl; exact versions in `uv.lock` and `requirements.txt` |
+| Test harness | Standard-library unittest |
 | Local environment | `.venv/`, excluded from Git |
 
-The local `.venv` was verified on 2026-11-03: it runs CPython 3.14.10 and is isolated from the base interpreter. Initial dependencies and development tools remain to be selected. On a new machine, create and verify an environment using one of the setup paths below.
+The local `.venv` runs CPython 3.14.10 and is isolated from the base interpreter. The ingestion dependencies are installed and locked. On a new machine, create and verify an environment using one of the setup paths below.
 
 `pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
 
-Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. No numerical, modeling, notebook, test, or formatting packages are installed by the initial configuration.
+Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. pandas brings its numerical dependencies; model-fitting, notebook, and formatting tools remain unselected.
 
 ### Standard Python setup: venv and pip
 
@@ -157,13 +159,39 @@ uv lock
 uv export --locked --all-groups --no-emit-project --format requirements.txt --output-file requirements.txt
 ```
 
-The export is tracked so a machine without uv can install the selected versions using pip. It currently contains comments only because no dependencies are selected. Do not hand-edit the generated export or use an unreviewed `pip freeze` of an unrelated environment as the project's dependency definition.
+The export is tracked so a machine without uv can install the selected versions using pip. It includes the table-reading dependencies and their transitive requirements. Do not hand-edit the generated export or use an unreviewed `pip freeze` of an unrelated environment as the project's dependency definition.
 
 A pip-only work machine can consume the committed export without uv. If it needs a different dependency set or approved versions, make an explicit configuration change and regenerate the lock/export in an environment with the resolution tools available. pip installs from the export; it does not update `uv.lock`.
 
 Use a fresh `.venv` when checking reproduction with pip: `pip install -r` does not remove unrelated packages already installed. uv's `sync --locked` reconciles the environment with the lockfile. Dependencies may also require platform support, so validate the selected stack on the actual work runtime when it becomes known.
 
 Setup references: [Python's packaging guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/), [uv project guide](https://docs.astral.sh/uv/guides/projects/), and [exporting a uv lockfile for pip](https://docs.astral.sh/uv/concepts/projects/export/).
+
+## Local ingestion
+
+After installing dependencies, run from the repository root with `PYTHONPATH=src .venv/bin/python`:
+
+```python
+from model_pipelining.ingest import ingest_local_file, read_local_table
+
+result = ingest_local_file(
+    "data/synthetic/mean_shift.csv",
+    "data/ingested/example-001/observations.csv",
+)
+table = read_local_table(result.destination)
+
+# For an acquired XLSX workbook, select a worksheet by name or index:
+# table = read_local_table("data/ingested/sales.xlsx", sheet="Sales")
+# table = read_local_table("data/ingested/sales.xlsx", sheet=1, header=0)
+```
+
+Generate the synthetic source first if needed, following [the data notes](data/README.md). The copy function creates destination directories and refuses to overwrite existing files. The reader returns a pandas DataFrame and defaults to the first XLSX worksheet. See [the ingestion notes](docs/ingestion.md) for headers, failure behavior, and limitations.
+
+Run the behavioral tests:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
+```
 
 ## First useful milestone
 
@@ -179,13 +207,13 @@ Success means the experiment is understandable and repeatable, including visible
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
-See [the roadmap](docs/roadmap.md) for proposed milestones. Before implementing the baseline, review [the saved data-versioning decisions and next steps](docs/data-versioning.md). They define how input snapshots, provenance, dataset-scoped tags, validation, and replaceable storage should work. The design is recorded; versioning code has not been implemented.
+See [the roadmap](docs/roadmap.md) for proposed milestones. The [local-file ingestion module](docs/ingestion.md) is implemented for review. git-annex is the planned preservation tool, with integration deferred. DVC or another tool for dependencies, stages, and execution will be considered later. The [saved data-versioning requirements](docs/data-versioning.md) still describe the later snapshot identity, provenance, dataset-scoped tags, validation, and portability needs.
 
 ## Working on the project
 
 Use one issue or small pull request per question or deliverable. Describe the problem, intended behavior, and evidence needed before adding abstractions. Record consequential decisions in `docs/decisions.md`; keep unresolved choices explicitly provisional.
 
-Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Code checks and CI will be added with executable code.
+Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Local ingestion tests exist; forecasting checks and CI remain future work.
 
 ## Repository and license
 

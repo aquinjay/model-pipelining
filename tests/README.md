@@ -1,8 +1,14 @@
 # Behavioral verification
 
-No executable tests exist yet. Add them with the behavior they verify.
+Run the ingestion tests from the repository root after installing dependencies:
 
-Priorities for the first slice:
+```bash
+PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
+```
+
+`test_ingest.py` uses standard-library unittest and temporary CSV/XLSX fixtures. It verifies exact copies, overwrite protection, failure cleanup, acquisition receipts, CSV/XLSX table equivalence, worksheet selection, headers, and invalid requests. Test fixtures do not depend on local generated data.
+
+Priorities for the future forecasting slice:
 
 - Forecasts use only information available at issuance.
 - Prediction keys and target times align with the requested horizon.
