@@ -26,17 +26,33 @@ This log distinguishes current direction from proposals. Update it when a choice
 
 ## Data versioning decisions — 2026-11-03
 
-The agreed direction, alternatives, open details, and ordered continuation plan are saved in [Data versioning: decisions and next steps](data-versioning.md). Review that document before implementation. No versioning code has been written yet.
+The agreed direction, alternatives, open details, and ordered continuation plan were saved in [Data versioning: decisions and next steps](data-versioning.md). No versioning code existed at that point. The narrower implementation selected later is recorded below.
 
 The selected approach preserves snapshots of one or more related files, compares SHA-256 file hashes before reusing contents, and records every acquisition. Dataset-scoped tags can move only through explicit requests, including automation. Runs pin permanent snapshot IDs. Processing preserves lineage; quality failures remain visible; required failures block model runs unless an explicit experimental override is recorded. Storage starts locally behind a replaceable destination boundary.
 
 ## Ingestion first; preservation and execution later — 2026-11-09
 
-- **Preservation tool direction:** use git-annex for preserving and retrieving versioned file contents. Integration, repository layout, and portability checks are deferred. git-annex has not been installed or configured for this project.
+- **Earlier preservation tool direction (superseded below):** use git-annex for preserving and retrieving versioned file contents. git-annex has not been installed or configured for this project.
 - **Execution tooling deferred:** consider DVC or another tool for dependencies, stages, execution, and caching when the runnable workflow needs it. DVC is a candidate, not a selected dependency. Avoid duplicating execution responsibilities between tools and the project runner.
 - **Immediate priority:** begin a small library of ingestion functions with one function for a local file and a companion CSV/XLSX table reader with worksheet selection by name or index. Functions for Snowflake, S3, SFTP, and other sources can follow as concrete needs arise. Acquisition remains separate from parsing, snapshot registration, validation, and model execution.
 - **Local implementation:** [Local ingestion: first slice and later enhancements](ingestion.md) describes the implemented interface and behavioral checks. pandas and openpyxl are declared, locked, and exported for table reading. Standard-library unittest is sufficient for this slice. The package is imported through `PYTHONPATH=src`; installable packaging is deferred.
 - **Sequence change:** this supersedes the earlier instruction to implement the full local snapshot/tag system before the next code slice. The snapshot identity, provenance, lineage, and validation requirements above remain future requirements; the first ingestion receipt does not satisfy them by itself.
+
+## Small local snapshot implementation — 2026-11-09
+
+- **Immediate scope:** implement the [small local snapshot workflow](snapshots.md) for user review before adding more features. It registers one local file, preserves its bytes, records each successful registration, and retrieves it with an integrity check.
+- **Tooling:** use standard-library `hashlib`, local files, and JSON. This supersedes the earlier selection of git-annex as the next preservation integration. git-annex remains an optional later integration; DVC or another execution tool is still deferred.
+- **Identity:** a reference is a dataset name plus the SHA-256 of the file bytes. Matching bytes reuse a snapshot within a dataset; each registration gets a distinct event record. Renamed identical inputs retain the first preserved filename. Unlike the older multi-file proposal, this first single-file identity does not include the filename. A multi-file contract remains future work.
+- **Recorded time:** `registered_at` is when registration records the local file; it does not claim the original acquisition time or historical availability. The input file must remain unchanged during registration.
+- **Inspection and notes:** `list_snapshots` returns metadata sorted by ID; `list_acquisitions` returns all registration records sorted by time and ID. Both return lists of plain dictionaries for one dataset without modifying storage. Registration accepts an optional string `note` stored in the event, independent of snapshot identity. Older records without notes remain readable as `note=None`.
+- **Initial boundary:** keep one writer at a time and all records/data local. Multi-file snapshots, processing lineage, data-quality checks, remote storage, and crash recovery remain saved enhancements. Basic tags were added in the later slice below. After the walkthroughs and documentation updates, the user requested commit and push of this slice on 2026-11-09.
+
+## Explicit dataset tags — 2026-11-09
+
+- **Operations:** `assign_tag`, `resolve_tag`, `list_tags`, and `list_tag_history` live in `src/model_pipelining/tags.py`, with [examples and limits](snapshots.md#assign-resolve-and-inspect-tags). Assignment is explicit and verifies the target in the same dataset. Registration never automatically advances tags.
+- **History and publication:** each tag has one JSON file containing its ordered assignments; the final assignment is the current target. A completed staged file replaces the previous record so target and history publish together. One writer is required; crash durability is deferred.
+- **Context:** every explicit assignment records old/new IDs, time, a caller-supplied `changed_by` person/process name, and an optional note. Reassigning the same ID still records the request. This is contextual history rather than authenticated or tamper-proof evidence.
+- **Run references:** resolve a tag once and save the dataset plus permanent snapshot ID. Moving the tag does not change previously selected input IDs. Tagging does not run models or override required data-quality evidence. Deletion, renaming, and automatic tag movement are not implemented.
 
 ## Working proposals
 

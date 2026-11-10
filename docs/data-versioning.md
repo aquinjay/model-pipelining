@@ -2,17 +2,21 @@
 
 Recorded: 2026-11-03.
 
-Update: 2026-11-09. The [ingestion-first decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) changes the immediate sequence: start with a local-file ingestion function, plan to use git-annex for preservation, and defer dependency/stage/execution tooling. The requirements below remain saved for later; their ordered implementation plan is no longer the next code slice. See [the local-ingestion proposal](ingestion.md).
+Current update: 2026-11-09. A [small single-file snapshot implementation](snapshots.md) now registers, preserves, and verifies local files with standard-library hashing and JSON records. [Explicit dataset-scoped tags](snapshots.md#assign-resolve-and-inspect-tags) support assignment, resolution, listing, and history. This supersedes git-annex as the next required integration. Single-file IDs hash bytes only; renamed identical inputs reuse a snapshot, whereas this older collection proposal includes filenames in identity. The remaining broader requirements below are saved for later, not claims about the first implementation.
 
-Status: agreed direction from the design discussion, saved for review before implementation. The registration system, tag registry, storage interface, and model integration do not exist yet. No implementation is requested at this stopping point.
+Earlier update: 2026-11-09. The [ingestion-first decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) changed the immediate sequence to start with local-file ingestion and defer dependency/stage/execution tooling. Its git-annex direction has since been superseded by the current update above. The requirements below remain saved for later; their original ordered implementation plan is historical.
+
+Historical status at the original stopping point: agreed direction from the design discussion, saved for review before implementation. At that point, the registration system, tag registry, storage interface, and model integration did not exist. See the current update above for the narrower implementation that followed.
 
 ## Start here next time
 
-We want every model output to identify the exact data used to produce it, even when a source revises history or a readable tag later moves. Data acquisition can happen manually or through automation. Registration happens after acquisition and gives the completed result a preserved identity.
+Use [the roadmap's current resume section](roadmap.md#resume-here) as the continuation plan. This document preserves the broader design and its earlier alternatives; its original implementation sequence below is historical.
 
-The current code is committed and pushed to `main` at `01a2ebe` (`Add reproducible synthetic data generator and documentation`). It generates two local synthetic series and a manifest containing settings and file hashes. Generated data is ignored by Git. The existing generator manifest is a starting point, not the versioning contract described here.
+Ingestion and CSV/XLSX reading were first published in `685b7fb` on `main`. The subsequent snapshot/tagging slice implements single-file snapshot registration and verified retrieval, inventory/history listing, registration notes, dataset-scoped tags, and tag assignment history. The user requested publication of this slice and the updated documentation on 2026-11-09. Its behavior and examples are documented in [the source-directory function reference](../src/model_pipelining/README.md) and [snapshot/tag notes](snapshots.md). All 50 tests passed again before publication; the README workflow was also exercised with synthetic data in a temporary store.
 
-Resume by reviewing this document together, resolving the open details below, and creating a separate branch for the work. `feature/data-versioning` is a suggested branch name; it has not been created as part of this documentation task.
+Resume from those implemented functions. A proposed following slice is preserving original ingestion source and acquisition-time context during registration. Its interface remains undecided; do not treat it as approved implementation work. Additional versioning requirements and the baseline experiment design remain future work. Keep future changes small and understandable to the user.
+
+The purpose still holds: every future model output should identify its exact input data even when history is revised or tags move. Current single-file references use the dataset plus SHA-256 of bytes, and registration time is distinct from acquisition time and historical availability. The original `feature/data-versioning` branch suggestion is part of the earlier plan, not an outstanding instruction to restart the completed implementation.
 
 ## Agreed decisions
 
@@ -160,7 +164,9 @@ These have not been selected yet:
 
 Local snapshots remain vulnerable to machine loss or deletion. Before depending on real data that cannot be reconstructed, choose a durable second copy or an appropriate storage destination. No external storage service has been selected.
 
-## Ordered next steps
+## Original ordered plan — historical
+
+This was the sequence saved before implementation. Use [the current roadmap](roadmap.md#resume-here) to resume; do not interpret the completed steps here as still pending. Multi-file collections, processing lineage, validation evidence, and runner integration in this original scope remain deferred.
 
 1. **Review this document together.** Confirm it captures the decisions and resolve the open details needed for the first slice. Do not treat illustrative names or proposed schemas as already approved.
 2. **Create the data-versioning branch.** Keep this work separate from the committed synthetic generator. Select packaging and tools only as needed for the first importable implementation.
@@ -170,7 +176,9 @@ Local snapshots remain vulnerable to machine loss or deletion. Before depending 
 6. **Exercise the workflow with our synthetic data.** Register identical data twice, modify an old observation and register again, create a derived snapshot, move tags, and inspect the preserved history and validation results.
 7. **Review the evidence before building the baseline runner.** The future runner must pin input IDs and enforce required checks with explicit experimental overrides. Do not claim this integration exists before executable model code is added.
 
-## Acceptance evidence for the first implementation
+## Original acceptance evidence — broader than the current slice
+
+The single-file implementation covers content reuse and revisions, explicit tag movement and fixed references, failed-copy handling, integrity verification, store relocation, and Git exclusion. Collection inventories, processing lineage, data-quality evidence, and a replaceable storage-backend interface are still future requirements; the list below preserves the original broader scope.
 
 - Repeated identical inputs reuse a snapshot and create another acquisition record.
 - An old-value revision creates a new snapshot, while the previous contents remain retrievable.
@@ -188,4 +196,4 @@ Runner acceptance evidence comes later: default blocking on required failures, r
 
 API/database acquisition connectors, file watchers, automatic execution triggered by tags, dashboards and searchable catalogs, semantic table comparison, row-level revision reports, remote storage integrations, coordinated writes across machines, retention/deletion automation, and custom recovery or replication systems.
 
-The immediate deliverable is a small local registration and reference system that can support another storage destination later. It is not a commitment to build all of these extensions.
+The small local registration and reference system is now implemented for review. Extending it to another storage destination is future work. This remains a saved list of possibilities rather than a commitment to build every extension.

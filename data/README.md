@@ -4,6 +4,8 @@ Keep input snapshots here while developing. Git ignores other contents of this d
 
 Reproduction will require an explicitly preserved snapshot or reliable versioned reference, including source and retrieval/availability assumptions. A hash alone cannot recreate data. Small synthetic fixtures may later be committed deliberately in a separate fixture location.
 
+The [local snapshot module](../docs/snapshots.md) defaults to `data/versioned/`. Keep its entire directory tree together: it contains preserved files, manifests, and registration records. These local contents are ignored by Git and are not uploaded when code is pushed to GitHub.
+
 ## Synthetic starting data
 
 Generate the local datasets from the repository root with:

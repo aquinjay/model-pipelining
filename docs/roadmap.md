@@ -1,6 +1,30 @@
 # Roadmap
 
-These milestones describe proposed outcomes. The repository contains design documents, environment configuration, a synthetic generator, and local CSV/XLSX ingestion with behavioral tests. The forecasting milestones have not been implemented.
+Updated: 2026-11-09.
+
+The repository now has synthetic data generation, local CSV/XLSX ingestion, single-file snapshots, registration history and notes, and explicit dataset-scoped tags. The forecasting milestones below remain proposed outcomes; no model runner or completed experiment exists.
+
+## Resume here
+
+The current checkpoint includes ingestion, snapshots, inspection functions, notes, tags, tests, clearer code comments/names, and the function reference. Ingestion was first published in `685b7fb` (`Add local file ingestion and CSV/XLSX table reading`). The user requested publication of the snapshot/tagging slice and updated notes on 2026-11-09; this change packages that work. Use Git history to find its exact commit.
+
+1. **Resume from the implemented checkpoint.** Start with the [function reference beside the code](../src/model_pipelining/README.md), then `ingest.py`, `snapshots.py`, and `tags.py`. The guide explains return values, the complete workflow, tag moves, permanent references, and the saved files. Keep future changes small and readable, with reviewable code and useful comments.
+2. **Agree on one next enhancement.** The proposed next versioning slice is richer acquisition context: retain the original ingestion source and copy time when registering an ingested file, alongside registration time. The current record identifies the local file supplied to registration. Decide the minimal fields and interface together before implementing this proposal.
+3. **Define the baseline experiment when ready.** Set the target, issuance/cutoff, minimum history, historical forecast origins, point statistic, scores, required checks, and expected artifacts. Its future runner must pin the dataset plus resolved snapshot ID and record the training selection. Neither this design nor runner integration is implemented yet.
+
+Do not rebuild the completed snapshot/tag functions or introduce a larger storage framework as the next step. Keep work in small pieces the user can read and understand. git-annex remains optional; DVC or another dependency/stage/execution tool is deferred.
+
+## Verification at this stopping point
+
+- The last full test run passed all 50 tests: 17 ingestion, 20 snapshot, and 13 tag tests. Snapshot and tag fixtures use temporary stores, including simulated copy/publication failures.
+- The complete example in the source-directory README ran with 200 freshly generated observations in a temporary store. Its relative file links were also checked.
+- The full suite, dependency compatibility, lockfile consistency, and whitespace checks passed again for the requested publication. Subsequent edits only update the publication notes. Rerun the suite after code changes:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
+```
+
+The supported local scope is one file per snapshot, one writer at a time, local writable storage, and integrity verification on retrieval. Multi-file identity, processing lineage, quality eligibility, concurrent writers, remote storage, and crash recovery are not implemented. Local data and records are ignored by Git and are not uploaded with code.
 
 ## 0. Establish the design and development environment
 
@@ -12,9 +36,24 @@ These milestones describe proposed outcomes. The repository contains design docu
 - [x] Declare project metadata and the supported interpreter range in `pyproject.toml`.
 - [x] Provide a uv lockfile and a pip-compatible dependency export.
 - [x] Document both venv/pip and uv setup, with local environments excluded from Git.
-- [ ] Recreate and verify the pinned environment on the development machine.
-- [ ] Agree on the first runtime modules and development tools, then lock and verify their versions.
+- [x] Recreate and verify the pinned environment on the development machine (CPython 3.14.10).
+- [x] Select and lock the first runtime packages (pandas/openpyxl) and use standard-library unittest for behavioral checks.
 - [ ] Agree on the first synthetic experiment and its observable acceptance criteria.
+
+## Data foundations — implemented locally
+
+- [x] Reproducible synthetic generator and two starting CSV datasets.
+- [x] Local-file copying with an acquisition receipt and overwrite protection.
+- [x] CSV/XLSX table reading with worksheet and header selection.
+- [x] Single-file SHA-256 snapshot registration, preserved bytes, and JSON manifests.
+- [x] Separate registration records and optional notes, including repeated identical acquisitions.
+- [x] Retrieval with integrity checks and storage-location-independent dataset/ID references.
+- [x] Snapshot inventory and chronological acquisition-history listing.
+- [x] Explicit dataset-scoped tag assignment, resolution, current-tag listing, and assignment history.
+- [x] Caller context and optional tag notes; registration never automatically moves tags.
+- [x] Code comments, descriptive names, an everyday function reference, and behavioral tests.
+- [x] Provide code walkthroughs, explanations, and the source-directory reference for user review.
+- [x] Prepare the reviewed snapshot/tagging slice for the user's requested commit and push.
 
 ## 1. Small synthetic experiment
 
@@ -44,12 +83,10 @@ Add a point-only model such as gradient boosting. Supply its feature, fitting, a
 
 Multiple horizons, richer Bayesian models, an operational-data application, a run index, dashboards, scheduled execution, and monitoring policies. Each extension needs a stated problem and evidence that it helps.
 
-## Next design slice
+## Further versioning enhancements — not selected for implementation
 
-Review the local implementation of [Local ingestion: first slice and later enhancements](ingestion.md): one local-file ingestion function in a small Python module, a receipt describing the completed copy, and a companion CSV/XLSX table reader with worksheet selection. Behavioral tests cover temporary files and a multi-sheet workbook. This slice is ready for code review and remains independent of snapshot registration and model execution.
+Richer original acquisition context is the proposed next slice above. Processing lineage, multi-file collections, quality-check evidence, additional source functions, and storage/recovery improvements remain possible later slices. Implement them only when a concrete need is selected; the list is not a requirement to finish every feature before learning from a baseline.
 
-The [2026-11-09 decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) selects git-annex as the direction for later preservation and defers DVC or another dependency/stage/execution tool. Do not implement a custom snapshot storage system as a prerequisite for the local ingestion function. Preserve the [data-versioning requirements](data-versioning.md) for later integration.
-
-Then define the smallest baseline experiment together: target, issuance/cutoff, minimum history, origins, point statistic, scores, required checks, and expected artifacts. Permanent input references and training selection remain runner requirements to address when that integration is designed. Select and verify packages as implementation needs become concrete.
+See [the current snapshot/tag behavior](snapshots.md), [the decision log](decisions.md), and [the broader versioning requirements and historical plan](data-versioning.md). The roadmap's resume section is the current continuation order.
 
 Turn each deliverable into a small GitHub issue using the repository's task template. This roadmap is not a commitment to implement all possible extensions.

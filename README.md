@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: design, synthetic data generation, and local CSV/XLSX ingestion.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). The ingestion module copies local files and reads CSV or selected XLSX worksheets, with behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
+**Status: design, synthetic data generation, local CSV/XLSX ingestion, and single-file snapshots.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). Ingestion copies files and reads tables. The small snapshot module preserves versions using SHA-256 and JSON records, with verified retrieval. Both have behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
 
 ## Why build this?
 
@@ -77,10 +77,11 @@ model-pipelining/
     roadmap.md               small milestones and the next design slice
     decisions.md             decisions, proposals, and open questions
     ingestion.md             local copy/read interface and later enhancements
+    snapshots.md             small local snapshot workflow and limitations
     references.md            public background reading
-  src/model_pipelining/      local-file ingestion and CSV/XLSX reading
+  src/model_pipelining/      local-file ingestion, table reading, snapshots, and tags
   configs/                   reserved for task/model/check-plan examples
-  tests/                     ingestion behavioral tests
+  tests/                     ingestion, snapshot, and tag behavioral tests
   scripts/                   reproducible synthetic data generator
   data/                      local input snapshots; contents ignored by Git
   runs/                      local run artifacts; contents ignored by Git
@@ -169,6 +170,8 @@ Setup references: [Python's packaging guide](https://packaging.python.org/en/lat
 
 ## Local ingestion
 
+The [function reference beside the Python code](src/model_pipelining/README.md) explains ingestion, snapshots, tags, return values, and a complete copy-to-tag-to-table example.
+
 After installing dependencies, run from the repository root with `PYTHONPATH=src .venv/bin/python`:
 
 ```python
@@ -193,6 +196,38 @@ Run the behavioral tests:
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
+## Local snapshots
+
+Use the new local snapshot module after ingestion, or pass a completed local file directly. Launch Python with `PYTHONPATH=src .venv/bin/python`:
+
+```python
+from model_pipelining.ingest import read_local_table
+from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
+
+snapshot = register_snapshot(
+    "data/synthetic/mean_shift.csv", dataset="synthetic-mean-shift",
+    note="Initial synthetic input",
+)
+path = retrieve_snapshot(snapshot.snapshot_id, dataset=snapshot.dataset)
+table = read_local_table(path)
+```
+
+Repeated identical bytes reuse a snapshot while recording each registration. Changed bytes create another snapshot. Save the dataset name and snapshot ID as the reference. Optional notes explain each registration without changing the snapshot. Use `list_snapshots(dataset=...)` and `list_acquisitions(dataset=...)` from the same module to inspect versions and registration history as lists of dictionaries. The default store, `data/versioned`, is local and ignored by Git. See [the snapshot notes](docs/snapshots.md) for examples, the on-disk layout, single-writer assumptions, and deferred enhancements.
+
+Add an explicit readable reference using the tag module:
+
+```python
+from model_pipelining.tags import assign_tag, resolve_tag
+
+assign_tag(
+    dataset=snapshot.dataset, tag="baseline-input",
+    snapshot_id=snapshot.snapshot_id, changed_by="manual-review",
+)
+selected_snapshot_id = resolve_tag(dataset=snapshot.dataset, tag="baseline-input")
+```
+
+Tag assignment verifies the target and saves the assignment history. New registrations leave existing tags unchanged. Save the resolved snapshot ID with the dataset for later reproduction. `list_tags` and `list_tag_history` expose the saved metadata; see [the tag examples](docs/snapshots.md#assign-resolve-and-inspect-tags).
+
 ## First useful milestone
 
 Produce one reproducible synthetic baseline experiment:
@@ -207,7 +242,7 @@ Success means the experiment is understandable and repeatable, including visible
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
-See [the roadmap](docs/roadmap.md) for proposed milestones. The [local-file ingestion module](docs/ingestion.md) is implemented for review. git-annex is the planned preservation tool, with integration deferred. DVC or another tool for dependencies, stages, and execution will be considered later. The [saved data-versioning requirements](docs/data-versioning.md) still describe the later snapshot identity, provenance, dataset-scoped tags, validation, and portability needs.
+See [the roadmap](docs/roadmap.md) for the current checkpoint and proposed next steps. [Local ingestion](docs/ingestion.md) and [single-file snapshots with explicit tags](docs/snapshots.md) are implemented and documented. git-annex is now an optional later integration. DVC or another tool for dependencies, stages, and execution will be considered later. The [saved data-versioning requirements](docs/data-versioning.md) describe the broader multi-file, provenance, validation, and portability needs.
 
 ## Working on the project
 

@@ -2,7 +2,7 @@
 
 Recorded: 2026-11-09.
 
-Status: implemented, with behavioral tests. The local-file copy function and CSV/XLSX table reader support worksheet selection; snapshot registration, git-annex integration, and execution tooling are deferred.
+Status: implemented, with behavioral tests. The local-file copy function and CSV/XLSX table reader support worksheet selection. A separate [small snapshot module](snapshots.md) now registers and verifies completed files. git-annex integration and execution tooling remain deferred.
 
 ## Purpose and boundary
 
@@ -109,8 +109,8 @@ Exercise the real example in an ignored directory under `data/`. Keep fixtures c
 - A shared multi-file result with source kind, query and parameters, source object versions, acquisition timing, connector/code version, and explicit unknowns. Keep credentials out of saved records.
 - A clear consistency policy for files changing during acquisition and multi-file/database reads.
 - Deterministic query export ordering and serialization to avoid accidental byte differences.
-- Checksums and snapshot registration, stable IDs, repeat-acquisition records, lineage, dataset tags, and tag history.
-- git-annex integration for preservation and retrieval. Preserve the accompanying records as well as data; define how permanent snapshot references resolve through the tool.
+- The separate [single-file snapshot module](snapshots.md) now provides hashes, preserved copies, dataset/ID references, and a registration event per call. The tag module adds explicit dataset-scoped assignments and history. Full original acquisition context and processing lineage remain later enhancements.
+- Optional git-annex integration for preservation and retrieval. The first snapshot implementation uses local files and standard-library hashing.
 - DVC or another dependency/stage/execution tool. Evaluate overlap with the forecasting runner before adopting its execution features.
 - CSV/schema checks, timestamp availability, and experiment-specific eligibility rules, with outcomes separate from acquisition success.
 - Multiple-sheet results, sheet listing, cell ranges, explicit dtypes/date/missing-value policies, CSV dialect/encoding options, formula-cache checks, and additional spreadsheet formats as concrete needs arise. Google Sheets would be a separate acquisition source; worksheet selection here means sheets inside an XLSX workbook.
