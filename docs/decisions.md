@@ -54,6 +54,14 @@ The selected approach preserves snapshots of one or more related files, compares
 - **Context:** every explicit assignment records old/new IDs, time, a caller-supplied `changed_by` person/process name, and an optional note. Reassigning the same ID still records the request. This is contextual history rather than authenticated or tamper-proof evidence.
 - **Run references:** resolve a tag once and save the dataset plus permanent snapshot ID. Moving the tag does not change previously selected input IDs. Tagging does not run models or override required data-quality evidence. Deletion, renaming, and automatic tag movement are not implemented.
 
+## Carry local ingestion receipts into registration — 2026-11-09
+
+- **Selected change:** the user requested retaining the ingestion receipt with a snapshot registration. `register_snapshot` accepts optional `ingestion_receipt: IngestResult | None`, alongside the existing file path. Direct file registration remains supported.
+- **Saved context:** the registration event contains an `ingestion_receipt` dictionary with `source`, `destination`, UTC ISO `acquired_at`, and `size_bytes`, or `None` when omitted. `source_path` still identifies the registered file, and `registered_at` remains separate from the earlier copy completion time. Neither timestamp establishes historical availability.
+- **Checks and limits:** the receipt must describe the registered destination and byte count, with a timezone-aware acquisition time. These checks happen before creating the store. The original ingestion source need not still exist. Receipts contain no hash and cannot prove that same-size edits did not occur after ingestion; the acquired file must remain unchanged until registration.
+- **Identity and compatibility:** receipt context belongs to each registration and changes neither snapshot IDs nor manifests. Repeated identical inputs can carry different receipts. The optional field extends event format version 1; listing older records returns `ingestion_receipt=None` without rewriting files. No new dependencies or storage framework are needed.
+- **Evidence:** all 57 behavioral tests pass, including retained context after source removal and store relocation, distinct registration/acquisition times, receipt-independent identity, UTC normalization, invalid receipts, and older records.
+
 ## Working proposals
 
 - Start the Python implementation with a few files in `src/model_pipelining/`; package/build configuration follows the first importable code.

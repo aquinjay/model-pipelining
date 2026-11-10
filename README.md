@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: design, synthetic data generation, local CSV/XLSX ingestion, and single-file snapshots.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). Ingestion copies files and reads tables. The small snapshot module preserves versions using SHA-256 and JSON records, with verified retrieval. Both have behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
+**Status: design, synthetic data generation, local CSV/XLSX ingestion, and single-file snapshots.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). Ingestion copies files and reads tables. The small snapshot module preserves versions using SHA-256 and JSON records, with verified retrieval and optional saved ingestion receipts. Both have behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
 
 ## Why build this?
 
@@ -198,21 +198,31 @@ PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 
 ## Local snapshots
 
-Use the new local snapshot module after ingestion, or pass a completed local file directly. Launch Python with `PYTHONPATH=src .venv/bin/python`:
+Use the local snapshot module after ingestion, or pass a completed local file directly. The following example copies a file and saves the returned receipt with its snapshot registration. Launch Python with `PYTHONPATH=src .venv/bin/python`:
 
 ```python
-from model_pipelining.ingest import read_local_table
+from model_pipelining.ingest import ingest_local_file, read_local_table
 from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
 
+receipt = ingest_local_file(
+    "data/synthetic/mean_shift.csv",
+    "data/ingested/snapshot-example/mean_shift.csv",
+)
 snapshot = register_snapshot(
-    "data/synthetic/mean_shift.csv", dataset="synthetic-mean-shift",
+    receipt.destination,
+    dataset="synthetic-mean-shift",
+    ingestion_receipt=receipt,
     note="Initial synthetic input",
 )
 path = retrieve_snapshot(snapshot.snapshot_id, dataset=snapshot.dataset)
 table = read_local_table(path)
 ```
 
+The process still has two calls: copy the file, then register it. **The one added argument is `ingestion_receipt=receipt`.** Once supplied, registration automatically writes the receipt into its acquisition record; you do not save a separate receipt file. Copying alone does not register a snapshot. Omitting the argument saves no original ingestion context, and older records are not filled in automatically. Choose an unused ingestion destination when repeating the full example.
+
 Repeated identical bytes reuse a snapshot while recording each registration. Changed bytes create another snapshot. Save the dataset name and snapshot ID as the reference. Optional notes explain each registration without changing the snapshot. Use `list_snapshots(dataset=...)` and `list_acquisitions(dataset=...)` from the same module to inspect versions and registration history as lists of dictionaries. The default store, `data/versioned`, is local and ignored by Git. See [the snapshot notes](docs/snapshots.md) for examples, the on-disk layout, single-writer assumptions, and deferred enhancements.
+
+The receipt's source, destination, UTC `acquired_at`, and byte count are saved with that registration. Passing a receipt is optional; registration checks that its destination and size match the supplied file. See the [complete workflow](src/model_pipelining/README.md#one-complete-workflow).
 
 Add an explicit readable reference using the tag module:
 
@@ -245,6 +255,8 @@ After a review, add one real-data application and a local-level BDLM through the
 See [the roadmap](docs/roadmap.md) for the current checkpoint and proposed next steps. [Local ingestion](docs/ingestion.md) and [single-file snapshots with explicit tags](docs/snapshots.md) are implemented and documented. git-annex is now an optional later integration. DVC or another tool for dependencies, stages, and execution will be considered later. The [saved data-versioning requirements](docs/data-versioning.md) describe the broader multi-file, provenance, validation, and portability needs.
 
 ## Working on the project
+
+Agents must follow [the repository instructions](AGENTS.md), including updating affected documentation after implementation or workflow changes and before reporting completion.
 
 Use one issue or small pull request per question or deliverable. Describe the problem, intended behavior, and evidence needed before adding abstractions. Record consequential decisions in `docs/decisions.md`; keep unresolved choices explicitly provisional.
 

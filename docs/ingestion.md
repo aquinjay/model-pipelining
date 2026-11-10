@@ -38,7 +38,19 @@ The result contains:
 | `acquired_at` | UTC time when this copy completed; not evidence of historical availability |
 | `size_bytes` | Size of the completed copy |
 
-These are acquisition details, not a permanent snapshot ID or a portable provenance record. A later result contract can support multiple files and source-specific context when the second source requires it.
+These are acquisition details, not a permanent snapshot ID. Carry the receipt into snapshot registration to save its context with the preserved version:
+
+```python
+from model_pipelining.snapshots import register_snapshot
+
+snapshot = register_snapshot(
+    result.destination,
+    dataset="synthetic-mean-shift",
+    ingestion_receipt=result,
+)
+```
+
+The receipt's source, destination, UTC completion time, and byte count are stored with this registration, separately from registration time and snapshot identity. The destination must resolve to the file being registered and its byte count must match. The original source need not still exist. A receipt contains no hash, so the caller must keep the acquired copy unchanged until registration. See [snapshot behavior and limits](snapshots.md). A later result contract can support multiple files and source-specific context when the second source requires it.
 
 ## First-function behavior
 
@@ -109,11 +121,11 @@ Exercise the real example in an ignored directory under `data/`. Keep fixtures c
 - A shared multi-file result with source kind, query and parameters, source object versions, acquisition timing, connector/code version, and explicit unknowns. Keep credentials out of saved records.
 - A clear consistency policy for files changing during acquisition and multi-file/database reads.
 - Deterministic query export ordering and serialization to avoid accidental byte differences.
-- The separate [single-file snapshot module](snapshots.md) now provides hashes, preserved copies, dataset/ID references, and a registration event per call. The tag module adds explicit dataset-scoped assignments and history. Full original acquisition context and processing lineage remain later enhancements.
+- The separate [single-file snapshot module](snapshots.md) provides hashes, preserved copies, dataset/ID references, a registration event per call, and optional preservation of the local ingestion receipt. The tag module adds explicit dataset-scoped assignments and history. Remote source-specific context and processing lineage remain later enhancements.
 - Optional git-annex integration for preservation and retrieval. The first snapshot implementation uses local files and standard-library hashing.
 - DVC or another dependency/stage/execution tool. Evaluate overlap with the forecasting runner before adopting its execution features.
 - CSV/schema checks, timestamp availability, and experiment-specific eligibility rules, with outcomes separate from acquisition success.
 - Multiple-sheet results, sheet listing, cell ranges, explicit dtypes/date/missing-value policies, CSV dialect/encoding options, formula-cache checks, and additional spreadsheet formats as concrete needs arise. Google Sheets would be a separate acquisition source; worksheet selection here means sheets inside an XLSX workbook.
-- Retries, timeouts, progress reporting, batch/directory ingestion, durable receipts, atomic publication, recovery, and concurrency, when actual use requires them.
+- Retries, timeouts, progress reporting, batch/directory ingestion, standalone saved receipts before registration, atomic publication, recovery, and concurrency, when actual use requires them.
 
 The first deliverable is one callable local-file acquisition function, a CSV/XLSX table reader with worksheet selection, and evidence for their behavior. It is not a versioning service or a model runner.

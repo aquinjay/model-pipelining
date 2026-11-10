@@ -15,7 +15,7 @@ This is the everyday reference for the functions in this directory: what to call
 | Dataset | A named collection of versions of an input, such as `synthetic-mean-shift` |
 | Snapshot | One preserved version of a file |
 | Snapshot ID | The SHA-256 fingerprint of the file's bytes |
-| Acquisition record | One successful registration, including its local source path, registration time, and optional note |
+| Acquisition record | One successful registration, including its local source path, registration time, optional note, and optional ingestion receipt |
 | Manifest | The record describing a snapshot's filename, byte count, hash, and format version |
 | Tag | A readable name within a dataset pointing to a snapshot, such as `baseline-input` |
 | Store | The directory containing preserved files and records; defaults to `data/versioned` |
@@ -44,6 +44,8 @@ The generator refuses to overwrite its output, so do not rerun it if those files
 
 Copy a file, preserve it as a version, give that version a name, then select and read it:
 
+Copying and registration remain separate function calls. Add `ingestion_receipt=receipt` to registration to carry the copy's receipt forward. Registration then saves it automatically with that event; there is no separate receipt-saving call or file to maintain. Omitting the argument leaves `ingestion_receipt=None`, and earlier registrations are not filled in automatically.
+
 ```python
 from model_pipelining.ingest import ingest_local_file, read_local_table
 from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
@@ -55,11 +57,12 @@ receipt = ingest_local_file(
     "data/ingested/readme-example/mean_shift.csv",
 )
 
-# 2. Preserve the copy and record why we registered it.
+# 2. Preserve the copy, its ingestion receipt, and why we registered it.
 snapshot = register_snapshot(
     receipt.destination,
     dataset="synthetic-mean-shift",
     note="Initial input for the baseline",
+    ingestion_receipt=receipt,
 )
 
 # 3. Explicitly give this version a readable name.
@@ -117,7 +120,7 @@ All snapshot functions accept `store="data/versioned"` as an optional keyword ar
 
 | Function | What it does | Returns |
 |---|---|---|
-| `register_snapshot(path, *, dataset, note=None, store=...)` | Preserves a completed file or reuses matching contents; records every successful registration | `Snapshot` receipt |
+| `register_snapshot(path, *, dataset, note=None, ingestion_receipt=None, store=...)` | Preserves a completed file or reuses matching contents; records every successful registration | `Snapshot` receipt |
 | `retrieve_snapshot(snapshot_id, *, dataset, store=...)` | Checks the manifest, byte count, and hash before locating the preserved file | `Path` |
 | `list_snapshots(*, dataset, store=...)` | Lists unique versions sorted by ID | List of dictionaries |
 | `list_acquisitions(*, dataset, store=...)` | Lists registrations oldest first, then by acquisition ID when times tie | List of dictionaries |
@@ -125,6 +128,8 @@ All snapshot functions accept `store="data/versioned"` as an optional keyword ar
 `Snapshot` contains `snapshot_id`, `dataset`, and `path`. Save the dataset and ID as the permanent reference. The path is local to the current store; retrieve again after moving it.
 
 Identical bytes in one dataset reuse a snapshot, including renamed inputs. The first saved filename remains. Changed bytes create another version while keeping the previous one. Each successful registration gets its own acquisition record. The optional note belongs to that record and does not affect snapshot identity.
+
+Pass `ingestion_receipt=receipt` to retain the original copy's `source`, `destination`, `acquired_at`, and `size_bytes`. Paths are saved as strings and the acquisition time as UTC ISO text. The receipt must be an `IngestResult` whose destination resolves to the registered file and whose byte count matches it. The original source does not need to exist anymore. Omit the receipt when registering a file directly.
 
 ```python
 from model_pipelining.snapshots import list_snapshots, list_acquisitions
@@ -134,11 +139,14 @@ registrations = list_acquisitions(dataset="synthetic-mean-shift")
 
 for registration in registrations:
     print(registration["registered_at"], registration["note"])
+    if registration["ingestion_receipt"] is not None:
+        print(registration["ingestion_receipt"]["source"])
+        print(registration["ingestion_receipt"]["acquired_at"])
 ```
 
-Snapshot summaries contain `dataset`, `snapshot_id`, `filename`, and `size_bytes`. Acquisition records also describe the supplied `source_path`, `registered_at`, optional `note`, and unique `acquisition_id`. Older records without notes return `note=None`.
+Snapshot summaries contain `dataset`, `snapshot_id`, `filename`, and `size_bytes`. Acquisition records also describe the supplied `source_path`, `registered_at`, optional `note`, optional `ingestion_receipt` dictionary, and unique `acquisition_id`. Missing optional fields return `None`, including for older records; stored files are not rewritten.
 
-Both listing functions return `[]` for absent data without creating directories. Listing reads metadata; retrieval checks actual file integrity. Registration time does not establish when the original source was acquired or historically available.
+Both listing functions return `[]` for absent data without creating directories. Listing reads metadata; retrieval checks actual file integrity. `registered_at` describes snapshot registration, while the receipt's `acquired_at` describes completion of the earlier ingestion copy. Neither establishes historical availability. Receipt context does not change snapshot IDs or manifests. Receipts contain no hash, so path and size checks cannot detect same-size edits made between ingestion and registration.
 
 ## Understanding tags
 

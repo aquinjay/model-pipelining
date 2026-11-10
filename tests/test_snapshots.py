@@ -1,6 +1,7 @@
 """Check preserved versions, registration history, integrity, and portability."""
 
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -11,7 +12,7 @@ from unittest.mock import patch
 
 from openpyxl import Workbook
 
-from model_pipelining.ingest import read_local_table
+from model_pipelining.ingest import ingest_local_file, read_local_table
 from model_pipelining.snapshots import (
     list_acquisitions,
     list_snapshots,
@@ -33,12 +34,13 @@ class SnapshotTests(unittest.TestCase):
         self.source_file_path.write_bytes(self.original_file_bytes)
         self.dataset_name = "synthetic-mean-shift"
 
-    def register_source_file(self, source=None, dataset=None, note=None):
+    def register_source_file(self, source=None, dataset=None, note=None, ingestion_receipt=None):
         """Register a test input, using this test's defaults unless overridden."""
         return register_snapshot(
             source if source is not None else self.source_file_path,
             dataset=dataset if dataset is not None else self.dataset_name,
             note=note,
+            ingestion_receipt=ingestion_receipt,
             store=self.store_directory,
         )
 
@@ -73,6 +75,98 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(event["dataset"], self.dataset_name)
         self.assertEqual(event["source_path"], str(self.source_file_path.resolve()))
         self.assertEqual(datetime.fromisoformat(event["registered_at"]).utcoffset().total_seconds(), 0)
+        # Registration's internal staging copy is not an original ingestion.
+        self.assertIsNone(event["ingestion_receipt"])
+
+    def test_ingestion_receipt_survives_registration_source_removal_and_store_move(self):
+        receipt = ingest_local_file(
+            self.source_file_path, self.test_directory / "ingested" / "copy.csv",
+        )
+        self.source_file_path.unlink()
+        before_registration = datetime.now(UTC)
+        snapshot = self.register_source_file(receipt.destination, ingestion_receipt=receipt)
+        after_registration = datetime.now(UTC)
+        event, = self.read_saved_acquisition_records()
+        self.assertEqual(event["source_path"], str(receipt.destination))
+        self.assertEqual(event["ingestion_receipt"], {
+            "source": str(receipt.source),
+            "destination": str(receipt.destination),
+            "acquired_at": receipt.acquired_at.isoformat(),
+            "size_bytes": len(self.original_file_bytes),
+        })
+        registered_at = datetime.fromisoformat(event["registered_at"])
+        self.assertLessEqual(before_registration, registered_at)
+        self.assertLessEqual(registered_at, after_registration)
+        self.assertLessEqual(receipt.acquired_at, before_registration)
+
+        # Reading historical context does not require either original file.
+        receipt.destination.unlink()
+        moved_store = self.test_directory / "moved-store"
+        shutil.move(self.store_directory, moved_store)
+        listed, = list_acquisitions(dataset=self.dataset_name, store=moved_store)
+        self.assertEqual(listed, event)
+        self.assertEqual(
+            self.retrieve_preserved_file(snapshot.snapshot_id, store=moved_store).read_bytes(),
+            self.original_file_bytes,
+        )
+
+    def test_different_ingestion_receipts_reuse_snapshot_and_keep_separate_context(self):
+        first = self.register_source_file()
+        manifest_path = first.path.parent.parent / "manifest.json"
+        manifest_before = manifest_path.read_bytes()
+        expected_receipts = []
+        for day in (1, 2):
+            original = self.test_directory / f"original-{day}.csv"
+            original.write_bytes(self.original_file_bytes)
+            receipt = ingest_local_file(original, self.test_directory / f"copy-{day}.csv")
+            receipt = replace(receipt, acquired_at=datetime(2026, 11, day, tzinfo=UTC))
+            snapshot = self.register_source_file(receipt.destination, ingestion_receipt=receipt)
+            self.assertEqual(snapshot, first)
+            expected_receipts.append({
+                "source": str(receipt.source), "destination": str(receipt.destination),
+                "acquired_at": receipt.acquired_at.isoformat(), "size_bytes": receipt.size_bytes,
+            })
+        records = list_acquisitions(dataset=self.dataset_name, store=self.store_directory)
+        self.assertCountEqual(
+            [record["ingestion_receipt"] for record in records], [None, *expected_receipts],
+        )
+        self.assertEqual(len({record["acquisition_id"] for record in records}), 3)
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+
+    def test_unrelated_ingestion_receipt_is_rejected_even_for_identical_bytes(self):
+        receipt = ingest_local_file(self.source_file_path, self.test_directory / "copy.csv")
+        with self.assertRaisesRegex(ValueError, "destination must match"):
+            self.register_source_file(ingestion_receipt=receipt)
+        self.assertFalse(self.store_directory.exists())
+
+    def test_changed_ingested_file_size_is_rejected_before_creating_store(self):
+        receipt = ingest_local_file(self.source_file_path, self.test_directory / "copy.csv")
+        receipt.destination.write_bytes(b"changed size")
+        with self.assertRaisesRegex(ValueError, "size_bytes must match"):
+            self.register_source_file(receipt.destination, ingestion_receipt=receipt)
+        self.assertFalse(self.store_directory.exists())
+
+    def test_invalid_ingestion_receipt_type_is_rejected_before_creating_store(self):
+        for receipt in ("receipt", {"source": "original.csv"}, True):
+            with self.subTest(receipt=receipt):
+                with self.assertRaisesRegex(TypeError, "ingestion_receipt must be"):
+                    self.register_source_file(ingestion_receipt=receipt)
+                self.assertFalse(self.store_directory.exists())
+
+    def test_receipt_with_naive_acquisition_time_is_rejected_before_creating_store(self):
+        receipt = ingest_local_file(self.source_file_path, self.test_directory / "copy.csv")
+        receipt = replace(receipt, acquired_at=datetime(2026, 11, 1))
+        with self.assertRaisesRegex(ValueError, "acquired_at must be timezone-aware"):
+            self.register_source_file(receipt.destination, ingestion_receipt=receipt)
+        self.assertFalse(self.store_directory.exists())
+
+    def test_receipt_acquisition_time_is_saved_in_utc(self):
+        receipt = ingest_local_file(self.source_file_path, self.test_directory / "copy.csv")
+        local_time = datetime(2026, 11, 1, 10, tzinfo=timezone(timedelta(hours=-8)))
+        receipt = replace(receipt, acquired_at=local_time)
+        self.register_source_file(receipt.destination, ingestion_receipt=receipt)
+        event, = self.read_saved_acquisition_records()
+        self.assertEqual(event["ingestion_receipt"]["acquired_at"], "2026-11-01T18:00:00+00:00")
 
     def test_identical_or_renamed_input_reuses_snapshot_with_separate_records(self):
         first = self.register_source_file()
@@ -253,15 +347,17 @@ class SnapshotTests(unittest.TestCase):
         records = list_acquisitions(dataset=self.dataset_name, store=self.store_directory)
         self.assertCountEqual([record["note"] for record in records], [None, note, ""])
 
-    def test_older_acquisitions_without_notes_are_read_without_rewriting_them(self):
+    def test_older_acquisitions_without_optional_fields_are_read_without_rewriting_them(self):
         self.register_source_file()
         record_path, = (self.store_directory / self.dataset_name / "acquisitions").glob("*.json")
         record = json.loads(record_path.read_text())
         del record["note"]
+        del record["ingestion_receipt"]
         record_path.write_text(json.dumps(record))
         before = record_path.read_bytes()
         listed, = list_acquisitions(dataset=self.dataset_name, store=self.store_directory)
         self.assertIsNone(listed["note"])
+        self.assertIsNone(listed["ingestion_receipt"])
         self.assertEqual(record_path.read_bytes(), before)
 
     def test_invalid_note_is_rejected_before_creating_the_store(self):

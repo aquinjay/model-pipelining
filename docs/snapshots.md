@@ -26,7 +26,26 @@ path = retrieve_snapshot(snapshot.snapshot_id, dataset=snapshot.dataset)
 table = read_local_table(path)
 ```
 
-Generate the synthetic source first if needed using `scripts/generate_synthetic.py`. An already ingested file is equally valid: pass `receipt.destination` to `register_snapshot`. This function preserves the supplied file, regardless of where it originally came from.
+Generate the synthetic source first if needed using `scripts/generate_synthetic.py`. An already ingested file is equally valid. Pass its receipt to preserve the original acquisition details:
+
+```python
+from model_pipelining.ingest import ingest_local_file
+
+receipt = ingest_local_file(
+    "data/synthetic/mean_shift.csv",
+    "data/ingested/snapshot-example/mean_shift.csv",
+)
+snapshot = register_snapshot(
+    receipt.destination,
+    dataset="synthetic-mean-shift",
+    ingestion_receipt=receipt,
+    note="Preserve the original source and copy time",
+)
+```
+
+Choose an unused ingestion destination when repeating this example. `ingestion_receipt` is optional and accepts an `IngestResult` from `ingest_local_file`. Registration checks that its destination resolves to the supplied file and its byte count matches, before creating store files. Its acquisition time must be timezone-aware and is saved in UTC. The original ingestion source may already have been removed. Registration's own staging copy never supplies original acquisition context automatically.
+
+The receipt is caller-supplied historical context. It has no content hash, so the path and size checks cannot detect same-size edits after ingestion. Keep the ingested file unchanged until registration. Retrieval verifies the bytes preserved at registration.
 
 `register_snapshot` returns a `Snapshot` dataclass containing `snapshot_id`, `dataset`, and the current local `path`. `retrieve_snapshot` returns a `Path` after checking the manifest, size, and SHA-256. It raises an error for missing or changed contents; it does not silently repair or replace them. Pass that path to the existing CSV/XLSX reader. Excel worksheet selection remains a reading option; the snapshot preserves the whole workbook.
 
@@ -50,7 +69,7 @@ for event in history:
 Both functions return a list of dictionaries for the named dataset and accept the same `store` argument as registration and retrieval. An absent dataset returns `[]` without creating directories.
 
 - `list_snapshots` returns one summary per preserved snapshot: `dataset`, `snapshot_id`, `filename`, and `size_bytes`. Results are sorted by snapshot ID, not registration time.
-- `list_acquisitions` returns the complete registration records, including repeat registrations of the same snapshot. Results are sorted by the recorded UTC timestamp, oldest first, then by acquisition ID for ties. Older records without the optional note field return `note=None`; files are not rewritten.
+- `list_acquisitions` returns the complete registration records, including repeat registrations of the same snapshot. Results are sorted by the recorded UTC registration timestamp, oldest first, then by acquisition ID for ties. Missing optional `note` and `ingestion_receipt` fields return `None`, including for older records; files are not rewritten.
 
 Listing reads saved metadata without hashing or checking data-file availability. Use `retrieve_snapshot` when you need to verify the contents before use. Missing manifests and malformed JSON raise errors rather than silently hiding records. You can also inspect either list using `pandas.DataFrame(versions)` or `pandas.DataFrame(history)`.
 
@@ -119,7 +138,18 @@ data/versioned/
 
 The immutable-by-convention manifest has only `format_version`, `filename`, `sha256`, and `size_bytes`. Registration times and source paths are outside it, so repeated registration does not change the snapshot manifest or identity.
 
-Each acquisition record has `format_version`, a unique `acquisition_id`, `dataset`, `snapshot_id`, `source_path`, `registered_at` in UTC, and an optional `note`. `source_path` identifies the local file supplied to registration. If it was an ingested copy, this does not recover its original remote source or the ingestion receipt. `registered_at` is registration completion context, not the source's acquisition time or historical availability. The note is user-provided text; no credentials or arbitrary request details are automatically collected.
+Each acquisition record has `format_version`, a unique `acquisition_id`, `dataset`, `snapshot_id`, `source_path`, `registered_at` in UTC, an optional `note`, and an optional `ingestion_receipt`. `source_path` identifies the local file supplied to registration. `registered_at` describes registration, separately from the earlier ingestion copy's completion time. Neither time establishes historical availability. The note is user-provided text; no credentials or arbitrary request details are automatically collected.
+
+When supplied, `ingestion_receipt` is a dictionary with the receipt's four fields:
+
+| Field | Saved value |
+|---|---|
+| `source` | Original ingestion source path as text |
+| `destination` | Completed ingestion copy's path as text |
+| `acquired_at` | UTC ISO timestamp when that copy finished |
+| `size_bytes` | Byte count recorded by ingestion |
+
+Omission saves `ingestion_receipt: null`. Different receipts for identical bytes belong to separate registration records; the snapshot ID and manifest remain unchanged. These optional fields extend format version 1; older records remain readable without migration. Moving the store does not rewrite historical receipt paths, and inspecting receipts does not require those paths to exist.
 
 Each tag JSON file has `format_version`, `dataset`, `tag`, and `history`. Its final history entry identifies the current target. Assignment writes the updated file into temporary space on the same filesystem and replaces the previous tag file in one operation. This keeps the target and its history together without a separate mutable pointer file. Existing histories are retained by the API; they remain editable files, not a tamper-proof audit log. Malformed JSON or mismatched tag metadata raises an error instead of being silently overwritten.
 
@@ -139,7 +169,7 @@ Keep these enhancements for later review:
 
 - More tag operations only when needed, such as deletion, renaming, or configurable experiment-selection rules. Basic dataset-scoped tags and assignment history are implemented.
 - Multi-file inventories, supporting documents, processing lineage, and an explicit format migration policy.
-- Original acquisition context, including ingestion receipt, remote source/version, query parameters, and meaningful availability assumptions.
+- Source-specific acquisition context beyond the implemented local ingestion receipt: remote source/version, query parameters, and meaningful availability assumptions.
 - Data-quality evidence and future runner eligibility, separate from content integrity.
 - Durable backup/remote storage and an integration with git-annex if its benefits become useful. It is no longer a required next step.
 - Concurrent writers, crash recovery, retention, and richer inspection APIs.
@@ -153,6 +183,6 @@ The broader requirements and earlier discussion remain in [data-versioning.md](d
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-`tests/test_snapshots.py` covers repeated and renamed inputs, separate dataset histories, revised old observations, tampered data and manifests, failed copying, store relocation, invalid references, and reading a preserved XLSX worksheet. It also checks dataset-scoped listings, time ordering and ties, empty stores, malformed records, notes independent of snapshot identity, and older records without notes. Fixtures use temporary directories.
+`tests/test_snapshots.py` covers repeated and renamed inputs, separate dataset histories, revised old observations, tampered data and manifests, failed copying, store relocation, invalid references, and reading a preserved XLSX worksheet. It also checks dataset-scoped listings, time ordering and ties, empty stores, malformed records, notes and ingestion receipts independent of snapshot identity, and older records without optional fields. Receipt tests cover source removal, separate copy/registration times, UTC normalization, wrong destinations, changed byte counts, invalid types, and missing timezones. Fixtures use temporary directories.
 
 `tests/test_tags.py` covers assignment and movement, permanent IDs resolved before a move, explicit-only changes, multiple tags and separate datasets, invalid or corrupt targets, invalid arguments, failed publication, malformed records, store relocation, and history order when clock time moves backwards. It also uses temporary fixtures.

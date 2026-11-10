@@ -2,23 +2,23 @@
 
 Updated: 2026-11-09.
 
-The repository now has synthetic data generation, local CSV/XLSX ingestion, single-file snapshots, registration history and notes, and explicit dataset-scoped tags. The forecasting milestones below remain proposed outcomes; no model runner or completed experiment exists.
+The repository now has synthetic data generation, local CSV/XLSX ingestion, single-file snapshots, registration history and notes, optional ingestion receipts saved with registrations, and explicit dataset-scoped tags. The forecasting milestones below remain proposed outcomes; no model runner or completed experiment exists.
 
 ## Resume here
 
-The current checkpoint includes ingestion, snapshots, inspection functions, notes, tags, tests, clearer code comments/names, and the function reference. Ingestion was first published in `685b7fb` (`Add local file ingestion and CSV/XLSX table reading`). The user requested publication of the snapshot/tagging slice and updated notes on 2026-11-09; this change packages that work. Use Git history to find its exact commit.
+The current checkpoint includes ingestion, snapshots, inspection functions, notes, tags, tests, clearer code comments/names, and the function reference. Ingestion was first published in `685b7fb` (`Add local file ingestion and CSV/XLSX table reading`); snapshots and tags followed in `41a4120`. The user then selected carrying the ingestion receipt into snapshot registration. That local change adds the optional `ingestion_receipt` argument and saves the original copy's source, destination, UTC completion time, and byte count with each registration.
 
 1. **Resume from the implemented checkpoint.** Start with the [function reference beside the code](../src/model_pipelining/README.md), then `ingest.py`, `snapshots.py`, and `tags.py`. The guide explains return values, the complete workflow, tag moves, permanent references, and the saved files. Keep future changes small and readable, with reviewable code and useful comments.
-2. **Agree on one next enhancement.** The proposed next versioning slice is richer acquisition context: retain the original ingestion source and copy time when registering an ingested file, alongside registration time. The current record identifies the local file supplied to registration. Decide the minimal fields and interface together before implementing this proposal.
-3. **Define the baseline experiment when ready.** Set the target, issuance/cutoff, minimum history, historical forecast origins, point statistic, scores, required checks, and expected artifacts. Its future runner must pin the dataset plus resolved snapshot ID and record the training selection. Neither this design nor runner integration is implemented yet.
+2. **Review the implemented receipt enhancement.** Pass `ingestion_receipt=receipt` alongside `receipt.destination`. Receipt context belongs to the registration, independently of the snapshot ID and manifest. Destination and byte count must match; older records remain readable with `ingestion_receipt=None`. The complete workflow in the function reference includes this argument.
+3. **Define the baseline experiment next, when ready.** Set the target, issuance/cutoff, minimum history, historical forecast origins, point statistic, scores, required checks, and expected artifacts. Its future runner must pin the dataset plus resolved snapshot ID and record the training selection. Neither this design nor runner integration is implemented yet. Further versioning enhancements are optional later slices.
 
 Do not rebuild the completed snapshot/tag functions or introduce a larger storage framework as the next step. Keep work in small pieces the user can read and understand. git-annex remains optional; DVC or another dependency/stage/execution tool is deferred.
 
 ## Verification at this stopping point
 
-- The last full test run passed all 50 tests: 17 ingestion, 20 snapshot, and 13 tag tests. Snapshot and tag fixtures use temporary stores, including simulated copy/publication failures.
+- The receipt enhancement passed all 57 tests: 17 ingestion, 27 snapshot, and 13 tag tests. Receipt checks include retained source/time context, repeated identical bytes, old records, mismatched destinations and sizes, timezone handling, and store relocation. Snapshot and tag fixtures use temporary stores, including simulated copy/publication failures.
 - The complete example in the source-directory README ran with 200 freshly generated observations in a temporary store. Its relative file links were also checked.
-- The full suite, dependency compatibility, lockfile consistency, and whitespace checks passed again for the requested publication. Subsequent edits only update the publication notes. Rerun the suite after code changes:
+- The earlier snapshot/tag publication also passed dependency compatibility and lockfile checks. This enhancement changes no dependencies. Rerun the suite after code changes:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
@@ -47,6 +47,7 @@ The supported local scope is one file per snapshot, one writer at a time, local 
 - [x] CSV/XLSX table reading with worksheet and header selection.
 - [x] Single-file SHA-256 snapshot registration, preserved bytes, and JSON manifests.
 - [x] Separate registration records and optional notes, including repeated identical acquisitions.
+- [x] Optional original ingestion receipt saved with each registration, including source and copy completion time.
 - [x] Retrieval with integrity checks and storage-location-independent dataset/ID references.
 - [x] Snapshot inventory and chronological acquisition-history listing.
 - [x] Explicit dataset-scoped tag assignment, resolution, current-tag listing, and assignment history.
@@ -85,7 +86,7 @@ Multiple horizons, richer Bayesian models, an operational-data application, a ru
 
 ## Further versioning enhancements — not selected for implementation
 
-Richer original acquisition context is the proposed next slice above. Processing lineage, multi-file collections, quality-check evidence, additional source functions, and storage/recovery improvements remain possible later slices. Implement them only when a concrete need is selected; the list is not a requirement to finish every feature before learning from a baseline.
+Local ingestion receipts are now carried into registration. Remote source-specific context, processing lineage, multi-file collections, quality-check evidence, additional source functions, and storage/recovery improvements remain possible later slices. Implement them only when a concrete need is selected; the list is not a requirement to finish every feature before learning from a baseline.
 
 See [the current snapshot/tag behavior](snapshots.md), [the decision log](decisions.md), and [the broader versioning requirements and historical plan](data-versioning.md). The roadmap's resume section is the current continuation order.
 

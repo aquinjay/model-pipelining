@@ -21,7 +21,7 @@ import re
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
-from model_pipelining.ingest import ingest_local_file
+from model_pipelining.ingest import IngestResult, ingest_local_file
 
 
 @dataclass(frozen=True)
@@ -98,10 +98,10 @@ def list_acquisitions(
 ) -> list[dict]:
     """List registration records oldest first, including repeated acquisitions.
 
-    The dictionaries include source_path, registered_at, snapshot_id, and note,
-    along with the saved format version, dataset name, and acquisition ID.
-    Equal timestamps are ordered by acquisition ID. Older records without a
-    note return note=None. Reading history does not modify the stored records.
+    The dictionaries include source_path, registered_at, snapshot_id, note,
+    and an optional ingestion_receipt, along with the saved format version,
+    dataset name, and acquisition ID. Equal timestamps are ordered by acquisition
+    ID. Missing optional fields return None without modifying stored records.
     """
     acquisitions_directory = _get_dataset_directory(store, dataset) / "acquisitions"
     acquisition_records = []
@@ -110,6 +110,7 @@ def list_acquisitions(
         acquisition_record = json.loads(acquisition_record_path.read_text(encoding="utf-8"))
         # Supply the newer optional field in memory only. Do not rewrite history.
         acquisition_record.setdefault("note", None)
+        acquisition_record.setdefault("ingestion_receipt", None)
         acquisition_records.append(acquisition_record)
 
     # Writer-generated UTC ISO timestamps sort chronologically. The event ID
@@ -166,18 +167,24 @@ def register_snapshot(
     *,
     dataset: str,
     note: str | None = None,
+    ingestion_receipt: IngestResult | None = None,
     store: str | Path = "data/versioned",
 ) -> Snapshot:
     """Preserve a file, reuse matching bytes, and record this registration.
 
     path is a completed input file. dataset names its version history. store is
     the local root directory (data/versioned by default). note explains this
-    particular registration and may be omitted. Return a Snapshot receipt.
+    particular registration and may be omitted. ingestion_receipt optionally
+    carries the earlier copy's source, destination, UTC completion time, and
+    size into this registration record. Its destination must resolve to path
+    and its byte count must match. Return a Snapshot receipt.
 
     The original must remain unchanged during this call. Identity is based on
     bytes within a dataset; repeated or renamed inputs retain the first saved
     filename. Local paths, registration times, and optional notes live in
-    separate event files. Notes do not affect the content ID or manifest.
+    separate event files. Notes and receipts do not affect the content ID or
+    manifest. The receipt is caller-supplied context, not proof that the file
+    has remained unchanged since ingestion; it contains no content hash.
     Use one writer at a time; remote storage and crash recovery are deferred.
     """
     # Check inputs before creating directories or copying data.
@@ -186,6 +193,24 @@ def register_snapshot(
     source_file_path = Path(path).expanduser().resolve(strict=True)
     if not source_file_path.is_file():
         raise ValueError(f"Source must be a regular file: {source_file_path}")
+    # Keep the original ingestion separate from our internal staging copy.
+    # The original source need not still exist: this receipt describes history.
+    ingestion_context = None
+    if ingestion_receipt is not None:
+        if not isinstance(ingestion_receipt, IngestResult):
+            raise TypeError("ingestion_receipt must be an IngestResult or None")
+        if ingestion_receipt.destination.resolve() != source_file_path:
+            raise ValueError("ingestion_receipt destination must match the registered path")
+        if ingestion_receipt.size_bytes != source_file_path.stat().st_size:
+            raise ValueError("ingestion_receipt size_bytes must match the registered file")
+        if ingestion_receipt.acquired_at.utcoffset() is None:
+            raise ValueError("ingestion_receipt acquired_at must be timezone-aware")
+        ingestion_context = {
+            "source": str(ingestion_receipt.source),
+            "destination": str(ingestion_receipt.destination),
+            "acquired_at": ingestion_receipt.acquired_at.astimezone(UTC).isoformat(),
+            "size_bytes": ingestion_receipt.size_bytes,
+        }
     dataset_directory = _get_dataset_directory(store, dataset)
     dataset_directory.mkdir(parents=True, exist_ok=True)
 
@@ -195,15 +220,15 @@ def register_snapshot(
         temporary_directory_path = Path(temporary_directory)
         staged_snapshot_directory = temporary_directory_path / "snapshot"
         staged_file_path = staged_snapshot_directory / "content" / source_file_path.name
-        ingestion_receipt = ingest_local_file(source_file_path, staged_file_path)
+        staging_receipt = ingest_local_file(source_file_path, staged_file_path)
 
         # Hash the completed copy we will preserve, then describe it in a manifest.
-        snapshot_id = _calculate_file_sha256(ingestion_receipt.destination)
+        snapshot_id = _calculate_file_sha256(staging_receipt.destination)
         snapshot_manifest = {
             "format_version": 1,
             "filename": source_file_path.name,
             "sha256": snapshot_id,
-            "size_bytes": ingestion_receipt.size_bytes,
+            "size_bytes": staging_receipt.size_bytes,
         }
         manifest_file_path = staged_snapshot_directory / "manifest.json"
         manifest_file_path.write_text(
@@ -232,6 +257,7 @@ def register_snapshot(
             "source_path": str(source_file_path),
             "registered_at": datetime.now(UTC).isoformat(),
             "note": note,
+            "ingestion_receipt": ingestion_context,
         }
         # Finish writing the event in temporary space before publishing it, too.
         staged_acquisition_record_path = temporary_directory_path / "acquisition.json"
