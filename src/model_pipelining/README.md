@@ -1,4 +1,4 @@
-# Working with ingestion, snapshots, and tags
+# Working with data and the first forecasting model
 
 This is the everyday reference for the functions in this directory: what to call, what comes back, and where the results are saved.
 
@@ -7,6 +7,9 @@ This is the everyday reference for the functions in this directory: what to call
 | [ingest.py](ingest.py) | Copy local files and read CSV/XLSX tables |
 | [snapshots.py](snapshots.py) | Preserve exact file versions, verify them, and inspect registrations |
 | [tags.py](tags.py) | Give snapshots readable names and retain assignment history |
+| [models.py](models.py) | Define immutable forecast requests and the training-mean model |
+| [backtest.py](backtest.py) | Validate a daily CSV, select historical training data, predict, score, and save results |
+| [reporting.py](reporting.py) | Draw a PNG from saved results without fitting |
 
 ## The terms we use
 
@@ -188,7 +191,7 @@ Each assignment dictionary contains:
 | `changed_by` | Supplied person/process name |
 | `note` | Explanation, or `None` |
 
-Resolution reads the reference; retrieval verifies its contents. Resolve once and save the dataset plus ID with a future experiment, so subsequent tag moves cannot change the selected input.
+Resolution reads the reference; retrieval verifies its contents. Resolve once and save the dataset plus ID with an experiment, so subsequent tag moves cannot change the selected input. `run_backtest` does this automatically when supplied a tag.
 
 ```python
 from model_pipelining.tags import list_tags, list_tag_history
@@ -235,15 +238,61 @@ To use another store, pass the same `store` argument to the snapshot and tag fun
 - Missing files raise filesystem errors. An occupied ingestion destination raises `FileExistsError`; invalid options or failed integrity checks raise `ValueError`. Malformed JSON also raises an error rather than being silently skipped.
 - Use one writer at a time. Inputs must remain unchanged during copying or registration. Crash recovery, remote storage, and durable backups are future work.
 - Files and records remain writable. Integrity checks detect changed data but do not recover lost bytes. Assignment history is a local record rather than a tamper-proof log.
-- Successful copying, registration, or tagging does not establish data quality or historical availability. No model runner has been implemented.
+- Successful copying, registration, or tagging does not establish data quality or historical availability. The first backtest separately validates its daily input and explicitly assumes immediate availability with no revisions.
+
+## Running the first forecasting model
+
+After the copy-to-tag example above, launch Python with `PYTHONPATH=src .venv/bin/python`:
+
+```python
+from model_pipelining.backtest import run_backtest
+from model_pipelining.reporting import plot_run
+
+run = run_backtest(
+    dataset="synthetic-mean-shift",
+    tag="baseline-input",
+    minimum_history=30,
+    output_directory="runs/function-guide-001",
+)
+chart = plot_run(run)
+```
+
+| Function | What it does | Returns |
+|---|---|---|
+| `run_backtest(*, dataset, output_directory, snapshot_id=None, tag=None, minimum_history=30, model=None, store="data/versioned")` | Pins and verifies one CSV snapshot, validates daily observations, executes expanding-history forecasts, and saves predictions/scores/checks | Absolute run-directory `Path`, including a run with failed cases |
+| `plot_run(run_directory)` | Reads saved evaluation/manifest/scores and draws a chart without accessing input data or fitting | Chart `Path` |
+
+Supply exactly one of `tag` and `snapshot_id`, and an unused output directory.
+Tag resolution and input verification happen automatically; acquisition,
+registration, and tag assignment remain explicit earlier caller actions.
+`run_backtest` does not draw the chart: call `plot_run` yourself or use
+`scripts/run_baseline.py`, which calls both automatically.
+
+The default `TrainingMean` model predicts tomorrow's value with the average of
+all observations through today. `model=` accepts a `PointForecaster`: a name,
+JSON dictionary `configuration`, and `forecast(request)` method returning one
+finite numerical predictive mean. `ForecastRequest` contains `history` (an
+immutable tuple of timestamp/value `Observation` records), `issued_at`, and
+`target_time`. Future actuals are excluded. Models refit from each request and
+must not retain training data between calls; this trusted Python interface is
+not a security sandbox. Broader capabilities and diagnostics remain undecided.
+
+Inspect `manifest.json`'s status and the required outcomes in `checks.json`.
+Per-case exceptions/invalid predictions are retained and later cases continue;
+failed cases make the run `failed`. Scores disclose their coverage, and
+`review.json` remains pending human interpretation. Validation/configuration
+errors raise before output creation. Filesystem errors propagate and can leave
+an interrupted directory with `running` status. Existing runs/charts are rejected.
+See [the forecasting walkthrough](../../docs/forecasting.md) for the exact daily
+calendar/availability assumptions, saved files, reproduction, and limitations.
 
 ## Finding your way through the code
 
 Names ending in `_directory` identify folders; `_file_path` identifies a file's location. `source_file`, `destination_file`, and `file_stream` are open file objects. A `staged_` item is being prepared in temporary space. In `Path` expressions, `/ dataset` joins the dataset name onto a directory path.
 
-Start with `ingest.py`, then `snapshots.py`, then `tags.py`. Public functions above are the normal entry points. Helpers beginning with `_`, such as `_get_dataset_directory`, support them internally.
+Start with `ingest.py`, then `snapshots.py`, then `tags.py`. For forecasting, read `models.py`, `backtest.py`, then `reporting.py`. Public functions above are the normal entry points. Helpers beginning with `_`, such as `_get_dataset_directory`, support them internally.
 
-For tests and executable examples, see [test_ingest.py](../../tests/test_ingest.py), [test_snapshots.py](../../tests/test_snapshots.py), and [test_tags.py](../../tests/test_tags.py). Run them from the project root:
+For tests and executable examples, see [test_ingest.py](../../tests/test_ingest.py), [test_snapshots.py](../../tests/test_snapshots.py), [test_tags.py](../../tests/test_tags.py), and [test_backtest.py](../../tests/test_backtest.py). Run them from the project root:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v

@@ -2,6 +2,8 @@
 
 Status: high-level design. Names describe responsibilities; they are not a finalized API or a list of modules that must all exist immediately.
 
+The first executable boundary now exists in [the forecasting workflow](forecasting.md): `models.py` defines an immutable history/issuance/target-time request and a small point-forecast protocol; `backtest.py` selects expanding histories, calls the model, freezes predictions, scores, and saves evidence; `reporting.py` reads saved results. This implements one daily CSV task with fixed required checks. The richer capabilities, diagnostics, configurable check plan, and release policy below remain design guidance.
+
 ## Separate the problem, model, and execution
 
 | Component | Owns | Boundary |
@@ -22,7 +24,7 @@ At a high level, every run needs a task specification, a model configuration, a 
 
 Every forecast needs an unambiguous issuance time, training cutoff, series and target coordinates, horizon, target scale/version, and model/run identity. Point forecasts should identify their statistic, such as a predictive mean. Optional uncertainty must identify what it represents.
 
-Exact records and serialization will be designed alongside the first runnable experiment. A documented conceptual boundary should not become a large unused schema ahead of implementation.
+The first experiment saves task/model/data references in a JSON manifest and predictions/evaluation in CSV; [its record descriptions](forecasting.md#what-is-saved) document the current scope. Broader records remain open. A documented conceptual boundary should not become a large unused schema ahead of implementation.
 
 ## Capabilities and checks
 

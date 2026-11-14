@@ -62,10 +62,20 @@ The selected approach preserves snapshots of one or more related files, compares
 - **Identity and compatibility:** receipt context belongs to each registration and changes neither snapshot IDs nor manifests. Repeated identical inputs can carry different receipts. The optional field extends event format version 1; listing older records returns `ingestion_receipt=None` without rewriting files. No new dependencies or storage framework are needed.
 - **Evidence:** all 57 behavioral tests pass, including retained context after source removal and store relocation, distinct registration/acquisition times, receipt-independent identity, UTC normalization, invalid receipts, and older records.
 
+## Build shared execution around a training-mean model — 2026-11-13
+
+- **Question and decision:** after tagging, the user selected building the first modeling infrastructure around a working simple forecast, on a new branch (`feature/first-forecast-workflow`). Start with the existing synthetic daily series and a training-mean baseline rather than designing a larger unused interface first.
+- **Task:** predict tomorrow's `value` immediately after today's observation; 30 initial observations by default, then expanding history. Validate ordered/unique daily UTC timestamps and finite numeric values. Immediate availability without revisions is an explicit synthetic-data assumption, not inferred from ingestion timestamps. All forecast dates are development evidence; no untouched final evaluation period is reserved.
+- **Boundary:** `models.py` supplies immutable observation/request records, a point-forecast protocol, and the baseline. A model receives eligible history, issuance, and target time, and returns a finite predictive mean. The runner owns scheduling, coordinates, validation, evaluation, and artifacts. Models refit from each request; retained training state, probabilistic capabilities, and adapter diagnostics are deferred. The interface assumes trusted Python code.
+- **Data and evidence:** resolve any tag once, verify its snapshot, and save the permanent dataset/ID. Save JSON manifest/configuration/checks/scores/review and CSV predictions/evaluation. Close predictions before joining actuals for scoring. Per-origin model failures/invalid outputs and scoring overflow are retained; execution continues and coverage is explicit. A failed case fails the run. Invalid input/configuration raises before run creation. Fixed checks belong to the runner; configurable plans and release rules remain open.
+- **Reporting:** draw a PNG using matplotlib from saved results, with no model calls or input-store access. The library makes reporting explicit; the baseline script calls it automatically. matplotlib is a runtime dependency, declared, locked, and exported alongside the existing table readers.
+- **Limits and alternatives:** a general adapter/plugin registry, execution service, larger storage layer, tuning system, real-data task, and Bayesian adapter can follow demonstrated needs. Local run files remain writable; existing output directories/charts are rejected. Interrupted runs may retain `running` status. Source hashes and environment versions identify the implementation but do not restore it; callers preserve matching code, environment, and inputs. Human review stays pending even when checks pass.
+- **Evidence:** known forecasts and scores, future-value isolation, tag/store changes, failed cases, overflow, and reporting from saved artifacts are covered by behavioral tests. See [the executable workflow and reproduction instructions](forecasting.md).
+
 ## Working proposals
 
 - Start the Python implementation with a few files in `src/model_pipelining/`; package/build configuration follows the first importable code.
-- Plain local files for configuration and artifacts; select exact formats during the first slice.
+- Extend the first JSON/CSV run artifacts only as another model or task requires it.
 - A local-level BDLM with fixed variance settings as the first substantive model.
 - One market series as the first real-data application, followed later by a separate operational application.
 
@@ -73,13 +83,13 @@ These are starting choices to revisit deliberately, rather than implemented inte
 
 ## Open questions
 
-- What synthetic process best exposes the first failure cases?
+- Which additional synthetic processes would expose Bayesian or feature-model failure cases?
 - Which initial runtime modules, development tools, and compatible versions should we select?
 +- Which standard build backend should package the first importable implementation?
-- What is the smallest useful request/prediction/check result contract?
+- How should the working point-forecast request grow for Bayesian outputs and specialized checks?
 - Which checks stop execution, and which allow exploratory evidence collection while blocking release?
 - What requires explicit human interpretation in the first review?
-- Which artifact formats balance inspectability and reproduction?
+- Which additional artifacts are needed beyond the first inspectable JSON/CSV records?
 - Which instrument/source/target would make the later real-data exercise informative?
 - Which GitHub visibility and license should be selected before publication?
 

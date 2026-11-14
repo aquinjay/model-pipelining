@@ -5,6 +5,7 @@ description = "Reproducible forecasting experiments with interchangeable model a
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
 dependencies = [
+    "matplotlib>=3.10,<4",
     "openpyxl>=3.1.5,<4",
     "pandas>=3.0,<4",
 ]

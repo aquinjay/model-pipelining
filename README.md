@@ -4,7 +4,7 @@ A small framework for reproducible forecasting experiments: change the model whi
 
 The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
 
-**Status: design, synthetic data generation, local CSV/XLSX ingestion, and single-file snapshots.** A reproducible generator creates two local synthetic datasets; see [the data notes](data/README.md). Ingestion copies files and reads tables. The small snapshot module preserves versions using SHA-256 and JSON records, with verified retrieval and optional saved ingestion receipts. Both have behavioral tests. There is no runnable forecasting pipeline, fitted model, or completed experiment yet.
+**Status: the first local forecasting workflow is implemented.** A training-mean model runs daily historical forecasts against a preserved synthetic CSV, saving predictions, scores, checks, failures, and a pending review. A separate report draws a chart from saved results. Local CSV/XLSX ingestion, verified snapshots, ingestion receipts, and explicit tags supply its inputs. See [the forecasting walkthrough](docs/forecasting.md). Bayesian models and a general experiment framework remain future work.
 
 ## Why build this?
 
@@ -78,11 +78,12 @@ model-pipelining/
     decisions.md             decisions, proposals, and open questions
     ingestion.md             local copy/read interface and later enhancements
     snapshots.md             small local snapshot workflow and limitations
+    forecasting.md           first baseline, backtest, artifacts, and chart walkthrough
     references.md            public background reading
-  src/model_pipelining/      local-file ingestion, table reading, snapshots, and tags
+  src/model_pipelining/      ingestion, snapshots, tags, models, backtesting, and reporting
   configs/                   reserved for task/model/check-plan examples
-  tests/                     ingestion, snapshot, and tag behavioral tests
-  scripts/                   reproducible synthetic data generator
+  tests/                     data-workflow and forecasting behavioral tests
+  scripts/                   synthetic generator and baseline run entry point
   data/                      local input snapshots; contents ignored by Git
   runs/                      local run artifacts; contents ignored by Git
   .github/
@@ -90,7 +91,7 @@ model-pipelining/
     pull_request_template.md review context for each change
 ```
 
-Python 3.14 is selected. pandas and openpyxl support table reading; modeling dependencies, configuration formats, and storage schemas remain open. The local package is imported with `PYTHONPATH=src`; installable packaging is deferred.
+Python 3.14 is selected. pandas and openpyxl support table reading; matplotlib draws saved-result charts. The baseline uses standard-library statistics. The first run uses JSON configuration/artifacts and CSV predictions/evaluation; broader schemas remain open. The local package is imported with `PYTHONPATH=src`; installable packaging is deferred.
 
 ## Development environment
 
@@ -101,15 +102,15 @@ Use an isolated environment named `.venv`. The setup supports standard Python to
 | Supported interpreter | Standard CPython 3.14 (`>=3.14,<3.15`) |
 | Recommended development patch | 3.14.10, recorded in `.python-version` |
 | Project version | 0.1.0, recorded in `pyproject.toml`; the API is still being designed |
-| Runtime dependencies | pandas and openpyxl; exact versions in `uv.lock` and `requirements.txt` |
+| Runtime dependencies | pandas, openpyxl, and matplotlib; exact versions in `uv.lock` and `requirements.txt` |
 | Test harness | Standard-library unittest |
 | Local environment | `.venv/`, excluded from Git |
 
-The local `.venv` runs CPython 3.14.10 and is isolated from the base interpreter. The ingestion dependencies are installed and locked. On a new machine, create and verify an environment using one of the setup paths below.
+The local `.venv` runs CPython 3.14.10 and is isolated from the base interpreter. The table-reading and plotting dependencies are installed and locked. On a new machine, create and verify an environment using one of the setup paths below.
 
 `pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
 
-Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. pandas brings its numerical dependencies; model-fitting, notebook, and formatting tools remain unselected.
+Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. pandas and matplotlib bring their numerical dependencies; additional model-fitting, notebook, and formatting tools remain unselected.
 
 ### Standard Python setup: venv and pip
 
@@ -160,7 +161,7 @@ uv lock
 uv export --locked --all-groups --no-emit-project --format requirements.txt --output-file requirements.txt
 ```
 
-The export is tracked so a machine without uv can install the selected versions using pip. It includes the table-reading dependencies and their transitive requirements. Do not hand-edit the generated export or use an unreviewed `pip freeze` of an unrelated environment as the project's dependency definition.
+The export is tracked so a machine without uv can install the selected versions using pip. It includes the table-reading and plotting dependencies and their transitive requirements. Do not hand-edit the generated export or use an unreviewed `pip freeze` of an unrelated environment as the project's dependency definition.
 
 A pip-only work machine can consume the committed export without uv. If it needs a different dependency set or approved versions, make an explicit configuration change and regenerate the lock/export in an environment with the resolution tools available. pip installs from the export; it does not update `uv.lock`.
 
@@ -240,7 +241,7 @@ Tag assignment verifies the target and saves the assignment history. New registr
 
 ## First useful milestone
 
-Produce one reproducible synthetic baseline experiment:
+The first baseline workflow now supports this sequence:
 
 1. Preserve a small synthetic time series and a task specification.
 2. Run a training-mean baseline through rolling-origin evaluation.
@@ -249,6 +250,17 @@ Produce one reproducible synthetic baseline experiment:
 5. Produce one chart from saved results, with no fitting in the report.
 
 Success means the experiment is understandable and repeatable, including visible failures. It does not depend on beating a complex model or demonstrating market forecasting skill.
+
+After preparing and tagging the synthetic input as above, run:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/run_baseline.py \
+  --dataset synthetic-mean-shift \
+  --tag baseline-input \
+  --output-directory runs/mean-shift-001
+```
+
+The script automatically saves the backtest and draws `forecast.png`; use a new output directory each time. The default first prediction is day 31, using the mean of days 1–30. The [walkthrough](docs/forecasting.md) explains explicit input preparation, library calls, required checks, reproduction, and failed-run behavior. These are development forecasts; human review remains pending and no final evaluation period is reserved.
 
 After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
 
@@ -260,7 +272,7 @@ Agents must follow [the repository instructions](AGENTS.md), including updating 
 
 Use one issue or small pull request per question or deliverable. Describe the problem, intended behavior, and evidence needed before adding abstractions. Record consequential decisions in `docs/decisions.md`; keep unresolved choices explicitly provisional.
 
-Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Local ingestion tests exist; forecasting checks and CI remain future work.
+Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Data-workflow and first-baseline behavioral tests exist; model-specific diagnostics and CI remain future work.
 
 ## Repository and license
 

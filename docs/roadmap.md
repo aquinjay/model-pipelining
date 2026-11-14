@@ -1,30 +1,30 @@
 # Roadmap
 
-Updated: 2026-11-09.
+Updated: 2026-11-13.
 
-The repository now has synthetic data generation, local CSV/XLSX ingestion, single-file snapshots, registration history and notes, optional ingestion receipts saved with registrations, and explicit dataset-scoped tags. The forecasting milestones below remain proposed outcomes; no model runner or completed experiment exists.
+The repository now has synthetic data generation, local CSV/XLSX ingestion, verified single-file snapshots, saved ingestion receipts, explicit tags, and the first runnable forecasting workflow. The training-mean baseline uses daily expanding histories and saves predictions, scores, required checks, failures, and a pending review. A separate report draws a chart from saved artifacts. Broader model support remains proposed.
 
 ## Resume here
 
-The current checkpoint includes ingestion, snapshots, inspection functions, notes, tags, tests, clearer code comments/names, and the function reference. Ingestion was first published in `685b7fb` (`Add local file ingestion and CSV/XLSX table reading`); snapshots and tags followed in `41a4120`. The user then selected carrying the ingestion receipt into snapshot registration. That local change adds the optional `ingestion_receipt` argument and saves the original copy's source, destination, UTC completion time, and byte count with each registration.
+The current modeling slice is on `feature/first-forecast-workflow`. It builds on the completed ingestion/snapshot/tag workflow and receipt enhancement; it does not replace them.
 
-1. **Resume from the implemented checkpoint.** Start with the [function reference beside the code](../src/model_pipelining/README.md), then `ingest.py`, `snapshots.py`, and `tags.py`. The guide explains return values, the complete workflow, tag moves, permanent references, and the saved files. Keep future changes small and readable, with reviewable code and useful comments.
-2. **Review the implemented receipt enhancement.** Pass `ingestion_receipt=receipt` alongside `receipt.destination`. Receipt context belongs to the registration, independently of the snapshot ID and manifest. Destination and byte count must match; older records remain readable with `ingestion_receipt=None`. The complete workflow in the function reference includes this argument.
-3. **Define the baseline experiment next, when ready.** Set the target, issuance/cutoff, minimum history, historical forecast origins, point statistic, scores, required checks, and expected artifacts. Its future runner must pin the dataset plus resolved snapshot ID and record the training selection. Neither this design nor runner integration is implemented yet. Further versioning enhancements are optional later slices.
+1. **Review the working baseline.** Follow [the forecasting walkthrough](forecasting.md), then read `models.py`, `backtest.py`, and `reporting.py`. The first prediction uses 30 days to predict day 31; remaining predictions expand the training history one day at a time.
+2. **Inspect the saved evidence.** The runner resolves a supplied tag once, pins the dataset and snapshot ID, validates the input, and automatically saves forecasts, training coordinates, scores, required checks, and a pending review. The script also draws a chart; library callers invoke reporting separately. Input preparation and human interpretation remain explicit caller actions.
+3. **Review before extending.** Decide whether the request/model boundary and saved files are clear enough to keep. The first run is development evidence, with immediate synthetic availability and no final holdout. Define a real-data task's timing and final evaluation boundaries before adding it; add Bayesian diagnostics when the Bayesian adapter is selected. Broader versioning and a general plugin/check framework are not prerequisites.
 
 Do not rebuild the completed snapshot/tag functions or introduce a larger storage framework as the next step. Keep work in small pieces the user can read and understand. git-annex remains optional; DVC or another dependency/stage/execution tool is deferred.
 
-## Verification at this stopping point
+## Verification at this checkpoint
 
-- The receipt enhancement passed all 57 tests: 17 ingestion, 27 snapshot, and 13 tag tests. Receipt checks include retained source/time context, repeated identical bytes, old records, mismatched destinations and sizes, timezone handling, and store relocation. Snapshot and tag fixtures use temporary stores, including simulated copy/publication failures.
-- The complete example in the source-directory README ran with 200 freshly generated observations in a temporary store. Its relative file links were also checked.
-- The earlier snapshot/tag publication also passed dependency compatibility and lockfile checks. This enhancement changes no dependencies. Rerun the suite after code changes:
+- The suite contains 78 behavioral tests: 17 ingestion, 27 snapshot, 13 tag, and 21 forecasting/reporting checks. Forecast checks include known answers, future-value isolation, immutable history, input/target validation, tag moves/store relocation, invalid outputs and failed origins, scoring overflow, artifact preservation, and reporting without model calls.
+- The mean-shift example completed 170/170 one-day forecasts from 200 observations with the default minimum history (MAE 2.4197, RMSE 2.9462). The saved-result chart shows the baseline adapting slowly after the mean shift. Its outputs stay local under `runs/`; human review remains pending.
+- matplotlib is added for saved-result PNG charts; dependency declarations, lockfile, and pip export are updated together. Rerun the suite after code changes:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-The supported local scope is one file per snapshot, one writer at a time, local writable storage, and integrity verification on retrieval. Multi-file identity, processing lineage, quality eligibility, concurrent writers, remote storage, and crash recovery are not implemented. Local data and records are ignored by Git and are not uploaded with code.
+The supported local scope is one file per snapshot, one writer at a time, local writable storage, and integrity verification on retrieval. The first backtest adds daily CSV validation and fixed required checks; broader quality evidence/eligibility, configurable check plans, multi-file identity, processing lineage, concurrent writers, remote storage, and crash recovery remain future work. Local data and records are ignored by Git and are not uploaded with code.
 
 ## 0. Establish the design and development environment
 
@@ -38,7 +38,7 @@ The supported local scope is one file per snapshot, one writer at a time, local 
 - [x] Document both venv/pip and uv setup, with local environments excluded from Git.
 - [x] Recreate and verify the pinned environment on the development machine (CPython 3.14.10).
 - [x] Select and lock the first runtime packages (pandas/openpyxl) and use standard-library unittest for behavioral checks.
-- [ ] Agree on the first synthetic experiment and its observable acceptance criteria.
+- [x] Define the first synthetic baseline and verify its observable acceptance criteria.
 
 ## Data foundations — implemented locally
 
@@ -60,7 +60,18 @@ The supported local scope is one file per snapshot, one writer at a time, local 
 
 Seeded synthetic data → training-mean baseline → rolling backtest → saved results → one chart.
 
-The initial implementation should demonstrate correct target alignment, no future information in prediction, explicit failed folds, and reconstruction from preserved inputs/configuration. A deliberately invalid output or missing required check must be visible. The report reads saved results without fitting.
+Implemented in [the first forecasting workflow](forecasting.md):
+
+- [x] Daily one-step task with explicit initial history and availability assumptions.
+- [x] Training-mean model behind an immutable history/target-time request.
+- [x] Tag resolution once and permanent dataset/snapshot pinning.
+- [x] Expanding-history backtest, frozen predictions, MAE/RMSE, and coverage counts.
+- [x] Required input/alignment/output/coverage outcomes and visible failed origins.
+- [x] JSON/CSV evidence, pending review record, and chart from saved results.
+- [x] Behavioral checks for future-value isolation, reproduction, invalid output, and reporting.
+- [ ] Human review of the harness and the resulting evidence.
+
+The current checks are fixed in the runner. A configurable check plan and missing specialized-check handling will be designed when another model requires them; they are not claimed as implemented.
 
 Review the harness before adding model complexity: keep, simplify, or restart using the evidence preserved from this slice.
 

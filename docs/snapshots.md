@@ -170,7 +170,7 @@ Keep these enhancements for later review:
 - More tag operations only when needed, such as deletion, renaming, or configurable experiment-selection rules. Basic dataset-scoped tags and assignment history are implemented.
 - Multi-file inventories, supporting documents, processing lineage, and an explicit format migration policy.
 - Source-specific acquisition context beyond the implemented local ingestion receipt: remote source/version, query parameters, and meaningful availability assumptions.
-- Data-quality evidence and future runner eligibility, separate from content integrity.
+- Broader data-quality evidence and runner eligibility, separate from content integrity. The [first backtest](forecasting.md) now verifies its selected snapshot and separately validates a daily CSV; reusable quality-evidence records remain future work.
 - Durable backup/remote storage and an integration with git-annex if its benefits become useful. It is no longer a required next step.
 - Concurrent writers, crash recovery, retention, and richer inspection APIs.
 - DVC or another dependency/stage/execution tool, independently of this storage slice.

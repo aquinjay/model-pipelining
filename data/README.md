@@ -25,6 +25,8 @@ The shared noise intentionally isolates the effect of the mean shift. Seed 42 an
 
 Each observation is assumed available at its timestamp. Forecasts should be issued after observing the current value and predict the next day's value. Generation settings describe simulation truth; they should not be supplied as model inputs. These datasets contain no missing values, seasonality, or publication delays.
 
+The [first forecasting workflow](../docs/forecasting.md) now implements this convention with a training-mean model. After explicitly registering/tagging a CSV, the backtest pins its ID, validates the daily calendar and values, and predicts each remaining day after 30 initial observations by default. A 200-row input therefore produces 170 forecasts. No input acquisition, registration, or tag assignment happens automatically when starting a run.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:
