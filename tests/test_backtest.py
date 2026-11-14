@@ -75,8 +75,8 @@ class BacktestTests(unittest.TestCase):
         self.assertAlmostEqual(scores["rmse"], math.sqrt(50 / 3))
         self.assertEqual(scores["scored_count"], 3)
         self.assertTrue(scores["complete"])
-        self.assertTrue(all(check["required"] and check["status"] == "passed"
-                            for check in self.read_json(run, "checks.json")))
+        self.assertTrue(all(check["status"] == "passed"
+                            for check in self.read_json(run, "checks.json") if check["required"]))
         manifest = self.read_json(run, "manifest.json")
         self.assertEqual(manifest["status"], "completed")
         self.assertEqual(manifest["input"]["snapshot_id"], snapshot.snapshot_id)

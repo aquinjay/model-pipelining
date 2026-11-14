@@ -1,9 +1,26 @@
-# Experiment configuration
+# Configuration
 
-Reserved for future standalone examples of task specifications, model settings, evaluation protocols, and check plans.
+This directory is reserved for future standalone examples. **No current command
+loads a configuration file from here.** Choose settings through Python keyword
+arguments or the two run scripts; the runner saves them automatically in the run
+manifest for reference and reproduction.
 
-The first baseline uses Python keyword arguments or the options in `scripts/run_baseline.py`; it does not load a configuration file from this directory. `run_backtest` automatically saves the chosen task, model settings, and permanent data reference in the run's JSON manifest. See [the first forecasting workflow](../docs/forecasting.md). A broader configuration format remains open. Examples committed here should be understandable without private data or machine-specific paths.
+| Setting group | How it is selected | Where the run saves it |
+|---|---|---|
+| Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
+| Task | Current daily task plus `minimum_history` (default 30) | `task` |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` | `model.configuration` and model identity/capabilities |
+| Uncertainty request | `interval_levels=(0.8, 0.95)`; both scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
+| Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 
-The current ingestion and snapshot workflow uses Python function calls and needs no configuration file. Call `register_snapshot(receipt.destination, dataset="sales", ingestion_receipt=receipt)` to save the copy's receipt automatically with that registration. See the [complete workflow](../src/model_pipelining/README.md#one-complete-workflow).
+[The model guide](../docs/local-level.md#settings-and-timing) defines the four
+fixed local-level settings and their units. [The uncertainty guide](../docs/uncertainty.md)
+explains which declared outputs are requested and how reporting chooses a saved
+method/level. The point-only baseline creates no uncertainty just because
+interval levels are configured.
 
-The baseline pins the dataset and permanent snapshot ID, resolving any supplied tag once when selecting inputs. Ingestion receipts describe acquisition history; their local paths are not permanent experiment input references.
+Reproduction restores saved input/task/model/evaluation choices with matching
+code/environment into a new run directory. There is no automatic tuning or model
+registry. Acquisition receipts describe input history and are not configuration
+files or permanent input paths. Start with [the walkthrough](../docs/forecasting.md)
+for an executable example.

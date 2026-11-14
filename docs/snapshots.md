@@ -1,10 +1,15 @@
 # Small local snapshots
 
-Recorded: 2026-11-09. Implemented with tests and an everyday function reference; publication requested after user review. See Git history for the implementation commit.
+This is the reference for preserving and tagging a **single completed file**.
+A snapshot keeps the file bytes; a registration event explains one preservation
+call; a tag gives a dataset's version a readable name. Start with
+[the walkthrough](forecasting.md) for model execution or
+[the API reference](../src/model_pipelining/README.md) for signatures.
 
-This slice preserves one file at a time using Python's standard-library SHA-256 hashing and JSON records. Start reading `src/model_pipelining/snapshots.py` with `Snapshot` (the result), `_calculate_file_sha256` (the fingerprint), `retrieve_snapshot` (verification), and `register_snapshot` (copy, publish, record). `list_snapshots` and `list_acquisitions` expose saved metadata as plain dictionaries. The module's docstrings and comments explain inputs, return values, naming, temporary staging, and the distinction between snapshots and registrations.
-
-`src/model_pipelining/tags.py` adds explicit dataset-scoped tag assignment, resolution, listing, and history. Its shared dataset-path helper comes from the snapshot module so both use the same naming rules and local layout.
+The implementation uses local files, SHA-256, and JSON. Snapshot/registration/tag
+records use format version 1. Run-manifest version 2 belongs to the separate
+forecasting layer and does not change these storage formats. The earlier
+multi-file design is retained as a [historical proposal](data-versioning.md).
 
 ## Use it
 
@@ -88,7 +93,7 @@ assignment = assign_tag(
     note="Selected the initial baseline input",
 )
 
-# Resolve once and save both the dataset and this ID with a future model run.
+# Resolve once and save both the dataset and this ID with a model run.
 selected_snapshot_id = resolve_tag(dataset=snapshot.dataset, tag="baseline-input")
 selected_file_path = retrieve_snapshot(selected_snapshot_id, dataset=snapshot.dataset)
 table = read_local_table(selected_file_path)
@@ -116,7 +121,7 @@ All four functions accept `store`. Tag names follow the same letter/digit/unders
 - Changed bytes produce another snapshot. Earlier copies remain available. XLSX formatting or changes to another worksheet can also change the workbook's bytes and ID.
 - A registration verifies an existing snapshot before reusing it. A new registration copies into staging, calculates the copied file's hash, writes its manifest, and then moves the completed directory into place.
 
-Dataset names start with a letter or digit and otherwise contain letters, digits, underscores, or hyphens. Names are case-sensitive. The store defaults to `data/versioned`; supply `store=...` to both functions to use another location.
+Dataset names start with an ASCII letter or digit and otherwise contain ASCII letters, digits, underscores, or hyphens. Names are case-sensitive. The store defaults to `data/versioned`; pass the same `store=...` to all snapshot/tag calls that use another location.
 
 The byte-only identity rule is a deliberate simplification for this single-file slice. The older multi-file proposal includes filenames and inventory membership in identity. That future collection contract has not been implemented; do not assume these single-file IDs already identify collections.
 

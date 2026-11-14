@@ -1,24 +1,35 @@
-# Data versioning: decisions and next steps
+# Historical data-versioning proposal
 
-Recorded: 2026-11-03.
+**Historical design, recorded 2026-11-03. This is not the current API or a build
+checklist.** Read [snapshots and tags](snapshots.md) for implemented storage
+behavior and [the roadmap](roadmap.md) for current status.
 
-Current update: 2026-11-13. A [small single-file snapshot implementation](snapshots.md) now registers, preserves, and verifies local files with standard-library hashing and JSON records. [Explicit dataset-scoped tags](snapshots.md#assign-resolve-and-inspect-tags) support assignment, resolution, listing, and history. The [first baseline runner](forecasting.md) now resolves tags once, verifies snapshots, and pins dataset/ID references in saved runs. This supersedes git-annex as the next required integration. Single-file IDs hash bytes only; renamed identical inputs reuse a snapshot, whereas this older collection proposal includes filenames in identity. The remaining broader requirements below are saved for later, not claims about the first implementation.
+The proposal below is preserved to explain requirements and earlier alternatives.
+Later decisions deliberately implemented a smaller system. Where it differs
+from current behavior, the current references take precedence:
 
-Earlier update: 2026-11-09. The [ingestion-first decision](decisions.md#ingestion-first-preservation-and-execution-later--2026-11-09) changed the immediate sequence to start with local-file ingestion and defer dependency/stage/execution tooling. Its git-annex direction has since been superseded by the current update above. The requirements below remain saved for later; their original ordered implementation plan is historical.
+| Topic | Implemented today | Broader proposal below |
+|---|---|---|
+| Snapshot contents | One file, including a whole workbook | Collections of related files and supporting documents |
+| Identity | Dataset plus SHA-256 of exact file bytes; renaming identical bytes reuses a snapshot | Collection identity including filenames and membership |
+| Acquisition history | One event per successful registration; optional local ingestion receipt | Rich source/query context and standalone acquisition records |
+| Tags | Dataset-scoped, explicitly assigned, with history | Additional workflow naming/selection policies |
+| Modeling integration | Runner pins input IDs and performs fixed checks; forecast failures remain visible | Persisted quality evidence and explicit experimental overrides |
+| Storage | One local writer and local files | Replaceable backends, coordinated writes, stronger recovery |
+| Processing lineage | Not implemented | Derived snapshots linked to parent inputs |
 
-Historical status at the original stopping point: agreed direction from the design discussion, saved for review before implementation. At that point, the registration system, tag registry, storage interface, and model integration did not exist. See the current update above for the narrower implementation that followed.
+Historical references: ingestion was introduced in `685b7fb`, snapshots/tags in
+`41a4120`, ingestion receipts in `d9750ea`, and the baseline workflow in
+`eabd66e`. [The decision log](decisions.md) records how that scope evolved.
 
 ## Start here next time
 
-Use [the roadmap's current resume section](roadmap.md#resume-here) as the continuation plan. This document preserves the broader design and its earlier alternatives; its original implementation sequence below is historical.
+For current instructions, use [the forecasting walkthrough](forecasting.md) or
+[the roadmap's review order](roadmap.md#resume-here). The remaining sections
+record the November 3 proposal; terms such as “first version,” undecided ID
+formats, naming choices, and required overrides refer to that proposal.
 
-Ingestion and CSV/XLSX reading were first published in `685b7fb` on `main`. The subsequent snapshot/tagging slice implements single-file snapshot registration and verified retrieval, inventory/history listing, registration notes, dataset-scoped tags, and tag assignment history. The user requested publication of this slice and the updated documentation on 2026-11-09. Its behavior and examples are documented in [the source-directory function reference](../src/model_pipelining/README.md) and [snapshot/tag notes](snapshots.md). All 50 tests passed again before publication; the README workflow was also exercised with synthetic data in a temporary store.
-
-The user subsequently selected preserving the original ingestion receipt during registration. `register_snapshot` now accepts optional `ingestion_receipt=receipt`, saves its source, destination, UTC acquisition time, and byte count in the registration event, and checks the destination and size against the registered file. Snapshot identity and manifests remain byte-based. Older records remain readable without rewriting; that enhancement passed 57 tests. See [the current function reference](../src/model_pipelining/README.md) for the complete workflow. The baseline workflow has since been implemented with daily input validation and fixed required checks; broader versioning requirements and experimental overrides remain future work. Keep future changes small and understandable to the user.
-
-The purpose still holds: every future model output should identify its exact input data even when history is revised or tags move. Current single-file references use the dataset plus SHA-256 of bytes, and registration time is distinct from acquisition time and historical availability. The original `feature/data-versioning` branch suggestion is part of the earlier plan, not an outstanding instruction to restart the completed implementation.
-
-## Agreed decisions
+## Original proposed decisions
 
 ### 1. Acquisition and registration are separate
 
@@ -35,11 +46,15 @@ Assigning a tag does not itself start processing or model execution.
 
 ### 2. A snapshot can contain one or more related files
 
+**Proposed extension:** the implemented snapshot API accepts one file. The collection behavior below is not implemented.
+
 A snapshot preserves a collection that should be selected together. It can contain one data file or several related data files, plus supporting information such as a saved query and a manifest.
 
 For example, a query and its single result table fit this design, as do several tables that must be joined together. Sharing a download date alone is not a reason to group unrelated data.
 
 ### 3. Compare actual contents before reusing a snapshot
+
+This is the original collection-matching rule. Current single-file identity hashes bytes only; a rename of identical bytes reuses the existing snapshot.
 
 Calculate SHA-256 hashes of the completed data files. Compare the complete collection of data filenames and hashes, rather than assuming that the same query, URL, or requested dates means the same data.
 
@@ -58,7 +73,7 @@ A registered snapshot has a permanent identity and preserved contents. Tags are 
 
 Every model run resolves its selected tag to a permanent snapshot ID and saves that ID. Reproducing a run uses the saved ID, regardless of where the tag points later. Multiple tags can point to the same snapshot.
 
-The exact snapshot ID format has not been chosen. SHA-256 file checksums are agreed; using a combined content hash as the snapshot ID remains a design detail to review.
+At this original checkpoint, the exact ID format had not been chosen. The later single-file implementation selected dataset plus the lowercase SHA-256 of file bytes. A combined collection hash remains a future design question.
 
 ### 5. Tags belong to a named dataset
 
@@ -72,7 +87,7 @@ synthetic-mean-shift    / latest-snapshot-processed → snapshot B
 synthetic-mean-shift    / model-test-004            → snapshot B
 ```
 
-These names illustrate the behavior. Exact naming rules and command syntax are not settled.
+These were illustrative names before the implementation. Current dataset/tag naming is settled: ASCII letters/digits, underscores, and hyphens, starting with a letter/digit. See [the current API](../src/model_pipelining/README.md#naming-errors-and-limits) for callable signatures and validation.
 
 ### 6. Tag updates are explicit and support automation
 
@@ -83,6 +98,8 @@ An acquisition can request registration and a tag update in one operation. Anoth
 Model workflows can have explicit selection rules, such as accepting only tags matching `model-test-<number>`. This makes tagging useful for choosing experimental inputs without making the tag itself execute a model. The exact pattern is configurable and has not been fixed.
 
 ### 7. Processing creates a derived snapshot when contents change
+
+**Proposed extension:** processing-lineage records and automatic derived-snapshot handling do not exist in the current API.
 
 Preserve the raw snapshot. Processing that changes the data produces a derived snapshot linked to its input snapshot or snapshots. Do not relabel changed data as though it were the original immutable snapshot.
 
@@ -115,6 +132,8 @@ A preserved snapshot is not automatically suitable for training. Passing, failin
 An interrupted copy or failed integrity verification is a registration failure, not a successfully preserved snapshot with a data-quality warning. The implementation must publish only complete, verified snapshots.
 
 ### 9. Required check failures block runs by default
+
+**Original proposed policy:** there is no experimental-override API today. The current runner rejects invalid input/configuration, records per-case failures while continuing later origins, and fails overall execution when a required output/evaluation fails.
 
 Allow an explicit experimental override. Record the failed checks, the override, and the reason with the run, and make its experimental status clear.
 
@@ -150,9 +169,9 @@ Do not make acquisition timestamps or later tag changes modify immutable snapsho
 
 For forecasting, distinguish observation time, acquisition time, and historical availability. A historical series downloaded today does not prove what was available at a past forecast origin. Preserve availability assumptions and unknowns rather than treating acquisition time as historical evidence.
 
-## Open details to review together
+## Questions recorded with the original proposal
 
-These have not been selected yet:
+These were open on 2026-11-03. Snapshot identity, dataset/tag naming, local record layout, and single-writer scope were subsequently settled for the single-file implementation. The broader collection/lineage/override questions remain future work:
 
 1. **Identity and matching scope:** the snapshot ID format; deterministic ordering of file inventories; whether identical contents in different named datasets share storage or remain separate registrations. Source context must remain available either way.
 2. **Supporting files:** how saved queries and other provenance documents are retained without turning every acquisition timestamp or request change into a different data identity.
@@ -166,7 +185,7 @@ Local snapshots remain vulnerable to machine loss or deletion. Before depending 
 
 ## Original ordered plan — historical
 
-This was the sequence saved before implementation. Use [the current roadmap](roadmap.md#resume-here) to resume; do not interpret the completed steps here as still pending. Multi-file collections, processing lineage, validation evidence, and runner integration in this original scope remain deferred.
+This was the sequence saved before implementation. Use [the current roadmap](roadmap.md#resume-here) to resume; do not interpret the completed steps here as still pending. Multi-file collections, processing lineage, persisted quality evidence, and experimental overrides remain deferred. Basic runner input pinning and fixed checks are now implemented.
 
 1. **Review this document together.** Confirm it captures the decisions and resolve the open details needed for the first slice. Do not treat illustrative names or proposed schemas as already approved.
 2. **Create the data-versioning branch.** Keep this work separate from the committed synthetic generator. Select packaging and tools only as needed for the first importable implementation.
@@ -190,10 +209,10 @@ The single-file implementation covers content reuse and revisions, explicit tag 
 - Saving and retrieving through the local storage boundary preserves identity and contents without requiring a fixed absolute path.
 - Generated and registered data remain ignored by Git; scripts and documentation remain eligible for version control.
 
-Runner acceptance evidence comes later: default blocking on required failures, recorded experimental overrides, and outputs that identify their exact input snapshots and training selection.
+In this proposal, runner acceptance was future work. The current runner now identifies exact input snapshots/training selections and records required failures. Explicit experimental overrides from the original proposal remain unimplemented.
 
 ## Save for later
 
 API/database acquisition connectors, file watchers, automatic execution triggered by tags, dashboards and searchable catalogs, semantic table comparison, row-level revision reports, remote storage integrations, coordinated writes across machines, retention/deletion automation, and custom recovery or replication systems.
 
-The small local registration and reference system is now implemented for review. Extending it to another storage destination is future work. This remains a saved list of possibilities rather than a commitment to build every extension.
+The narrower single-file registration/reference system is implemented. This historical list records possible later work, not an instruction to rebuild completed functions or implement every proposed feature.

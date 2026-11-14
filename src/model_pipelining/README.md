@@ -1,301 +1,273 @@
-# Working with data and the first forecasting model
+# Python API reference
 
-This is the everyday reference for the functions in this directory: what to call, what comes back, and where the results are saved.
-
-| Module | Responsibility |
-|---|---|
-| [ingest.py](ingest.py) | Copy local files and read CSV/XLSX tables |
-| [snapshots.py](snapshots.py) | Preserve exact file versions, verify them, and inspect registrations |
-| [tags.py](tags.py) | Give snapshots readable names and retain assignment history |
-| [models.py](models.py) | Define immutable forecast requests and the training-mean model |
-| [backtest.py](backtest.py) | Validate a daily CSV, select historical training data, predict, score, and save results |
-| [reporting.py](reporting.py) | Draw a PNG from saved results without fitting |
-
-## The terms we use
-
-| Term | Meaning |
-|---|---|
-| Dataset | A named collection of versions of an input, such as `synthetic-mean-shift` |
-| Snapshot | One preserved version of a file |
-| Snapshot ID | The SHA-256 fingerprint of the file's bytes |
-| Acquisition record | One successful registration, including its local source path, registration time, optional note, and optional ingestion receipt |
-| Manifest | The record describing a snapshot's filename, byte count, hash, and format version |
-| Tag | A readable name within a dataset pointing to a snapshot, such as `baseline-input` |
-| Store | The directory containing preserved files and records; defaults to `data/versioned` |
-
-A snapshot describes which contents we have. An acquisition record describes a registration of those contents. A tag describes which version a readable name currently selects.
-
-## Run from the project root
-
-After following the [environment setup](../../README.md#development-environment), launch Python from the repository root, rather than this source directory:
+Use this page to look up arguments, return types, and records. For a complete
+example with explanations, start with [the forecasting walkthrough](../../docs/forecasting.md).
+All relative paths below are relative to the repository root. Launch Python with:
 
 ```bash
 PYTHONPATH=src .venv/bin/python
 ```
 
-`PYTHONPATH=src` makes the local package importable. Relative data paths in the examples are relative to the project root.
+A `*` in a signature means the following arguments must be named. Public
+functions are listed below; names starting with `_` are implementation helpers.
 
-For the complete example, generate the synthetic inputs if they are absent:
+| Module | Responsibility |
+|---|---|
+| [ingest.py](ingest.py) | Copy a completed file and read a CSV/XLSX table |
+| [snapshots.py](snapshots.py) | Preserve exact file bytes, verify retrieval, inspect registrations |
+| [tags.py](tags.py) | Assign readable dataset references and retain assignment history |
+| [models.py](models.py) | Shared requests/results, capabilities, and the training mean |
+| [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
+| [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
+| [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
+| [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
 
-```bash
-.venv/bin/python scripts/generate_synthetic.py
+## Terms and record boundaries
+
+| Term | Meaning |
+|---|---|
+| Dataset | A named history of input versions, such as `synthetic-mean-shift` |
+| Snapshot | One preserved file version; referenced by dataset plus snapshot ID |
+| Snapshot ID | Lowercase 64-character SHA-256 of exact file bytes; identifies but cannot recreate missing bytes |
+| Tag | A movable readable reference within one dataset |
+| Store | Preserved files and their metadata; defaults to `data/versioned` |
+| Registration/acquisition record | One successful `register_snapshot` event; may carry an earlier ingestion receipt |
+| Snapshot manifest | File identity/layout record, format version 1 |
+| Run manifest | Input/task/model/evaluation/environment/status record, format version 2 for new runs |
+| Run | One model/configuration executed over selected historical forecast cases |
+
+The different manifest versions apply to different record types. Adding run
+format version 2 did not change snapshot, acquisition, or tag format version 1.
+Acquisition time, registration time, and historical observation availability are
+separate concepts. The first two do not establish the third.
+
+## Copying and table reading
+
+```text
+ingest_local_file(source, destination) -> IngestResult
+read_local_table(path, *, sheet=None, header=0) -> pandas.DataFrame
 ```
 
-The generator refuses to overwrite its output, so do not rerun it if those files already exist.
+Source/destination/path arguments accept strings or `Path` objects.
+`ingest_local_file` copies one regular file, creates missing parent directories,
+and refuses existing destinations (including symlinks). A handled copy failure
+removes only its partial output. The source must remain unchanged during copying.
+
+`IngestResult` is a frozen dataclass:
+
+| Field | Value |
+|---|---|
+| `source` | Resolved original local `Path` |
+| `destination` | Resolved completed-copy `Path` |
+| `acquired_at` | Timezone-aware UTC copy-completion time |
+| `size_bytes` | Copied byte count |
+
+The reader infers CSV/XLSX from the case-insensitive extension and returns one
+DataFrame. For XLSX, `sheet` is a worksheet name or nonnegative zero-based index;
+omission selects the first sheet. CSV rejects `sheet`. `header` is a nonnegative
+zero-based row index or `None` for no header. pandas infers types/missing values;
+the function does not clean data, convert application timestamps, or calculate
+Excel formulas. Reading XLSX is supported here; the forecasting runner accepts
+CSV only. [The ingestion guide](../../docs/ingestion.md) covers detailed behavior.
 
 ## One complete workflow
 
-Copy a file, preserve it as a version, give that version a name, then select and read it:
-
-Copying and registration remain separate function calls. Add `ingestion_receipt=receipt` to registration to carry the copy's receipt forward. Registration then saves it automatically with that event; there is no separate receipt-saving call or file to maintain. Omitting the argument leaves `ingestion_receipt=None`, and earlier registrations are not filled in automatically.
+**This example covers data preparation only:** copy → preserve → tag → select →
+read. Continue with [the forecasting walkthrough](../../docs/forecasting.md) to
+run models. Generate the source first if absent with
+`.venv/bin/python scripts/generate_synthetic.py`.
 
 ```python
 from model_pipelining.ingest import ingest_local_file, read_local_table
 from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
 from model_pipelining.tags import assign_tag, resolve_tag
 
-# 1. Acquire a local copy. This destination must not already exist.
 receipt = ingest_local_file(
     "data/synthetic/mean_shift.csv",
-    "data/ingested/readme-example/mean_shift.csv",
+    "data/ingested/api-reference-001/mean_shift.csv",
 )
-
-# 2. Preserve the copy, its ingestion receipt, and why we registered it.
 snapshot = register_snapshot(
     receipt.destination,
     dataset="synthetic-mean-shift",
-    note="Initial input for the baseline",
     ingestion_receipt=receipt,
+    note="Input prepared using the API reference",
 )
-
-# 3. Explicitly give this version a readable name.
 assign_tag(
-    dataset=snapshot.dataset,
-    tag="baseline-input",
-    snapshot_id=snapshot.snapshot_id,
-    changed_by="manual-review",
-    note="Selected this version for development",
+    dataset=snapshot.dataset, tag="baseline-input",
+    snapshot_id=snapshot.snapshot_id, changed_by="api-example",
 )
-
-# 4. Resolve once. Save this dataset and ID for reproduction.
-selected_snapshot_id = resolve_tag(
-    dataset=snapshot.dataset,
-    tag="baseline-input",
-)
-
-# 5. Verify the selected version and read its preserved contents.
-preserved_file_path = retrieve_snapshot(
-    selected_snapshot_id,
-    dataset=snapshot.dataset,
-)
-table = read_local_table(preserved_file_path)
-print(table.head())
+selected_snapshot_id = resolve_tag(dataset=snapshot.dataset, tag="baseline-input")
+preserved_file = retrieve_snapshot(selected_snapshot_id, dataset=snapshot.dataset)
+table = read_local_table(preserved_file)
 ```
 
-To repeat the full example, choose a new ingestion destination. Repeating registration or tag assignment is allowed and records another event. You can also register an existing completed file directly; the separate ingestion copy is optional.
-
-## Copying and table reading
-
-| Function | What it does | Returns |
-|---|---|---|
-| `ingest_local_file(source, destination)` | Copies one file and creates missing destination directories; refuses to overwrite existing files | `IngestResult` receipt |
-| `read_local_table(path, *, sheet=None, header=0)` | Reads a CSV or one XLSX worksheet without changing the file | pandas DataFrame: a table in memory |
-
-`IngestResult` contains `source` and `destination` as absolute paths, UTC `acquired_at`, and `size_bytes`. Access fields with dots, such as `receipt.destination`.
-
-Copying handles raw file bytes, including whole XLSX workbooks. It does not parse them. The source must remain unchanged while copying; a handled failure removes the partial output created by that call.
-
-For files you have acquired yourself, table reading can look like this:
-
-```python
-table = read_local_table("data/ingested/observations.csv")
-table = read_local_table("data/ingested/sales.xlsx", sheet="Sales")
-table = read_local_table("data/ingested/sales.xlsx", sheet=1, header=2)
-```
-
-Options use zero-based indexes: `sheet=1` selects the second worksheet; `header=2` uses the third row as column names. Omit `sheet` for the first XLSX worksheet. Use `header=None` when every row contains data. CSV does not accept a sheet argument.
-
-Extensions are case-insensitive. pandas infers types and missing values. Excel formulas use cached results rather than being calculated by the reader. The `*` in a signature means subsequent options must be named, such as `sheet="Sales"`.
+Choose an unused ingestion destination if repeating this example. Copying does
+not register/tag a snapshot. Passing `ingestion_receipt=receipt` makes registration
+save that context automatically; no separate receipt-saving call is needed.
+You can also register an existing completed file directly without a copy/receipt.
 
 ## Preserving and inspecting versions
 
-All snapshot functions accept `store="data/versioned"` as an optional keyword argument.
+All functions below accept optional keyword `store="data/versioned"`:
 
-| Function | What it does | Returns |
-|---|---|---|
-| `register_snapshot(path, *, dataset, note=None, ingestion_receipt=None, store=...)` | Preserves a completed file or reuses matching contents; records every successful registration | `Snapshot` receipt |
-| `retrieve_snapshot(snapshot_id, *, dataset, store=...)` | Checks the manifest, byte count, and hash before locating the preserved file | `Path` |
-| `list_snapshots(*, dataset, store=...)` | Lists unique versions sorted by ID | List of dictionaries |
-| `list_acquisitions(*, dataset, store=...)` | Lists registrations oldest first, then by acquisition ID when times tie | List of dictionaries |
-
-`Snapshot` contains `snapshot_id`, `dataset`, and `path`. Save the dataset and ID as the permanent reference. The path is local to the current store; retrieve again after moving it.
-
-Identical bytes in one dataset reuse a snapshot, including renamed inputs. The first saved filename remains. Changed bytes create another version while keeping the previous one. Each successful registration gets its own acquisition record. The optional note belongs to that record and does not affect snapshot identity.
-
-Pass `ingestion_receipt=receipt` to retain the original copy's `source`, `destination`, `acquired_at`, and `size_bytes`. Paths are saved as strings and the acquisition time as UTC ISO text. The receipt must be an `IngestResult` whose destination resolves to the registered file and whose byte count matches it. The original source does not need to exist anymore. Omit the receipt when registering a file directly.
-
-```python
-from model_pipelining.snapshots import list_snapshots, list_acquisitions
-
-versions = list_snapshots(dataset="synthetic-mean-shift")
-registrations = list_acquisitions(dataset="synthetic-mean-shift")
-
-for registration in registrations:
-    print(registration["registered_at"], registration["note"])
-    if registration["ingestion_receipt"] is not None:
-        print(registration["ingestion_receipt"]["source"])
-        print(registration["ingestion_receipt"]["acquired_at"])
+```text
+register_snapshot(path, *, dataset, note=None, ingestion_receipt=None, store=...) -> Snapshot
+retrieve_snapshot(snapshot_id, *, dataset, store=...) -> Path
+list_snapshots(*, dataset, store=...) -> list[dict]
+list_acquisitions(*, dataset, store=...) -> list[dict]
 ```
 
-Snapshot summaries contain `dataset`, `snapshot_id`, `filename`, and `size_bytes`. Acquisition records also describe the supplied `source_path`, `registered_at`, optional `note`, optional `ingestion_receipt` dictionary, and unique `acquisition_id`. Missing optional fields return `None`, including for older records; stored files are not rewritten.
+`Snapshot` is a frozen dataclass with `dataset`, `snapshot_id`, and `path`.
+Keep the dataset/ID as the permanent reference. The path is the current local
+location; retrieve again after moving the store. Retrieval checks the manifest,
+size, and hash and raises on missing/tampered contents.
 
-Both listing functions return `[]` for absent data without creating directories. Listing reads metadata; retrieval checks actual file integrity. `registered_at` describes snapshot registration, while the receipt's `acquired_at` describes completion of the earlier ingestion copy. Neither establishes historical availability. Receipt context does not change snapshot IDs or manifests. Receipts contain no hash, so path and size checks cannot detect same-size edits made between ingestion and registration.
+Identical bytes in the same dataset reuse a snapshot, even if renamed; the first
+preserved filename stays. Every successful registration adds a separate event.
+Changed bytes create a new snapshot. Different datasets have separate copies and
+histories even when the content hash matches.
+
+`note` accepts a string or `None` and belongs to the event, not snapshot identity.
+An optional ingestion receipt must describe the registered destination/byte count
+and have an aware acquisition time. Its original source need not still exist.
+The receipt has no hash; the caller must keep the acquired copy unchanged until
+registration, including against same-size edits.
+
+| Listing | Contents and order |
+|---|---|
+| `list_snapshots` | `dataset`, `snapshot_id`, `filename`, `size_bytes`; sorted by ID |
+| `list_acquisitions` | `format_version`, `acquisition_id`, `dataset`, `snapshot_id`, `source_path`, `registered_at`, `note`, `ingestion_receipt`; oldest UTC registration first, then ID for ties |
+
+Listings return `[]` for absent data without creating directories. They inspect
+metadata, not preserved bytes. Older optional note/receipt fields return `None`
+without rewriting files. Historical receipt paths remain context after moving
+the store. [Snapshot files and record fields](../../docs/snapshots.md#files-on-disk)
+are described in the storage reference.
 
 ## Understanding tags
 
-A tag is a movable reference within one dataset:
+All tag functions accept optional keyword `store="data/versioned"`:
 
 ```text
-sales / baseline-input → snapshot A
+assign_tag(*, dataset, tag, snapshot_id, changed_by, note=None, store=...) -> dict
+resolve_tag(*, dataset, tag, store=...) -> str
+list_tags(*, dataset, store=...) -> list[dict]
+list_tag_history(*, dataset, tag, store=...) -> list[dict]
 ```
 
-After explicitly assigning the same tag to a revised version:
+Assignment verifies the target in the same dataset, then records every explicit
+assignment, including repeats. Registration never creates/moves tags. Multiple
+tags may select one snapshot; different datasets may use the same tag name.
+Moving a tag does not alter a previously resolved permanent ID or a saved run.
+
+`changed_by` is required, nonblank, caller-supplied context rather than
+authenticated identity. Optional `note` accepts a string or `None`. The returned
+event contains `change_id`, `previous_snapshot_id`, `snapshot_id`, UTC
+`changed_at`, `changed_by`, and `note`.
+
+Resolution reads the current ID and raises `FileNotFoundError` for an unassigned
+tag. Retrieval separately verifies its contents. `list_tags` returns current
+target/last-assignment metadata sorted by tag name. `list_tag_history` returns
+all events in saved sequence, including when the clock moves backwards. Empty
+listings return `[]`; history for an unassigned tag is also `[]`. See
+[the tag reference](../../docs/snapshots.md#assign-resolve-and-inspect-tags).
+
+## Backtesting and reporting
 
 ```text
-sales / baseline-input → snapshot B
+run_backtest(
+    *, dataset, output_directory, snapshot_id=None, tag=None,
+    minimum_history=30, model=None, interval_levels=(0.8, 0.95),
+    store="data/versioned",
+) -> Path
+
+plot_run(run_directory, *, interval_level=None, interval_method="auto") -> Path
+compare_runs(first_run, second_run, *, output_directory) -> Path
 ```
 
-Snapshot A remains preserved. An ID resolved before the move still selects A. Another dataset, such as `weather`, can have an independent `baseline-input` tag. Multiple tags within one dataset can also point to the same snapshot.
+Import the runner from `model_pipelining.backtest` and reports from
+`model_pipelining.reporting`. Supply exactly one of `snapshot_id` and `tag`; the
+runner resolves a tag once and saves its permanent ID. `model=None` selects
+`TrainingMean`. For the Bayesian adapter, pass `LocalLevel(...)` from
+`model_pipelining.local_level`. Every output directory must be unused.
 
-All tag functions accept the optional `store` keyword.
+`run_backtest` automatically verifies/parses the CSV, validates the daily series,
+selects historical training data, executes the model, freezes outputs, scores,
+and saves checks/review. It returns an absolute run-directory `Path`, **including
+when required cases failed**. Input/configuration errors raise before output
+creation. Per-case forecast failures are retained and later origins continue.
+Filesystem errors propagate and can leave a `running` directory.
 
-| Function | What it does | Returns |
-|---|---|---|
-| `assign_tag(*, dataset, tag, snapshot_id, changed_by, note=None, store=...)` | Verifies the target in that dataset, then creates or moves the tag and records the assignment | Assignment dictionary |
-| `resolve_tag(*, dataset, tag, store=...)` | Reads the tag's current target | Snapshot ID string |
-| `list_tags(*, dataset, store=...)` | Lists current targets and last-assignment details, sorted by tag name | List of dictionaries |
-| `list_tag_history(*, dataset, tag, store=...)` | Lists all assignments in saved sequence | List of dictionaries |
+Read `manifest.json.status` and `checks.json` before interpreting results. Point
+`scores.complete` is not the overall result: required uncertainty scoring can
+fail independently. The [walkthrough](../../docs/forecasting.md#read-the-results)
+explains status and [run-file reference](../../runs/README.md) lists artifacts.
+The library does not acquire/register/tag data, simulate priors, or draw charts
+inside `run_backtest`. The two run scripts call reporting automatically; the
+local-level script also handles prior simulation/files.
 
-To move a tag, call `assign_tag` again with the revised snapshot's ID. Registering new data never automatically moves tags. Every explicit assignment adds history, including reassigning the same ID. Assignment does not change data or run a model.
+`plot_run` reads saved evidence and returns the chart path. `"auto"` prefers the
+widest saved highest-density region, then equal-tail intervals. Explicit
+`interval_method` is `"highest_density"` or `"equal_tail"`; explicit levels must
+have been saved. A point-only run has no band. Existing charts are rejected.
 
-`changed_by` is required: supply the person or process requesting the assignment. `note` optionally explains the selection. These are caller-supplied details rather than authenticated identity.
+`compare_runs` reads completed runs with matching permanent inputs, task,
+training coordinates, target dates, and actuals. It saves JSON/PNG comparison
+files and returns the absolute comparison-directory path. It does not fit,
+tune, or select a model. Uncertainty comparisons use common supplied kinds and
+levels only; a point-only baseline has no uncertainty comparison.
 
-Each assignment dictionary contains:
+## Model requests and results
 
-| Field | Meaning |
+`Forecaster` is a Python protocol: adapters supply a nonempty `name`, JSON
+`configuration` dictionary, and `forecast(request)`. Boolean `supports_quantiles`
+and `supports_highest_density` flags declare available uncertainty. Absent flags
+are treated as false for legacy adapters. `PointForecaster` remains an alias.
+Models refit from each request, retaining no prior request's training data.
+
+| Immutable record | Fields |
 |---|---|
-| `change_id` | Unique ID for the assignment |
-| `previous_snapshot_id` | Previous target, or `None` initially |
-| `snapshot_id` | Assigned target |
-| `changed_at` | UTC assignment time |
-| `changed_by` | Supplied person/process name |
-| `note` | Explanation, or `None` |
+| `Observation` | `timestamp`, `value` |
+| `ForecastRequest` | `history` (tuple of observations), `issued_at`, `target_time`, `quantile_levels=()`, `highest_density_levels=()` |
+| `Forecast` | `mean`, `quantiles=()`, `highest_density_regions=()` |
+| `Quantile` | `probability`, `value` |
+| `HighestDensityRegion` | `level`, `segments` (tuple of `Interval` records) |
+| `Interval` | `lower`, `upper` |
 
-Resolution reads the reference; retrieval verifies its contents. Resolve once and save the dataset plus ID with an experiment, so subsequent tag moves cannot change the selected input. `run_backtest` does this automatically when supplied a tag.
+The runner requests all declared uncertainty kinds at `interval_levels`.
+`LocalLevel.forecast` returns `Forecast`; direct callers use `.mean` for the point
+value. `TrainingMean` returns a numerical mean and declares no uncertainty.
+Numeric legacy outputs are accepted for point-only adapters; declaring uncertainty
+while returning only a number fails the required-output check. Direct callers constructing
+a request must specify desired levels; the empty request defaults request none.
 
-```python
-from model_pipelining.tags import list_tags, list_tag_history
+Record construction itself does not validate numerical contents; the runner
+performs output validation before accepting/saving a forecast.
 
-current_tags = list_tags(dataset="synthetic-mean-shift")
-assignments = list_tag_history(
-    dataset="synthetic-mean-shift",
-    tag="baseline-input",
-)
+All shared uncertainty targets the future **observation**, not a hidden state
+or parameter. [The uncertainty contract](../../docs/uncertainty.md) defines exact
+validation/scoring behavior, including HPD segments and failure handling.
 
-for assignment in assignments:
-    print(assignment["previous_snapshot_id"], "→", assignment["snapshot_id"])
-    print(assignment["changed_by"], assignment["note"])
-```
+`LocalLevel` accepts fixed `initial_mean=0`, `initial_variance=100`,
+`observation_variance=1`, and `evolution_variance=0.1` settings. Its methods also
+include `predictive_distribution(request) -> NormalDist`,
+`filter_history(history) -> tuple[FilterStep, ...]`, and
+`simulate_prior(*, count, seed=0) -> tuple[PriorDraw, ...]`.
+[The model guide](../../docs/local-level.md#library-interface-and-diagnostics)
+defines the diagnostic fields, timing, and separate simulation/reporting calls.
 
-Current tag summaries contain `dataset`, `tag`, `snapshot_id`, and the last assignment's `changed_at`, `changed_by`, and `note`. Listing reads metadata without verifying data files. History retains saved order even if the clock moves backwards or timestamps tie.
+## Naming, errors, and limits
 
-A never-assigned tag has an empty history and raises `FileNotFoundError` when resolved. A dataset with no tags returns `[]` from `list_tags`. Deletion, renaming, and automatic tag movement have not been implemented.
+Dataset/tag names are case-sensitive: start with an ASCII letter/digit, followed
+by ASCII letters, digits, underscores, or hyphens. Invalid options/checks generally raise
+`ValueError`; wrong note/receipt types raise `TypeError`; filesystem failures
+retain their usual types. Malformed saved records raise rather than being
+silently skipped. Individual forecast/evaluation failures are saved as described
+above instead of propagating to stop all later origins.
 
-## Files saved on disk
-
-```text
-data/versioned/
-  synthetic-mean-shift/
-    snapshots/
-      <snapshot-id>/
-        manifest.json
-        content/
-          mean_shift.csv
-    acquisitions/
-      <acquisition-id>.json
-    tags/
-      baseline-input.json
-```
-
-Each tag file contains `format_version`, `dataset`, `tag`, and its complete `history`. The final entry determines its current target. Updating writes a completed temporary file, then replaces the previous file, keeping the target and history together.
-
-To use another store, pass the same `store` argument to the snapshot and tag functions. Move the entire tree to preserve data and records together. The default store is ignored by Git; pushing code to GitHub does not upload these data files.
-
-## Naming, errors, and current limits
-
-- Dataset and tag names are case-sensitive, start with a letter or digit, and otherwise contain letters, digits, underscores, or hyphens.
-- Notes accept strings or `None`. Other types raise `TypeError`.
-- Missing files raise filesystem errors. An occupied ingestion destination raises `FileExistsError`; invalid options or failed integrity checks raise `ValueError`. Malformed JSON also raises an error rather than being silently skipped.
-- Use one writer at a time. Inputs must remain unchanged during copying or registration. Crash recovery, remote storage, and durable backups are future work.
-- Files and records remain writable. Integrity checks detect changed data but do not recover lost bytes. Assignment history is a local record rather than a tamper-proof log.
-- Successful copying, registration, or tagging does not establish data quality or historical availability. The first backtest separately validates its daily input and explicitly assumes immediate availability with no revisions.
-
-## Running the first forecasting model
-
-After the copy-to-tag example above, launch Python with `PYTHONPATH=src .venv/bin/python`:
-
-```python
-from model_pipelining.backtest import run_backtest
-from model_pipelining.reporting import plot_run
-
-run = run_backtest(
-    dataset="synthetic-mean-shift",
-    tag="baseline-input",
-    minimum_history=30,
-    output_directory="runs/function-guide-001",
-)
-chart = plot_run(run)
-```
-
-| Function | What it does | Returns |
-|---|---|---|
-| `run_backtest(*, dataset, output_directory, snapshot_id=None, tag=None, minimum_history=30, model=None, store="data/versioned")` | Pins and verifies one CSV snapshot, validates daily observations, executes expanding-history forecasts, and saves predictions/scores/checks | Absolute run-directory `Path`, including a run with failed cases |
-| `plot_run(run_directory)` | Reads saved evaluation/manifest/scores and draws a chart without accessing input data or fitting | Chart `Path` |
-
-Supply exactly one of `tag` and `snapshot_id`, and an unused output directory.
-Tag resolution and input verification happen automatically; acquisition,
-registration, and tag assignment remain explicit earlier caller actions.
-`run_backtest` does not draw the chart: call `plot_run` yourself or use
-`scripts/run_baseline.py`, which calls both automatically.
-
-The default `TrainingMean` model predicts tomorrow's value with the average of
-all observations through today. `model=` accepts a `PointForecaster`: a name,
-JSON dictionary `configuration`, and `forecast(request)` method returning one
-finite numerical predictive mean. `ForecastRequest` contains `history` (an
-immutable tuple of timestamp/value `Observation` records), `issued_at`, and
-`target_time`. Future actuals are excluded. Models refit from each request and
-must not retain training data between calls; this trusted Python interface is
-not a security sandbox. Broader capabilities and diagnostics remain undecided.
-
-Inspect `manifest.json`'s status and the required outcomes in `checks.json`.
-Per-case exceptions/invalid predictions are retained and later cases continue;
-failed cases make the run `failed`. Scores disclose their coverage, and
-`review.json` remains pending human interpretation. Validation/configuration
-errors raise before output creation. Filesystem errors propagate and can leave
-an interrupted directory with `running` status. Existing runs/charts are rejected.
-See [the forecasting walkthrough](../../docs/forecasting.md) for the exact daily
-calendar/availability assumptions, saved files, reproduction, and limitations.
-
-## Finding your way through the code
-
-Names ending in `_directory` identify folders; `_file_path` identifies a file's location. `source_file`, `destination_file`, and `file_stream` are open file objects. A `staged_` item is being prepared in temporary space. In `Path` expressions, `/ dataset` joins the dataset name onto a directory path.
-
-Start with `ingest.py`, then `snapshots.py`, then `tags.py`. For forecasting, read `models.py`, `backtest.py`, then `reporting.py`. Public functions above are the normal entry points. Helpers beginning with `_`, such as `_get_dataset_directory`, support them internally.
-
-For tests and executable examples, see [test_ingest.py](../../tests/test_ingest.py), [test_snapshots.py](../../tests/test_snapshots.py), [test_tags.py](../../tests/test_tags.py), and [test_backtest.py](../../tests/test_backtest.py). Run them from the project root:
-
-```bash
-PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
-```
-
-For implementation decisions and saved enhancements, see [the ingestion notes](../../docs/ingestion.md) and [snapshot/tag notes](../../docs/snapshots.md). For what is complete and where to resume next, use [the roadmap](../../docs/roadmap.md#resume-here).
+Use completed, stable inputs and one writer. Preserved/run files remain writable;
+retrieval verifies input integrity but does not recover lost bytes. Move the
+whole snapshot store, including manifests/events/tags. Git excludes local data
+and run evidence. Remote storage, crash recovery, retention, and backups remain
+caller concerns or future work. The Python model boundary is trusted code, not a
+security sandbox. [Tests](../../tests/README.md) map claims to supporting evidence.

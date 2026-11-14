@@ -19,6 +19,7 @@ def main() -> int:
     parser.add_argument("--store", default="data/versioned")
     parser.add_argument("--output-directory", required=True)
     parser.add_argument("--minimum-history", type=int, default=30)
+    parser.add_argument("--interval-levels", type=float, nargs="+", default=(0.8, 0.95))
     arguments = parser.parse_args()
     run = run_backtest(**vars(arguments))
     chart = plot_run(run)

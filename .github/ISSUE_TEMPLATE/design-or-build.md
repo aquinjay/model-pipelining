@@ -16,7 +16,7 @@ Describe observable behavior or the decision to record. Keep the scope small.
 
 ## Evidence of completion
 
-What artifact, comparison, or behavioral check would demonstrate the outcome?
+What artifact, comparison, or behavioral check would demonstrate the outcome? For modeling work, specify whether the task is to verify calculations/interfaces or evaluate model performance. For documentation, identify the reader, the workflow they should be able to follow, and which examples/links need checking.
 
 ## Open choices and dependencies
 

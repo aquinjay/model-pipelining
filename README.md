@@ -1,97 +1,88 @@
 # Model Pipelining
 
-A small framework for reproducible forecasting experiments: change the model while keeping data handling, backtesting, evaluation, and saved results consistent.
+A Python toolkit for repeatable forecasting runs. Preserve an input file, choose
+a model, make historical predictions using only the allowed past data, and save
+the predictions, checks, errors, and uncertainty together.
 
-The project starts with time-indexed numerical targets. It should support Bayesian models, classical models, and machine-learning models through a shared execution boundary, with checks appropriate to each model.
+The shared infrastructure lets models use the same data selection, execution,
+evaluation, and reporting. The current models are small examples for developing
+and verifying that infrastructure. Better scores alone do not establish that
+an implementation is correct or that a model is suitable for an application.
 
-**Status: the first local forecasting workflow is implemented.** A training-mean model runs daily historical forecasts against a preserved synthetic CSV, saving predictions, scores, checks, failures, and a pending review. A separate report draws a chart from saved results. Local CSV/XLSX ingestion, verified snapshots, ingestion receipts, and explicit tags supply its inputs. See [the forecasting walkthrough](docs/forecasting.md). Bayesian models and a general experiment framework remain future work.
+## Start here
 
-## Why build this?
+1. Follow [the forecasting walkthrough](docs/forecasting.md). It explains the
+   workflow and runs both models against the same preserved input.
+2. Read [the local-level model guide](docs/local-level.md) to understand the
+   Bayesian model, its four fixed settings, and its calculations.
+3. Read [the uncertainty guide](docs/uncertainty.md) for highest posterior density
+   (HPD) regions, quantiles, their meaning, and their evaluation.
 
-The goal is to learn model development while building infrastructure that can be reused across applications. A baseline, a Bayesian dynamic linear model (BDLM), and a gradient-boosting model should be comparable without rewriting the runner or result storage.
+For a review of the recent modeling work, follow that same order. Then inspect
+`models.py`, `local_level.py`, `uncertainty.py`, `backtest.py`, and `reporting.py`
+in [the source directory](src/model_pipelining/). The [test guide](tests/README.md)
+explains which checks support each implementation claim.
 
-The framework should preserve more than a winning score. It should make it possible to inspect the question, assumptions, checks, forecasts, failures, and revisions that produced a result.
+## What works today
 
-The first end-to-end exercise will use synthetic data and a simple baseline. A later personal application may use one market series. A separate operational application can follow once the core responsibilities are clear.
+| Part | Current behavior |
+|---|---|
+| Input preservation | One local file per snapshot; verified retrieval, registration history, optional copy receipts, and explicit dataset tags |
+| Table reading | CSV or one selected XLSX worksheet; forecasting currently accepts CSV only |
+| Forecasting task | One daily numerical series, next-day predictions, expanding training history, 30 initial observations by default |
+| Training mean | Average the eligible history; supplies a point prediction only |
+| Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
+| Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
+| Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
 
-## Design starts with the question
+The forecast uncertainty describes the **next observed value**, conditional on
+the model's assumptions. It is separate from uncertainty about the hidden level
+or a model parameter. The sample task assumes immediate observation availability
+and no revisions. All example evaluations are development evidence; there is no
+untouched final test period or automatic model approval.
 
-Before selecting a model, define the target, intended use, information available at prediction time, benchmark, and evaluation protocol. Distinguish forecasting, monitoring, and causal effect estimation: each needs a design that supports its intended claim.
-
-The initial implementation focuses on forecasting. A backtest evaluates predictive performance; estimating the effect of an intervention requires a separate causal design and assumptions.
-
-## Shared workflow
-
-```mermaid
-flowchart TD
-    A[Question and study / evaluation design] --> B[Versioned task and check plan]
-    B --> C[Check before fitting]
-    C --> D[Fit and verify]
-    D --> E[Criticize the fitted model]
-    E --> F[Evaluate frozen held-out forecasts]
-    F --> G[Review evidence and limitations]
-    G -->|Revise| B
-    G -->|Release when useful| H[Operate and monitor]
-    H -->|New evidence| A
-```
-
-This is a map of responsibilities. The runner's exact stages and interfaces will be settled during implementation. Simulation studies can support several stages, and backtests repeat fitting and forecasting across historical origins.
-
-**Shared structure, model-specific evidence:**
-
-| Responsibility | Shared framework | Model contribution |
-|---|---|---|
-| Define the experiment | Task, calendar, availability, benchmark, and comparison cases | Declared capabilities and configuration |
-| Check before fitting | Validate inputs and the required check plan | Prior predictive simulation for a Bayesian model; feature/schema checks for a boosting adapter |
-| Fit and verify | Schedule eligible training data and record failures | Analytic-update checks, applicable sampler diagnostics, or fitting diagnostics |
-| Criticize the fitted model | Preserve and display development evidence | Predictive replications, sensitivity, residual patterns, or other relevant checks |
-| Evaluate | Compare common forecast cases and compatible outputs | Point forecasts and any explicitly supported uncertainty |
-| Review and revise | Preserve lineage, limitations, and decisions | Explain model-specific evidence and proposed changes |
-
-The experiment owns check requirements and failure policy. Adapters supply specialized checks. A point-only model does not need invented uncertainty, and an analytic Bayesian filter does not need MCMC diagnostics.
-
-## Architecture at a glance
-
-Three responsibilities stay separate:
-
-- **Application:** what to predict, when to issue it, which data are eligible, and what a useful result means.
-- **Model adapter:** how the model fits, predicts, declares capabilities, and supplies its checks.
-- **Shared pipeline:** how experiments execute, outputs are validated, results are evaluated and stored, and evidence is reviewed.
-
-Reports read saved artifacts. Predictions are frozen before actuals are used for scoring. Model-specific diagnostics keep their meaning while sharing a result format.
-
-Read [the architecture](docs/architecture.md) for boundaries and [the decision log](docs/decisions.md) for what is settled versus open.
-
-## Repository layout
+## Workflow and caller actions
 
 ```text
-model-pipelining/
-  README.md                  project entry point and setup instructions
-  LICENSE                    Apache License 2.0
-  pyproject.toml             project metadata and dependency declarations
-  .python-version            recommended development interpreter
-  uv.lock                    resolved dependency versions for uv
-  requirements.txt           generated dependency export for pip
-  docs/
-    architecture.md          responsibilities and information boundaries
-    roadmap.md               small milestones and the next design slice
-    decisions.md             decisions, proposals, and open questions
-    ingestion.md             local copy/read interface and later enhancements
-    snapshots.md             small local snapshot workflow and limitations
-    forecasting.md           first baseline, backtest, artifacts, and chart walkthrough
-    references.md            public background reading
-  src/model_pipelining/      ingestion, snapshots, tags, models, backtesting, and reporting
-  configs/                   reserved for task/model/check-plan examples
-  tests/                     data-workflow and forecasting behavioral tests
-  scripts/                   synthetic generator and baseline run entry point
-  data/                      local input snapshots; contents ignored by Git
-  runs/                      local run artifacts; contents ignored by Git
-  .github/
-    ISSUE_TEMPLATE/          a template for small design/build tasks
-    pull_request_template.md review context for each change
+Choose a forecasting question and its timing assumptions
+  → obtain a completed input file
+  → preserve it as a snapshot; optionally assign a readable tag
+  → run historical forecasts with one model
+  → inspect saved checks, predictions, scores, and assumptions
+  → report or compare saved results
 ```
 
-Python 3.14 is selected. pandas and openpyxl support table reading; matplotlib draws saved-result charts. The baseline uses standard-library statistics. The first run uses JSON configuration/artifacts and CSV predictions/evaluation; broader schemas remain open. The local package is imported with `PYTHONPATH=src`; installable packaging is deferred.
+You obtain/register the input and choose model settings explicitly. Starting a
+run does not fetch data, register a file, or move a tag. The runner verifies the
+selected snapshot, selects eligible histories, executes the model, and saves
+results automatically. Library callers invoke reporting separately; the two
+run scripts also draw their charts automatically. The local-level script adds
+a seeded prior simulation for human review.
+
+A completed run means the required computational checks and scoring succeeded.
+It does not decide whether the assumptions are useful. `review.json` starts as
+a pending human review record. The [walkthrough](docs/forecasting.md#read-the-results)
+explains how to read both execution and review status.
+
+## Documentation map
+
+| Need | Read |
+|---|---|
+| Run and understand the complete example | [Forecasting walkthrough](docs/forecasting.md) |
+| Understand the Bayesian model and its equations | [Local-level model](docs/local-level.md) |
+| Understand HPD regions, quantiles, and output rules | [Shared uncertainty](docs/uncertainty.md) |
+| Look up a function, argument, or return type | [Python API reference](src/model_pipelining/README.md) |
+| Copy/read a local CSV or workbook | [Ingestion](docs/ingestion.md) |
+| Preserve, retrieve, or tag a file | [Snapshots and tags](docs/snapshots.md) |
+| Find saved inputs or run files | [Data directory](data/README.md), [run directory](runs/README.md) |
+| Understand module responsibilities and future design | [Architecture](docs/architecture.md) |
+| See current status and review priorities | [Roadmap](docs/roadmap.md) |
+| Understand previous choices | [Decision history](docs/decisions.md) |
+| Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
+
+The walkthrough describes current behavior. Architecture sections marked as
+planned describe future responsibilities. Decision history and the historical
+storage proposal explain earlier choices; they are not setup instructions.
 
 ## Development environment
 
@@ -106,7 +97,7 @@ Use an isolated environment named `.venv`. The setup supports standard Python to
 | Test harness | Standard-library unittest |
 | Local environment | `.venv/`, excluded from Git |
 
-The local `.venv` runs CPython 3.14.10 and is isolated from the base interpreter. The table-reading and plotting dependencies are installed and locked. On a new machine, create and verify an environment using one of the setup paths below.
+Create an isolated environment using either setup path below. The pinned environment has been exercised locally; verify it on the machine where you will run experiments.
 
 `pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
 
@@ -135,7 +126,19 @@ py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-Then use the same `python -m pip` and verification commands. Select `.venv` as your editor/notebook interpreter when those tools are introduced. Run `deactivate` to leave an activated environment.
+Then use the same `python -m pip` and verification commands. Workflow examples
+use Linux/macOS shell notation. In an activated PowerShell environment, set
+`$env:PYTHONPATH="src"`, use `python` instead of `.venv/bin/python`, and place
+multi-line shell commands on one line. To open the Python session used by the
+walkthrough:
+
+```powershell
+$env:PYTHONPATH="src"
+python
+```
+
+Select `.venv` as your editor/notebook interpreter. Run `deactivate` to leave an
+activated environment.
 
 At work, use the approved interpreter and package source with this pip route. A different Python minor version requires a separate compatibility decision and dependency resolution; a requirements export alone does not establish compatibility with that runtime.
 
@@ -169,117 +172,26 @@ Use a fresh `.venv` when checking reproduction with pip: `pip install -r` does n
 
 Setup references: [Python's packaging guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/), [uv project guide](https://docs.astral.sh/uv/guides/projects/), and [exporting a uv lockfile for pip](https://docs.astral.sh/uv/concepts/projects/export/).
 
-## Local ingestion
+## Development checks and contributions
 
-The [function reference beside the Python code](src/model_pipelining/README.md) explains ingestion, snapshots, tags, return values, and a complete copy-to-tag-to-table example.
-
-After installing dependencies, run from the repository root with `PYTHONPATH=src .venv/bin/python`:
-
-```python
-from model_pipelining.ingest import ingest_local_file, read_local_table
-
-result = ingest_local_file(
-    "data/synthetic/mean_shift.csv",
-    "data/ingested/example-001/observations.csv",
-)
-table = read_local_table(result.destination)
-
-# For an acquired XLSX workbook, select a worksheet by name or index:
-# table = read_local_table("data/ingested/sales.xlsx", sheet="Sales")
-# table = read_local_table("data/ingested/sales.xlsx", sheet=1, header=0)
-```
-
-Generate the synthetic source first if needed, following [the data notes](data/README.md). The copy function creates destination directories and refuses to overwrite existing files. The reader returns a pandas DataFrame and defaults to the first XLSX worksheet. See [the ingestion notes](docs/ingestion.md) for headers, failure behavior, and limitations.
-
-Run the behavioral tests:
+Run the behavioral suite from the repository root after setup:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-## Local snapshots
+Tests check calculations, future-data isolation, reproducible outputs, visible
+failures, and reporting without model calls. See [the test map](tests/README.md)
+for details. There is no CI workflow yet.
 
-Use the local snapshot module after ingestion, or pass a completed local file directly. The following example copies a file and saves the returned receipt with its snapshot registration. Launch Python with `PYTHONPATH=src .venv/bin/python`:
-
-```python
-from model_pipelining.ingest import ingest_local_file, read_local_table
-from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
-
-receipt = ingest_local_file(
-    "data/synthetic/mean_shift.csv",
-    "data/ingested/snapshot-example/mean_shift.csv",
-)
-snapshot = register_snapshot(
-    receipt.destination,
-    dataset="synthetic-mean-shift",
-    ingestion_receipt=receipt,
-    note="Initial synthetic input",
-)
-path = retrieve_snapshot(snapshot.snapshot_id, dataset=snapshot.dataset)
-table = read_local_table(path)
-```
-
-The process still has two calls: copy the file, then register it. **The one added argument is `ingestion_receipt=receipt`.** Once supplied, registration automatically writes the receipt into its acquisition record; you do not save a separate receipt file. Copying alone does not register a snapshot. Omitting the argument saves no original ingestion context, and older records are not filled in automatically. Choose an unused ingestion destination when repeating the full example.
-
-Repeated identical bytes reuse a snapshot while recording each registration. Changed bytes create another snapshot. Save the dataset name and snapshot ID as the reference. Optional notes explain each registration without changing the snapshot. Use `list_snapshots(dataset=...)` and `list_acquisitions(dataset=...)` from the same module to inspect versions and registration history as lists of dictionaries. The default store, `data/versioned`, is local and ignored by Git. See [the snapshot notes](docs/snapshots.md) for examples, the on-disk layout, single-writer assumptions, and deferred enhancements.
-
-The receipt's source, destination, UTC `acquired_at`, and byte count are saved with that registration. Passing a receipt is optional; registration checks that its destination and size match the supplied file. See the [complete workflow](src/model_pipelining/README.md#one-complete-workflow).
-
-Add an explicit readable reference using the tag module:
-
-```python
-from model_pipelining.tags import assign_tag, resolve_tag
-
-assign_tag(
-    dataset=snapshot.dataset, tag="baseline-input",
-    snapshot_id=snapshot.snapshot_id, changed_by="manual-review",
-)
-selected_snapshot_id = resolve_tag(dataset=snapshot.dataset, tag="baseline-input")
-```
-
-Tag assignment verifies the target and saves the assignment history. New registrations leave existing tags unchanged. Save the resolved snapshot ID with the dataset for later reproduction. `list_tags` and `list_tag_history` expose the saved metadata; see [the tag examples](docs/snapshots.md#assign-resolve-and-inspect-tags).
-
-## First useful milestone
-
-The first baseline workflow now supports this sequence:
-
-1. Preserve a small synthetic time series and a task specification.
-2. Run a training-mean baseline through rolling-origin evaluation.
-3. Validate forecast alignment and information availability.
-4. Save configuration, predictions, scores, check outcomes, and a review record.
-5. Produce one chart from saved results, with no fitting in the report.
-
-Success means the experiment is understandable and repeatable, including visible failures. It does not depend on beating a complex model or demonstrating market forecasting skill.
-
-After preparing and tagging the synthetic input as above, run:
-
-```bash
-PYTHONPATH=src .venv/bin/python scripts/run_baseline.py \
-  --dataset synthetic-mean-shift \
-  --tag baseline-input \
-  --output-directory runs/mean-shift-001
-```
-
-The script automatically saves the backtest and draws `forecast.png`; use a new output directory each time. The default first prediction is day 31, using the mean of days 1–30. The [walkthrough](docs/forecasting.md) explains explicit input preparation, library calls, required checks, reproduction, and failed-run behavior. These are development forecasts; human review remains pending and no final evaluation period is reserved.
-
-After a review, add one real-data application and a local-level BDLM through the same infrastructure. A contrasting point-only adapter later tests whether the design generalizes.
-
-See [the roadmap](docs/roadmap.md) for the current checkpoint and proposed next steps. [Local ingestion](docs/ingestion.md) and [single-file snapshots with explicit tags](docs/snapshots.md) are implemented and documented. git-annex is now an optional later integration. DVC or another tool for dependencies, stages, and execution will be considered later. The [saved data-versioning requirements](docs/data-versioning.md) describe the broader multi-file, provenance, validation, and portability needs.
-
-## Working on the project
-
-Agents must follow [the repository instructions](AGENTS.md), including updating affected documentation after implementation or workflow changes and before reporting completion.
-
-Use one issue or small pull request per question or deliverable. Describe the problem, intended behavior, and evidence needed before adding abstractions. Record consequential decisions in `docs/decisions.md`; keep unresolved choices explicitly provisional.
-
-Verification should target behavior: no future information, correct target alignment, reproducible artifacts, visible failed folds, and honest capability handling. Data-workflow and first-baseline behavioral tests exist; model-specific diagnostics and CI remain future work.
+Keep changes small enough to review. Follow [AGENTS.md](AGENTS.md), update affected
+documentation in the same task, and record consequential design decisions in
+[the decision log](docs/decisions.md). Details of a future real-data task,
+probabilistic extensions, and model-specific checks belong in
+[the roadmap](docs/roadmap.md), not as implied features in usage examples.
 
 ## Repository and license
 
-The GitHub repository is [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining). The local `origin` remote is configured for fetch and push using `git@github.com:aquinjay/model-pipelining.git`.
-
-The project is licensed under the [Apache License 2.0](LICENSE).
-
-## Background
-
-The workflow is informed by Gelman et al.'s *Bayesian workflow*, especially iterative model building, simulation, predictive checks, and comparison. The shared adapter/check architecture is a project design choice. See [references](docs/references.md).
+Repository: [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining).
+Licensed under [Apache License 2.0](LICENSE). The Bayesian workflow background
+and mathematical references are collected in [references](docs/references.md).

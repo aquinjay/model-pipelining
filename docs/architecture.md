@@ -1,65 +1,125 @@
-# Architecture
+# Architecture: current behavior and future design
 
-Status: high-level design. Names describe responsibilities; they are not a finalized API or a list of modules that must all exist immediately.
+Read [the walkthrough](forecasting.md) for usage. This page explains responsibility
+boundaries. Sections marked **implemented** describe code that exists; the later
+workflow/checking sections are **design guidance**, not an implemented framework.
 
-The first executable boundary now exists in [the forecasting workflow](forecasting.md): `models.py` defines an immutable history/issuance/target-time request and a small point-forecast protocol; `backtest.py` selects expanding histories, calls the model, freezes predictions, scores, and saves evidence; `reporting.py` reads saved results. This implements one daily CSV task with fixed required checks. The richer capabilities, diagnostics, configurable check plan, and release policy below remain design guidance.
+## Implemented execution path
 
-## Separate the problem, model, and execution
+```mermaid
+flowchart LR
+    A[Preserved CSV and permanent ID] --> B[Runner selects eligible history]
+    B --> C[Adapter computes requested forecasts]
+    C --> D[Validate and save frozen outputs]
+    D --> E[Evaluate]
+    F[Actual target values] --> E
+    E --> G[Saved checks, scores, and pending review]
+    G --> H[Report reads saved files]
+```
 
-| Component | Owns | Boundary |
+The runner can parse/validate the complete input, but future actual values are
+excluded from the request given to a model. Actuals are joined for scoring only
+after forecast files are written and closed. This is a trusted Python boundary,
+not a sandbox preventing an adapter from independently reading files.
+
+| Responsibility | Implemented now | Remaining design |
 |---|---|---|
-| Application specification | Target meaning, units, calendar, issuance, allowed features, benchmarks, and evaluation cases | Must not embed a particular model's internals |
-| Data preparation | Source access, preserved snapshots, quality checks, and availability information | A reproducible extract does not automatically reconstruct historical availability |
-| Model adapter | Model-specific input transformation, fitting, prediction, capabilities, and specialized checks | Must not own the shared backtest, artifact layout, or delivery policy |
-| Runner | Historical origins, eligible training views, stage dispatch, validation, and recorded execution policy | Should not branch on model-family names |
-| Evaluation | Scores and comparisons compatible with the returned predictions | Must not infer uncertainty or latent states that were never supplied |
-| Artifact storage | Run identity, manifests, predictions, evidence, lineage, and review records | Preserve issued predictions and the versions used for scoring |
-| Reporting | Displays saved results and limitations | Must not silently refit models to produce a report |
+| Application/task | A daily numerical CSV task with explicit timing assumptions and function arguments | A broader versioned application specification, richer calendars/features, real-data availability rules |
+| Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
+| Model adapter | Training mean; fixed-variance Gaussian local level; declared output capabilities | Other families, parameter learning, incremental updates, specialized checks |
+| Runner | Historical origins, eligible histories, output validation, fixed required checks, visible failures | Configurable stage/check dispatch and explicit experimental overrides |
+| Evaluation | Point errors, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
+| Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
+| Reporting | Charts and matched-case comparisons from saved artifacts | Wider reports and application delivery |
 
-Start with a few files that express these boundaries. Extract additional modules only when concrete use demonstrates the need.
+A run's directory and manifest identify its model/configuration and saved cases.
+There is no global run-ID registry. No orchestration service, release process,
+or monitoring/deployment system is implemented.
 
-## Inputs and outputs
+## Implemented model boundary
 
-At a high level, every run needs a task specification, a model configuration, a data reference, an evaluation protocol, and a check plan.
+[models.py](../src/model_pipelining/models.py) defines immutable requests/results.
+A model receives eligible observations, issuance, target time, and requested
+quantile probabilities/highest-density masses. It returns a predictive mean and
+its declared uncertainty kinds. `TrainingMean` is point-only; `LocalLevel`
+supplies quantiles and highest-density regions.
 
-Every forecast needs an unambiguous issuance time, training cutoff, series and target coordinates, horizon, target scale/version, and model/run identity. Point forecasts should identify their statistic, such as a predictive mean. Optional uncertainty must identify what it represents.
+Both uncertainty kinds target the future observed value in original units.
+State or parameter distributions would require separate diagnostic outputs.
+Normal-specific filtering/quantile calculations stay inside the adapter. The
+runner never branches on model-family names or invents missing uncertainty.
 
-The first experiment saves task/model/data references in a JSON manifest and predictions/evaluation in CSV; [its record descriptions](forecasting.md#what-is-saved) document the current scope. Broader records remain open. A documented conceptual boundary should not become a large unused schema ahead of implementation.
+Capabilities make supported outputs required at the requested levels. Shared
+checks enforce complete, finite, structurally valid outputs. Highest-density
+sets preserve disconnected segments and nesting across masses, but their
+probability mass and density optimality remain the adapter's mathematical
+responsibility. Reports prefer supplied highest-density regions. The
+[uncertainty reference](uncertainty.md) defines the records and compatible scores.
 
-## Capabilities and checks
+## Implemented artifacts and information boundaries
 
-Models declare the outputs and operations they actually support. Examples include point forecasts, quantiles, predictive samples, incremental updates, or latent-state diagnostics. Shared evaluation selects compatible calculations from those capabilities.
+New run manifests use format version 2; the existing point CSV remains compatible.
+Snapshots, acquisition events, and tags retain their separate format version 1.
+Reports can read old version-1 saved point runs without generating new uncertainty.
+See [the API reference](../src/model_pipelining/README.md) and
+[run-file reference](../runs/README.md).
 
-The proposed checking boundary lets an adapter describe its checks and execute a selected check in a stage-specific context. It may delegate implementation to a separate diagnostic component. Shared validators use a common result format too.
+At every forecast origin, eligibility follows the task's information assumptions.
+The synthetic task assumes each observation is immediately available and has no
+revisions. Acquisition/registration timestamps do not establish real historical
+availability. A revised series downloaded today needs a separate availability
+policy before it supports a real-data historical claim.
 
-| Question | Bayesian example | Non-Bayesian example |
+Any later learned preprocessing or tuning must stay inside the appropriate
+training/development boundaries. Current adapters have no such tuning. A target
+held out from one forecast can become past training data for a later origin;
+this does not make the entire development series an untouched final evaluation.
+
+## Planned broader workflow
+
+The intended long-term workflow separates defining a question, checking assumptions,
+fitting, criticizing a model, evaluating held-out predictions, human review, and
+possible operation/monitoring:
+
+```mermaid
+flowchart TD
+    A[Question and evaluation design] --> B[Versioned task and check plan]
+    B --> C[Check assumptions before fitting]
+    C --> D[Fit and verify]
+    D --> E[Criticize the fitted model]
+    E --> F[Evaluate held-out forecasts]
+    F --> G[Review evidence and limitations]
+    G -->|Revise| B
+    G -->|Release when justified| H[Operate and monitor]
+    H -->|New evidence| A
+```
+
+This diagram describes responsibilities to develop, not a current set of runner
+stages. Forecasting, monitoring, and causal effect estimation need different
+study designs; a predictive backtest alone does not establish a causal effect.
+
+## Planned model-specific checks and iteration
+
+The current runner owns a fixed list of validation/completion checks. A future
+experiment-owned check plan should describe requirements, applicability,
+criteria, and failure actions. Adapters could supply specialized evidence without
+being allowed to omit required checks and thereby pass a run.
+
+| Question | Bayesian example | Other-model example |
 |---|---|---|
-| Are the assumptions plausible before fitting? | Prior predictive simulations | Feature availability and intended-use coverage checks |
-| Did inference or fitting work? | Recursion verification; sampler diagnostics when used | Fit completion and output validity |
-| What does the fitted model miss? | Posterior predictive replications and prior sensitivity | Residual analysis, ablation, and regularization sensitivity |
-| How does prediction perform? | Point scores and supported distributional scores | Point scores and any explicitly supported probabilistic outputs |
+| Are assumptions plausible? | Prior predictive simulation | Feature availability and intended-use coverage |
+| Did the calculation work? | Analytic recursion verification; sampler diagnostics only when a sampler is used | Fit completion and output validity |
+| What does the fitted model miss? | Predictive replications and prior sensitivity | Residual patterns, ablation, regularization sensitivity |
+| How do held-out forecasts behave? | Compatible point/distributional scores | Point scores and any explicitly supported uncertainty |
 
-These checks share lifecycle and evidence conventions while retaining their different meanings. Feature importance alone is not assumption validation; a Bayesian label does not make MCMC diagnostics applicable.
+The local-level script saves one prior trajectory for human review; it does not
+implement this whole plan. Existing numerical/simulation tests verify stated
+calculation properties, rather than approving prior plausibility. The current
+analytic filter has no MCMC (Markov chain Monte Carlo) sampler.
 
-The experiment owns the required check plan, applicability policy, criteria, and failure actions. An adapter cannot waive a requirement by omitting a check. Missing, failed, errored, deferred, or unresolved required evidence remains visible and blocks release according to the plan. Exploratory execution can still save evidence; run completion and release readiness are separate judgments.
-
-## Information boundaries
-
-- At each backtest origin, use data and features available at that issuance time.
-- Fit learned preprocessing and choose tuning settings within the allowed development/training boundaries.
-- Keep future actual targets out of prediction requests and any check contexts used at issuance.
-- Freeze predictions before joining actuals for scoring.
-- Label fitted-data predictive replications separately from held-out forecasts.
-- Preserve a final evaluation period; if its results guide revision, record its new role as development evidence.
-
-## Simulation and model revision
-
-The application/test harness can supply known scenarios for any model. Generative models can additionally supply simulations from their own assumptions. Prior prediction, parameter/state recovery, formal simulation-based calibration, and future predictive calibration answer distinct questions.
-
-Run expensive simulation suites at an appropriate model/configuration scope, with recorded provenance and budget. Do not automatically repeat them inside every backtest fold. Reassess applicability after relevant model, code, prior, or inference changes.
-
-Preserve the parent iteration, motivating discrepancy, changed assumption, evidence, and review decision. Comparisons should explain changes in conclusions as well as changes in scores.
-
-## Scope boundary
-
-The first implementation is a local forecasting experiment, executed manually. Automated deployment, alerting, tracking services, dashboards, causal-effect estimation, and a universal plugin system remain later possibilities.
+Simulation, parameter/state recovery, formal simulation-based calibration, and
+held-out predictive calibration answer different questions. Expensive simulation
+suites should run at a documented model/configuration scope, not automatically
+inside every forecast origin. A future iteration record should preserve parent
+runs, the motivating discrepancy, changed assumptions, and review decisions.
+These records and configurable release rules are not implemented today.

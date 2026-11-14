@@ -1,157 +1,246 @@
-# First forecasting workflow
+# Forecasting walkthrough
 
-Implemented: 2026-11-13. This is a small development exercise using the existing
-synthetic data, with a training-mean model and shared execution, scoring, and
-saved results. There is no Bayesian model or general experiment framework yet.
+Start here to understand and run the current tooling. This walkthrough uses the
+artificial sample data already supplied by the project, runs both implemented
+models, and shows what to inspect. Setup is in
+[the main README](../README.md#development-environment).
 
-## What the first model does
+The objective is to verify a reusable workflow: the calculations must be correct,
+models must receive only eligible history, and saved inputs/settings must let
+us repeat a run. Comparing forecast scores is a separate use of the saved
+results, rather than the acceptance criterion for this implementation.
 
-After observing the first 30 days, take their arithmetic mean and predict day 31.
-Then use days 1–31 to predict day 32, continuing through the last observation.
-This is an expanding-history, rolling-origin backtest: each historical prediction
-uses only the observations available at its issuance time.
+## Understand the example
 
-The task is deliberately narrow:
+The input has 200 daily observations with `timestamp` and `value` columns. Each
+value is assumed available at its timestamp, with no publication delay or
+revision. After observing days 1–30, predict day 31. Then use days 1–31 to predict
+day 32, and continue through day 200. This produces **170 forecast cases**.
 
-| Choice | Behavior |
-|---|---|
-| Input | One preserved CSV with `timestamp` and `value` columns; other columns are ignored |
-| Calendar | Exactly one UTC day between consecutive observations, including weekends |
-| Availability | Each value is available at its timestamp; no delay or revisions |
-| Issuance | Immediately after observing the current value |
-| Target | The next day's value, in the original units |
-| Initial history | 30 observations by default; caller can set `minimum_history` |
-| Training window | All observations up to and including issuance |
-| Model output | One finite point forecast representing a predictive mean |
-| Evaluation | All remaining days; MAE and RMSE, with explicit coverage counts |
-| Role | Development evidence; no untouched final evaluation period |
+The two models use the same cases:
 
-Availability is an assumption of these synthetic datasets. File acquisition and
-registration timestamps do not establish historical availability for real data.
-The generator's known means and change date are simulation truth, never model inputs.
+| Model | What it calculates | Uncertainty supplied |
+|---|---|---|
+| `TrainingMean` | Average of all eligible past values | None |
+| `LocalLevel` | Updated estimate of a changing hidden level | Observation quantiles and highest-density prediction regions, conditional on fixed model settings |
+
+A **backtest** repeats forecasts at historical dates. An **origin** is when a
+forecast is issued. A **case** is one origin and its next-day target. The
+**actual** is the observed target value, joined only after predictions are saved.
+A **run** is one model/configuration executed over the selected cases. An
+**adapter** is the model code that accepts the shared request and returns its
+supported outputs.
+
+Each forecast target is held out from that forecast's training history. It can
+become an observed past value at a later origin. The whole example is used for
+development; it does not reserve an untouched final test period.
 
 ## Prepare the input explicitly
 
-Install dependencies using the [project setup](../README.md#development-environment).
-matplotlib is now included for a saved PNG chart. If the synthetic files are absent,
-generate them from the repository root:
+Run shell commands from the repository root. If `data/synthetic/` does not already
+contain the sample files, generate them:
 
 ```bash
 .venv/bin/python scripts/generate_synthetic.py
 ```
 
-The generator refuses to overwrite existing files. Use `--output-dir` to generate
-another copy instead. Then launch Python with `PYTHONPATH=src .venv/bin/python`:
+The generator refuses to overwrite its files. Reuse existing sample files when
+repeating the example, or use `--output-dir` and adjust the input path below.
+The [data guide](../data/README.md) describes both scenarios and their settings.
+
+Launch Python:
+
+```bash
+PYTHONPATH=src .venv/bin/python
+```
+
+Keep this Python session open for the next four sections; the examples pass
+variables from one section to the next. You can also place those Python blocks
+in one script and launch it with the same interpreter and `PYTHONPATH=src`.
 
 ```python
 from model_pipelining.snapshots import register_snapshot
-from model_pipelining.tags import assign_tag
+from model_pipelining.tags import assign_tag, resolve_tag
 
 snapshot = register_snapshot(
     "data/synthetic/mean_shift.csv",
     dataset="synthetic-mean-shift",
-    note="Input for the first forecasting exercise",
+    note="Input for the forecasting walkthrough",
 )
 assign_tag(
     dataset=snapshot.dataset,
     tag="baseline-input",
     snapshot_id=snapshot.snapshot_id,
-    changed_by="manual-review",
+    changed_by="walkthrough",
 )
+selected_snapshot_id = resolve_tag(dataset=snapshot.dataset, tag="baseline-input")
 ```
 
-Registration can take an existing completed file directly. If you need a separate
-ingestion copy and its saved receipt, use the [copy-to-tag workflow](../src/model_pipelining/README.md#one-complete-workflow).
-If your chosen snapshot already has a tag, reuse it and skip these preparation
-calls. Running a backtest never acquires, registers, or tags data automatically.
+A **snapshot** preserves the file bytes. Its permanent reference is the dataset
+name plus snapshot ID. A **tag** is a readable name that can be moved explicitly.
+We resolve it once here and pass the same permanent ID to both runs, so a later
+tag move cannot change which data either model uses.
+
+This example registers an existing completed file directly. A separate ingestion
+copy is optional; [the ingestion guide](ingestion.md) explains when and how to
+copy a file and save its receipt. Starting a backtest never performs registration
+or tag assignment automatically.
 
 ## Run the baseline
-
-From the repository root:
-
-```bash
-PYTHONPATH=src .venv/bin/python scripts/run_baseline.py \
-  --dataset synthetic-mean-shift \
-  --tag baseline-input \
-  --output-directory runs/mean-shift-001
-```
-
-The script automatically runs the backtest, saves its artifacts, draws
-`forecast.png` from those saved results, and prints the scores. It exits with
-status 1 if any forecast/evaluation case failed, while retaining the evidence.
-Use a new output directory for each run; existing directories are rejected.
-Use `--snapshot-id ID` instead of `--tag` to select a permanent reference directly.
-`--store` selects another snapshot store and `--minimum-history` changes the initial history.
-
-The library keeps running and reporting as separate caller actions:
 
 ```python
 from model_pipelining.backtest import run_backtest
 from model_pipelining.reporting import plot_run
 
-run = run_backtest(
-    dataset="synthetic-mean-shift",
-    tag="baseline-input",
+baseline_run = run_backtest(
+    dataset=snapshot.dataset,
+    snapshot_id=selected_snapshot_id,
     minimum_history=30,
-    output_directory="runs/mean-shift-library-001",
+    output_directory="runs/tutorial-mean-001",
 )
-chart = plot_run(run)
+plot_run(baseline_run)
 ```
 
-`run_backtest` returns an absolute `Path`, including when individual cases failed.
-Inspect `manifest.json` and `checks.json` before treating its results as successful.
-`plot_run` needs only saved artifacts, never the original input or a model call.
-It refuses an unfinished run or an existing chart. No GUI is required.
+Without a `model` argument, the runner uses `TrainingMean`. It verifies the
+preserved file, validates its daily calendar and values, selects each training
+history, calls the model, and saves results. `plot_run` is a separate call that
+reads those saved results and creates `forecast.png`; it never fits a model.
+The baseline supplies a mean only, so it has no uncertainty band.
 
-## What is saved
+## Run the Bayesian model
 
-| File | Contents |
-|---|---|
-| `manifest.json` | Permanent dataset/snapshot reference, selected tag as context, task, model settings, Python/pandas versions, implementation fingerprints, start/finish times and status |
-| `predictions.csv` | Issuance, training start/cutoff/count, target time, prediction, and per-origin failure details; no actual targets |
-| `evaluation.csv` | Predictions joined to actuals by target time, signed error (`prediction - actual`), absolute/squared errors, and failures |
-| `scores.json` | MAE, RMSE, expected/scored/failed counts, and whether all cases were scored |
-| `checks.json` | Required input/calendar, eligible-history/alignment, finite-output, and scoring-coverage outcomes |
-| `review.json` | Pending human review and limitations; successful execution never approves a model |
-| `forecast.png` | Optional chart written by the reporting call; actuals versus predictions with status and coverage |
+```python
+from model_pipelining.local_level import LocalLevel
 
-Tag selection resolves once before execution; the run saves the resolved ID. Tag
-moves do not change a saved run. Input validation rejects missing columns, invalid
-or naive timestamps, duplicates, unordered dates, daily gaps, nonnumeric/missing/
-nonfinite values, or insufficient history. It does not repair data. Validation and
-configuration failures raise before creating a run directory; they are not saved
-as completed runs.
+local_run = run_backtest(
+    dataset=snapshot.dataset,
+    snapshot_id=selected_snapshot_id,
+    minimum_history=30,
+    model=LocalLevel(
+        initial_mean=0,
+        initial_variance=100,
+        observation_variance=1,
+        evolution_variance=0.1,
+    ),
+    interval_levels=(0.8, 0.95),
+    output_directory="runs/tutorial-local-level-001",
+)
+plot_run(local_run)
+```
 
-The runner passes an immutable history and target time to the model. Predictions
-are written and closed before actuals are joined for scoring. A model exception
-or invalid output records a failed origin and does not stop later origins.
-Scoring overflow is also recorded. Scores use successful cases only, with `null`
-metrics when none succeeded. Partial scores must not be compared as complete runs.
-Any failed case makes the run status `failed` and a required check fail.
+These four model settings are explicit illustrative assumptions, held fixed for
+the run. The model learns about the hidden level from past values; it does not
+estimate those variance settings. The [model guide](local-level.md) explains
+the assumptions and equations.
 
-These are a fixed set of checks owned by this runner. A configurable check plan,
-adapter diagnostics, and release policy remain future work; a model cannot omit
-one of the current checks. The Python model boundary assumes trusted code and
-does not prevent a model from independently reading files.
+The runner requests the uncertainty kinds that this adapter declares. Its
+regions describe the **next observed value**, conditional on the fixed settings.
+The chart defaults to the widest supplied highest posterior predictive density
+(HPD) region: 95% here. For this Gaussian model, HPD and equal-tail bounds
+coincide; the shared format keeps the methods distinct for other models.
+See [the uncertainty guide](uncertainty.md) for the precise meaning and outputs.
 
-To reproduce a baseline run, read `input.dataset`, `input.snapshot_id`, and
-`task.minimum_history` from its manifest and supply them to another
-`run_backtest` call with a new output directory. Keep the preserved data, matching
-source code, and locked environment; source fingerprints identify code but do not
-save or retrieve it. Baseline forecasts and scores repeat; run timestamps differ.
-There is no automatic code/environment restoration or general model registry.
+## Read the results
 
-Run directories and snapshots remain local and ignored by Git. The runner never
-rewrites saved forecasts, but files are still writable by other programs. Use one
-writer. Filesystem errors propagate and interrupted runs may retain `running`
-status; crash recovery and artifact integrity verification are not implemented.
+```python
+import json
 
-## Where to read the implementation
+for run in (baseline_run, local_run):
+    manifest = json.loads((run / "manifest.json").read_text())
+    scores = json.loads((run / "scores.json").read_text())
+    print(run.name, manifest["status"], scores["uncertainty"]["status"])
+```
 
-- [models.py](../src/model_pipelining/models.py): the request, point-forecast interface, and arithmetic-mean model.
-- [backtest.py](../src/model_pipelining/backtest.py): data validation, historical selection, frozen predictions, scoring, and run files.
-- [reporting.py](../src/model_pipelining/reporting.py): charting saved results.
-- [test_backtest.py](../tests/test_backtest.py): known answers, future-value isolation, failure visibility, reproduction, and reporting checks.
+For successful runs, expect `completed / not_applicable` for the baseline and
+`completed / completed` for the local-level model. Inspect these files in order:
 
-Review this working path before extending the interface for Bayesian models,
-probabilistic outputs, features, tuning, multiple horizons, or real-world timing.
+1. **`manifest.json`** identifies the permanent input, model settings, requested
+   outputs, and overall execution status.
+2. **`checks.json`** shows whether required validation and scoring checks passed.
+3. **`predictions.csv` and `forecast.png`** show what was predicted and when.
+4. **`scores.json`** summarizes point errors and applicable uncertainty results,
+   with expected/scored/failed case counts.
+5. **`review.json`** starts with a pending human decision and stated limitations.
+
+`completed` means the required computational work succeeded; it is not approval
+of the model assumptions. `failed` means a required output or evaluation failed.
+`running` may indicate an interrupted run. Point `scores.complete` covers point
+scoring only: uncertainty can fail while point scoring succeeds. Use the overall
+manifest status and checks to assess execution.
+
+Required forecast failures are saved and later origins continue. Point and
+uncertainty forecasts are written and closed before actuals are used for scoring.
+“Frozen” means the runner/report never rewrites them; the files remain writable
+by other programs. Partial scores disclose their case counts and are not a
+complete-run comparison.
+
+Human review is a separate action: inspect assumptions and evidence and record
+your interpretation/decision in `review.json` if you want to retain it. There is
+no review command or automated release policy. A near-nominal coverage rate or
+a better point score does not by itself verify an implementation.
+
+## Compare saved results
+
+```python
+from model_pipelining.reporting import compare_runs
+
+comparison = compare_runs(
+    baseline_run,
+    local_run,
+    output_directory="runs/tutorial-comparison-001",
+)
+```
+
+This creates `comparison.json` and `comparison.png`, using only saved results.
+The function requires matching permanent inputs, task settings, training
+coordinates, target dates, actuals, and complete execution. It does not refit,
+tune, or select a winner. The baseline supplies no uncertainty, so its uncertainty
+comparison is explicitly inapplicable; the available local-level band can still
+be shown. After this section, you can exit the Python session.
+
+## Command-line scripts as an alternative
+
+After explicit input preparation, these scripts combine backtesting and charting:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/run_baseline.py \
+  --dataset synthetic-mean-shift --tag baseline-input \
+  --output-directory runs/tutorial-script-mean-001
+
+PYTHONPATH=src .venv/bin/python scripts/run_local_level.py \
+  --dataset synthetic-mean-shift --tag baseline-input \
+  --interval-levels 0.8 0.95 \
+  --output-directory runs/tutorial-script-local-level-001
+```
+
+Each script resolves a supplied tag once. For a repeatable selection shared
+across separate invocations, pass `--snapshot-id ID` instead of `--tag` using the
+same saved ID. The local-level script also simulates one 200-step prior trajectory
+before fitting and saves it for human review. The library example above does
+not simulate/save priors automatically. [The model guide](local-level.md#run-it)
+details this extra behavior. The scripts return a nonzero exit status on failure;
+filesystem/reporting errors propagate even if the backtest itself completed.
+
+## Repetition, errors, and reproduction
+
+Use an unused run/comparison directory for every invocation. Existing output
+directories and `forecast.png` files are rejected. Repeating registration/tagging
+is allowed and records another event; it does not overwrite preserved bytes.
+
+Input validation rejects missing columns, invalid/naive timestamps, unordered or
+duplicate dates, daily gaps, missing/nonnumeric/nonfinite values, and insufficient
+history. It does not repair data. Invalid input/configuration raises before a run
+directory is created. Forecast-stage errors are recorded per case; filesystem
+errors can leave an interrupted directory. [The API reference](../src/model_pipelining/README.md)
+documents signatures and return values.
+
+For reproduction, use the saved permanent input, model configuration, minimum
+history, and requested interval levels, with matching code/environment and a new
+output directory. Timestamps will differ; numerical artifacts repeat. Source
+fingerprints identify code but do not restore it. There is no automatic model
+registry or environment restoration.
+
+Run folders and preserved data are local and ignored by Git. Copying code to
+another machine does not copy this evidence. Keep the whole input store and
+important run folders together with matching code/locked dependencies.
+[The run-file reference](../runs/README.md) explains every saved file.

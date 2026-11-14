@@ -1,8 +1,9 @@
-# Local ingestion: first slice and later enhancements
+# Local file ingestion and table reading
 
-Recorded: 2026-11-09.
-
-Status: implemented, with behavioral tests. The local-file copy function and CSV/XLSX table reader support worksheet selection. A separate [small snapshot module](snapshots.md) now registers and verifies completed files. git-annex integration and execution tooling remain deferred.
+This page describes the implemented local copy function and CSV/XLSX reader.
+[The snapshot API](snapshots.md) separately preserves completed files; the
+[forecasting walkthrough](forecasting.md) shows where data preparation fits.
+The reader accepts XLSX, but the current forecasting runner accepts CSV only.
 
 ## Purpose and boundary
 
@@ -12,7 +13,7 @@ The acquisition function copies the source bytes to an explicit destination, inc
 
 Keep source acquisition independent of the destination used to preserve registered snapshots. Fetching from S3 and storing preserved snapshots in S3 are separate operations with potentially different accounts, locations, and credentials.
 
-## Starting interface
+## Interface
 
 The module `src/model_pipelining/ingest.py` contains the `IngestResult` dataclass, `ingest_local_file`, and `read_local_table`. From the repository root, launch Python with `PYTHONPATH=src .venv/bin/python`, then:
 
@@ -52,7 +53,7 @@ snapshot = register_snapshot(
 
 The receipt's source, destination, UTC completion time, and byte count are stored with this registration, separately from registration time and snapshot identity. The destination must resolve to the file being registered and its byte count must match. The original source need not still exist. A receipt contains no hash, so the caller must keep the acquired copy unchanged until registration. See [snapshot behavior and limits](snapshots.md). A later result contract can support multiple files and source-specific context when the second source requires it.
 
-## First-function behavior
+## Copy behavior
 
 1. Accept string or `Path` source and destination arguments. Copy one regular file, preserving its bytes and leaving the original unchanged. Resolve symlinks to a regular source file; do not ingest a directory recursively.
 2. Create missing destination parent directories for convenience. The caller selects the destination; there is no automatic dataset naming, tag assignment, or unique-name generator.
@@ -61,7 +62,7 @@ The receipt's source, destination, UTC completion time, and byte count are store
 5. Return the receipt only after the copy completes and the output is closed. On a handled copy failure, remove the partial output created by this call and raise the error. Do not delete or modify pre-existing files. Empty parent directories may remain.
 6. Expose useful filesystem errors, such as missing source, non-file source, existing destination, or denied access. Avoid wrapping every failure in a generic error.
 
-The source is expected to be a completed acquisition and to remain unchanged during copying. This first slice does not promise a consistent view of a file being edited concurrently, crash-safe publication, integrity verification, immutable storage, or successful registration. Copy completion does not imply data quality checks have passed.
+The source is expected to be a completed acquisition and to remain unchanged during copying. The copy function does not promise a consistent view of a file being edited concurrently, crash-safe publication, integrity verification, immutable storage, or successful registration. Copy completion does not imply data quality checks have passed.
 
 ## CSV and XLSX table reading
 
@@ -87,7 +88,7 @@ Implemented behavior:
 - Use ordinary library type/missing-value inference initially and document it. Do not add automatic column renaming, filling, deduplication, or application-specific timestamp conversions.
 - Excel formula values depend on values cached by the workbook producer; the reader does not calculate formulas. Formula-dependent datasets need an explicit policy before they are used for a model run.
 
-Acquisition and parsing have separate outcomes: a workbook can be copied successfully while a worksheet selection fails. Preserve the completed copy on a parsing error. Later run/provenance records must identify the acquired file, selected sheet, and parsing options in addition to the permanent snapshot reference.
+Acquisition and parsing have separate outcomes: a workbook can be copied successfully while a worksheet selection fails. Preserve the completed copy on a parsing error. A future XLSX modeling integration must record the selected worksheet and parsing options alongside the permanent snapshot reference. That integration is not part of the current CSV runner.
 
 References: [pandas CSV reader](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html), [pandas Excel reader and worksheet selection](https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html), and [openpyxl workbook options and cached formula values](https://openpyxl.readthedocs.io/en/stable/api/openpyxl.reader.excel.html).
 
@@ -124,8 +125,8 @@ Exercise the real example in an ignored directory under `data/`. Keep fixtures c
 - The separate [single-file snapshot module](snapshots.md) provides hashes, preserved copies, dataset/ID references, a registration event per call, and optional preservation of the local ingestion receipt. The tag module adds explicit dataset-scoped assignments and history. Remote source-specific context and processing lineage remain later enhancements.
 - Optional git-annex integration for preservation and retrieval. The first snapshot implementation uses local files and standard-library hashing.
 - DVC or another dependency/stage/execution tool. Evaluate overlap with the forecasting runner before adopting its execution features.
-- CSV/schema checks, timestamp availability, and experiment-specific eligibility rules, with outcomes separate from acquisition success.
+- Reusable schema/availability/eligibility evidence beyond the CSV/daily checks already implemented in the forecasting runner. Those checks remain separate from successful acquisition.
 - Multiple-sheet results, sheet listing, cell ranges, explicit dtypes/date/missing-value policies, CSV dialect/encoding options, formula-cache checks, and additional spreadsheet formats as concrete needs arise. Google Sheets would be a separate acquisition source; worksheet selection here means sheets inside an XLSX workbook.
 - Retries, timeouts, progress reporting, batch/directory ingestion, standalone saved receipts before registration, atomic publication, recovery, and concurrency, when actual use requires them.
 
-The first deliverable is one callable local-file acquisition function, a CSV/XLSX table reader with worksheet selection, and evidence for their behavior. It is not a versioning service or a model runner.
+These functions obtain/parse data. Preservation, experiment validation, and model execution remain separate caller steps described in their own guides.
