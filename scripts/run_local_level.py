@@ -5,10 +5,12 @@ Launch from the repository root with PYTHONPATH=src; see docs/local-level.md.
 
 import argparse
 import csv
+from dataclasses import replace
 import json
 import platform
 
 from model_pipelining.backtest import run_backtest
+from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.local_level import LocalLevel
 from model_pipelining.reporting import plot_run
 
@@ -21,7 +23,9 @@ def main() -> int:
     selection.add_argument("--tag")
     parser.add_argument("--store", default="data/versioned")
     parser.add_argument("--output-directory", required=True)
-    parser.add_argument("--minimum-history", type=int, default=30)
+    parser.add_argument("--minimum-history", type=int, default=None)
+    parser.add_argument("--experiment", help="Version-1 experiment JSON; omit --minimum-history")
+    parser.add_argument("--evaluation-role", choices=("development", "final"), help="Explicit override of the experiment's evaluation role")
     parser.add_argument("--interval-levels", type=float, nargs="+", default=(0.8, 0.95))
     parser.add_argument("--initial-mean", type=float, default=0.0)
     parser.add_argument("--initial-variance", type=float, default=100.0)
@@ -29,6 +33,14 @@ def main() -> int:
     parser.add_argument("--evolution-variance", type=float, default=0.1)
     parser.add_argument("--prior-seed", type=int, default=0)
     options = vars(parser.parse_args())
+    specification, role = options.pop("experiment"), options.pop("evaluation_role")
+    if role is not None and specification is None:
+        parser.error("--evaluation-role requires --experiment")
+    if specification is not None:
+        experiment = ExperimentSpec.load(specification)
+        if role is not None:
+            experiment = replace(experiment, evaluation=replace(experiment.evaluation, role=role))
+        options["experiment"] = experiment
     model = LocalLevel(**{name: options.pop(name) for name in (
         "initial_mean", "initial_variance", "observation_variance", "evolution_variance",
     )})

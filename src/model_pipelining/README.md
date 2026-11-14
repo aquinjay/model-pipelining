@@ -16,8 +16,10 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [ingest.py](ingest.py) | Copy a completed file and read a CSV/XLSX table |
 | [snapshots.py](snapshots.py) | Preserve exact file bytes, verify retrieval, inspect registrations |
 | [tags.py](tags.py) | Assign readable dataset references and retain assignment history |
-| [models.py](models.py) | Shared requests/results, capabilities, and the training mean |
+| [models.py](models.py) | Shared requests/results, capabilities, training mean, and last-value baseline |
+| [experiments.py](experiments.py) | Immutable versioned task/evaluation specs, release parsing, as-of case planning, and scoring vintage selection |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
+| [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
@@ -33,11 +35,12 @@ functions are listed below; names starting with `_` are implementation helpers.
 | Store | Preserved files and their metadata; defaults to `data/versioned` |
 | Registration/acquisition record | One successful `register_snapshot` event; may carry an earlier ingestion receipt |
 | Snapshot manifest | File identity/layout record, format version 1 |
-| Run manifest | Input/task/model/evaluation/environment/status record, format version 2 for new runs |
+| Run manifest | Input/experiment/task/model/evaluation/environment/status record, format version 3 for new runs |
+| Experiment specification | Version-1 model-independent target/timing, benchmark, and evaluation contract |
 | Run | One model/configuration executed over selected historical forecast cases |
 
 The different manifest versions apply to different record types. Adding run
-format version 2 did not change snapshot, acquisition, or tag format version 1.
+format version 3 did not change snapshot, acquisition, or tag format version 1.
 Acquisition time, registration time, and historical observation availability are
 separate concepts. The first two do not establish the third.
 
@@ -177,7 +180,7 @@ listings return `[]`; history for an unassigned tag is also `[]`. See
 ```text
 run_backtest(
     *, dataset, output_directory, snapshot_id=None, tag=None,
-    minimum_history=30, model=None, interval_levels=(0.8, 0.95),
+    minimum_history=None, experiment=None, model=None, interval_levels=(0.8, 0.95),
     store="data/versioned",
 ) -> Path
 
@@ -189,18 +192,22 @@ Import the runner from `model_pipelining.backtest` and reports from
 `model_pipelining.reporting`. Supply exactly one of `snapshot_id` and `tag`; the
 runner resolves a tag once and saves its permanent ID. `model=None` selects
 `TrainingMean`. For the Bayesian adapter, pass `LocalLevel(...)` from
-`model_pipelining.local_level`. Every output directory must be unused.
+`model_pipelining.local_level`. Every output directory must be unused. Without
+`experiment`, the effective minimum history is 30 unless `minimum_history` is
+supplied. With an `ExperimentSpec`, omit that legacy argument and choose the
+count in `experiment.task`.
 
-`run_backtest` automatically verifies/parses the CSV, validates the daily series,
-selects historical training data, executes the model, freezes outputs, scores,
-and saves checks/review. It returns an absolute run-directory `Path`, **including
+`run_backtest` automatically verifies/parses the CSV, validates its daily calendar
+and releases, saves the case schedule, selects as-of training versions, executes
+the model and declared benchmarks, freezes outputs, scores against the declared
+actual vintage, and saves checks/review. It returns an absolute run-directory `Path`, **including
 when required cases failed**. Input/configuration errors raise before output
 creation. Per-case forecast failures are retained and later origins continue.
 Filesystem errors propagate and can leave a `running` directory.
 
 Read `manifest.json.status` and `checks.json` before interpreting results. Point
 `scores.complete` is not the overall result: required uncertainty scoring can
-fail independently. The [walkthrough](../../docs/forecasting.md#read-the-results)
+fail independently; a declared benchmark failure also fails the run. The [walkthrough](../../docs/forecasting.md#read-the-results)
 explains status and [run-file reference](../../runs/README.md) lists artifacts.
 The library does not acquire/register/tag data, simulate priors, or draw charts
 inside `run_backtest`. The two run scripts call reporting automatically; the
@@ -211,11 +218,51 @@ widest saved highest-density region, then equal-tail intervals. Explicit
 `interval_method` is `"highest_density"` or `"equal_tail"`; explicit levels must
 have been saved. A point-only run has no band. Existing charts are rejected.
 
-`compare_runs` reads completed runs with matching permanent inputs, task,
-training coordinates, target dates, and actuals. It saves JSON/PNG comparison
+`compare_runs` reads completed runs with matching permanent inputs, experiment,
+task, training coordinates/history hashes, target dates, and actual vintages. It saves JSON/PNG comparison
 files and returns the absolute comparison-directory path. It does not fit,
 tune, or select a model. Uncertainty comparisons use common supplied kinds and
 levels only; a point-only baseline has no uncertainty comparison.
+
+## Experiment specifications and planning
+
+Import `ForecastTask`, `EvaluationPlan`, and `ExperimentSpec` from
+`model_pipelining.experiments`. All are frozen keyword-only dataclasses.
+`ForecastTask()` supplies the original daily immediate/unrevised task with
+30 minimum observations. `EvaluationPlan()` supplies development-only evaluation
+with no extra benchmarks. `ExperimentSpec(task=..., evaluation=...)` combines
+them. See [fields, defaults, semantics, and examples](../../docs/experiments.md).
+
+```text
+ExperimentSpec.to_dict() -> dict
+ExperimentSpec.from_dict(value) -> ExperimentSpec
+ExperimentSpec.load(path) -> ExperimentSpec
+read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, ...]
+plan_cases(versions, experiment) -> (tuple[ForecastCase, ...], list[dict])
+select_actuals(versions, task) -> dict[str, ObservationVersion]
+```
+
+`load` reads version-1 JSON explicitly; unknown constructor fields/versions or
+invalid settings raise. `to_dict` expands defaults, serializes UTC boundary
+timestamps, and emits benchmark names as a list. `from_dict` restores them.
+No function fetches data, executes a model, or automatically starts final evaluation.
+
+The parsing/planning functions support inspection without executing a run.
+`read_task_data` validates the ordered daily CSV and release table;
+`ObservationVersion` holds `timestamp`, `value`, and `available_at`. Pass its
+validated records to `plan_cases`. A `ForecastCase` holds `origin_index`,
+`issued_at`, `target_time`, and selected `versions`; `.history` returns immutable
+model observations and `.history_sha256` hashes timestamp/value/release triples.
+The schedule records selected/excluded candidate targets. `select_actuals`
+chooses the declared first/latest scoring vintage, keyed by UTC ISO target time;
+the runner invokes it only after freezing forecasts. Record construction itself
+does not validate raw data.
+
+Only daily UTC with gap rejection is implemented. One fixed positive-day horizon
+is allowed per run. Delayed releases, revisions, and issuance offsets can produce
+requests unsupported by an adapter: the current `LocalLevel` still requires
+contiguous daily history ending exactly at issuance and a one-day target.
+Unsupported requests fail visibly rather than changing the declared experiment.
 
 ## Model requests and results
 
@@ -236,7 +283,9 @@ Models refit from each request, retaining no prior request's training data.
 
 The runner requests all declared uncertainty kinds at `interval_levels`.
 `LocalLevel.forecast` returns `Forecast`; direct callers use `.mean` for the point
-value. `TrainingMean` returns a numerical mean and declares no uncertainty.
+value. `TrainingMean` and `LastValue` return numerical point forecasts and declare
+no uncertainty. `LastValue` persists the latest eligible observation; both are
+also selectable by name as experiment benchmarks.
 Numeric legacy outputs are accepted for point-only adapters; declaring uncertainty
 while returning only a number fails the required-output check. Direct callers constructing
 a request must specify desired levels; the empty request defaults request none.
@@ -255,6 +304,44 @@ include `predictive_distribution(request) -> NormalDist`,
 `simulate_prior(*, count, seed=0) -> tuple[PriorDraw, ...]`.
 [The model guide](../../docs/local-level.md#library-interface-and-diagnostics)
 defines the diagnostic fields, timing, and separate simulation/reporting calls.
+
+## Local-level diagnostics
+
+```text
+run_local_level_diagnostics(
+    *, dataset, reference, scenarios, output_directory,
+    snapshot_id=None, tag=None, store="data/versioned",
+) -> Path
+
+plot_local_level_diagnostics(diagnostics_directory) -> tuple[Path, Path]
+```
+
+Import both functions from `model_pipelining.diagnostics`. Supply a concrete
+`LocalLevel` reference and a nonempty `dict[str, LocalLevel]` of alternatives;
+subclasses are not supported. Scenario names must be nonblank strings other
+than the reserved `reference`. Use exactly one input selector and an unused
+output directory. The tag resolves once and the snapshot is verified/parsed
+using the daily CSV rules. At least one observation is required.
+
+The calculation saves every full forward path from the first observation,
+pre-observation standardized innovations/PIT, update gain, updated level mean/SD,
+next-observation SD, conditional initial-mean derivative, and reference
+differences. Summaries preserve full settings, changed prior/noise groups,
+criticism, influence, and per-configuration errors. No settings are selected
+automatically; no influence magnitude or agreement threshold determines success.
+Human review remains pending. See [diagnostic semantics and examples](../../docs/diagnostics.md).
+
+Invalid options/input raises before output creation. Numerical configuration
+failures are saved and later configurations continue. The returned path can
+contain failed computation: inspect `diagnostics.json.status` and
+`scenario_summaries.json`. If the reference fails, valid alternative paths are
+retained with unavailable comparison differences. I/O errors propagate.
+
+Plotting reads saved evidence only and returns `(sensitivity.png, innovations.png)`
+paths. Either preexisting chart is rejected before rendering. The diagnostics
+CLI reads `--config` JSON and calls both functions; existing backtest commands
+do not call them. These are development diagnostics, not backtest forecasts,
+posterior predictive replications, or automatic model approval.
 
 ## Naming, errors, and limits
 

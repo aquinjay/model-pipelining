@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **118 tests**. They use temporary fixtures/stores rather than
+There are currently **146 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy, already installed through pandas, supplies an independent batch Gaussian
 calculation for the model tests.
@@ -22,6 +22,8 @@ calculation for the model tests.
 | [test_backtest.py](test_backtest.py) | 21 | Known predictions/scores, eligible immutable history, future isolation, tag pinning/replay, failures, scoring overflow, existing-output protection, reports without fitting |
 | [test_local_level.py](test_local_level.py) | 19 | Independent posterior calculations, prior/state simulations, validation/limiting cases, no retained state, shared execution/replay, matched-case reports |
 | [test_uncertainty.py](test_uncertainty.py) | 21 | Observation predictive variance, quantile/HPD semantics, known scores, disconnected sets, capability failures, freezing/replay, old-artifact compatibility |
+| [test_diagnostics.py](test_diagnostics.py) | 12 | Independent initial-mean influence, strong prior completion, prior/noise distinction, sequential errors, isolation/replay, saved failures, explicit missing correlation, charts without models, CLI inheritance |
+| [test_experiments.py](test_experiments.py) | 16 | Named targets, release/revision isolation, actual vintages, available-history counts, disjoint target roles, benchmark freezing/failures, horizons, replay/history fingerprints, legacy version 2, both CLIs |
 
 ## Data behavior checked in detail
 
@@ -69,6 +71,42 @@ artifacts still render without invented uncertainty.
 Comparison tests require matching data/cases, reject failed runs and changed
 actuals/tasks, preserve source evidence, and prohibit model calls from reporting.
 [The uncertainty guide](../docs/uncertainty.md) defines the contract being checked.
+
+## Influence and sequential criticism
+
+The diagnostic tests check initial-mean weights against independent batch
+Gaussian conditioning and counterfactual mean changes. A hand calculation
+checks update gains, predictive variance, standardized innovations, and PIT.
+Changing prior precision and the two noise settings exposes their different
+effects on gains/uncertainty; the derivative is not treated as total prior
+influence. A known fixed level retains full initial-mean influence and still
+completes, with pending human review.
+
+Other checks cover unchanged earlier paths after future-data changes, exact
+numerical replay, permanent tag pinning, retained numerical failures and later
+successful configurations, missing reference comparisons, unavailable lag
+correlation, saved-only plotting, overwrite protection, and CLI scenario
+inheritance. These tests verify the [documented evidence](../docs/diagnostics.md),
+not that sensitivity or residual patterns meet an approval threshold.
+
+## Reusable task and evaluation contracts
+
+Experiment tests use delayed releases and later revisions as counterexamples to
+naive full-file training. They check exact as-of histories, inclusion at the
+issuance boundary, unchanged earlier forecasts after future revisions, and
+separate first-release/latest scoring without changing predictions. Calendar
+gaps, ambiguous releases, invalid boundaries, and conflicting settings raise
+before output creation. Available history counts distinct eligible periods.
+
+Target-based development/final cases are disjoint. Changing final-period values
+does not change development forecast/evaluation artifacts; earlier final
+observations can enter later final histories only sequentially. Known benchmark
+scores use identical histories/targets, and all primary/benchmark forecasts are
+saved before actual-vintage selection. A benchmark failure fails overall status
+even with complete primary scores. Replay restores the saved experiment and
+numerical artifacts, while reporting checks history identity and still reads
+legacy version-2 artifacts. Both CLIs exercise explicit final selection.
+See [experiment semantics](../docs/experiments.md).
 
 ## What passing tests does not decide
 

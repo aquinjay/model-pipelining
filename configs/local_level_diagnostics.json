@@ -1,0 +1,14 @@
+{
+  "reference": {
+    "initial_mean": 0,
+    "initial_variance": 100,
+    "observation_variance": 1,
+    "evolution_variance": 0.1
+  },
+  "scenarios": {
+    "different-initial-mean": {"initial_mean": 10},
+    "tighter-initial-prior": {"initial_variance": 1},
+    "more-observation-noise": {"observation_variance": 4},
+    "less-level-movement": {"evolution_variance": 0.01}
+  }
+}

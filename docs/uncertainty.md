@@ -153,8 +153,9 @@ frozen values and never call the model, re-estimate a density, or use input data
 
 ## Saved evidence and compatibility
 
-New run manifests use `format_version=2`; the existing point CSV columns remain
-unchanged. The manifest records capabilities, interval/quantile requests,
+New run manifests use `format_version=3`, adding expanded experiment/case
+provenance to the earlier uncertainty format. Existing point CSV columns remain,
+with added history identity fields. The manifest records capabilities, interval/quantile requests,
 `future_observation` semantics, primary display method, and scoring conventions.
 
 | Artifact | Contents |
@@ -187,9 +188,14 @@ checks have `required=false` and `status="not_applicable"`.
 
 Point-only uncertainty has status `not_applicable`, empty metric lists, and no
 uncertainty files. Old version-1 runs still render and compare as saved point
-forecasts; they are never backfilled with intervals. To reproduce new runs,
-restore the saved model configuration, permanent input reference, minimum
-history, and `evaluation.interval_levels` with matching code/environment.
+forecasts; they are never backfilled with intervals. For reproduction, restore
+the saved model configuration, permanent input, and `evaluation.interval_levels`
+with matching code/environment. Version-3 runs restore the saved `ExperimentSpec`
+instead of passing the legacy minimum-history argument separately; older runs
+use their saved minimum history and original daily rules. This also restores release and
+actual-vintage policies, benchmarks, and evaluation role/boundaries. See
+[experiments](experiments.md). Version-1/2 reports remain readable without
+backfilled task claims.
 
 ## Validation and evaluation
 

@@ -1,8 +1,4 @@
-"""Run a small, daily, one-step expanding-history forecasting experiment.
-
-This development backtest assumes observations become available at their UTC
-timestamps without revisions. It does not reconstruct real-world availability.
-"""
+"""Execute a declared daily experiment with release-aware, frozen forecasts."""
 
 import csv
 from datetime import UTC, datetime, timedelta
@@ -11,13 +7,12 @@ from importlib.metadata import version
 import inspect
 import json
 import math
-from numbers import Real
 from pathlib import Path
 import platform
 from statistics import mean
 
-from model_pipelining.ingest import read_local_table
-from model_pipelining.models import ForecastRequest, Forecaster, Observation, TrainingMean
+from model_pipelining.experiments import ExperimentSpec, ForecastTask, plan_cases, read_task_data, select_actuals
+from model_pipelining.models import ForecastRequest, Forecaster, LastValue, Observation, TrainingMean
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
 from model_pipelining.uncertainty import (
@@ -38,27 +33,44 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
 
 
 def _read_observations(path: Path) -> tuple[Observation, ...]:
-    """Reject invalid data; never silently sort, deduplicate, or fill gaps."""
-    if path.suffix.lower() != ".csv":
-        raise ValueError("The first backtest supports CSV snapshots only")
-    table = read_local_table(path)
-    if not {"timestamp", "value"}.issubset(table.columns):
-        raise ValueError("Input must contain timestamp and value columns")
-    observations = []
-    for raw_time, raw_value in table[["timestamp", "value"]].itertuples(index=False, name=None):
-        timestamp = datetime.fromisoformat(str(raw_time))
-        if timestamp.utcoffset() is None:
-            raise ValueError("Every timestamp must include a timezone")
-        timestamp = timestamp.astimezone(UTC)
-        if isinstance(raw_value, bool) or not isinstance(raw_value, Real):
-            raise ValueError("Every value must be numeric")
-        value = float(raw_value)
-        if not math.isfinite(value):
-            raise ValueError("Every value must be finite and nonmissing")
-        if observations and timestamp - observations[-1].timestamp != timedelta(days=1):
-            raise ValueError("Timestamps must be ordered, unique, and exactly one UTC day apart")
-        observations.append(Observation(timestamp, value))
-    return tuple(observations)
+    """The original immediate, unrevised daily reader used by diagnostics."""
+    return tuple(Observation(item.timestamp, item.value) for item in read_task_data(path, ForecastTask()))
+
+
+def _evaluate_points(predictions, actuals):
+    evaluations = []
+    for prediction in predictions:
+        actual = actuals[prediction["target_time"]]
+        row = {"target_time": prediction["target_time"], "actual": actual.value,
+               "actual_available_at": actual.available_at.isoformat(),
+               "prediction": prediction["prediction"], "error": None,
+               "absolute_error": None, "squared_error": None,
+               "status": prediction["status"], "failure": prediction["error"]}
+        if "benchmark" in prediction:
+            row["benchmark"] = prediction["benchmark"]
+        if prediction["status"] == "passed":
+            try:
+                error = prediction["prediction"] - actual.value
+                squared_error = error ** 2
+                if not math.isfinite(error) or not math.isfinite(squared_error):
+                    raise ValueError("Nonfinite scoring result")
+                row.update(error=error, absolute_error=abs(error), squared_error=squared_error)
+            except (ValueError, OverflowError) as error:
+                row.update(status="failed", failure=f"{type(error).__name__}: {error}")
+        evaluations.append(row)
+    return evaluations
+
+
+def _point_scores(evaluations):
+    scored = [row for row in evaluations if row["status"] == "passed"]
+    return {
+        "expected_count": len(evaluations), "scored_count": len(scored),
+        "failed_count": len(evaluations) - len(scored), "complete": len(scored) == len(evaluations),
+        # statistics.mean avoids overflow of a sum of finite squared errors.
+        "mae": mean(row["absolute_error"] for row in scored) if scored else None,
+        "rmse": math.sqrt(mean(row["squared_error"] for row in scored)) if scored else None,
+        "scope": "Successful cases only; partial scores are not a complete-run comparison",
+    }
 
 
 def run_backtest(
@@ -67,14 +79,18 @@ def run_backtest(
     output_directory: str | Path,
     snapshot_id: str | None = None,
     tag: str | None = None,
-    minimum_history: int = 30,
+    minimum_history: int | None = None,
+    experiment: ExperimentSpec | None = None,
     model: Forecaster | None = None,
     interval_levels: tuple[float, ...] = (0.8, 0.95),
     store: str | Path = "data/versioned",
 ) -> Path:
-    """Save a daily development backtest in a new directory and return its path.
+    """Save a daily experiment in a new directory and return its path.
 
-    Supply exactly one of snapshot_id and tag. A tag resolves once; the manifest
+    With no experiment, use the original immediate/unrevised development task
+    and minimum_history=30. With an ExperimentSpec, choose minimum history there
+    and omit the legacy argument. Supply exactly one of snapshot_id and tag.
+    A tag resolves once; the manifest
     pins its permanent ID. The default model is TrainingMean. Forecast failures
     are saved per origin and execution continues. Failed runs return normally;
     inspect manifest.json's status and checks.json before interpreting scores.
@@ -87,14 +103,18 @@ def run_backtest(
     """
     if (snapshot_id is None) == (tag is None):
         raise ValueError("Supply exactly one of snapshot_id or tag")
-    if type(minimum_history) is not int or minimum_history < 1:
-        raise ValueError("minimum_history must be a positive integer")
+    if experiment is None:
+        experiment = ExperimentSpec(task=ForecastTask(minimum_history=30 if minimum_history is None else minimum_history))
+    elif not isinstance(experiment, ExperimentSpec):
+        raise ValueError("experiment must be an ExperimentSpec")
+    elif minimum_history is not None:
+        raise ValueError("Choose minimum_history in the experiment, not both interfaces")
+    task = experiment.task
     levels = validate_interval_levels(interval_levels)
     selected_id = resolve_tag(dataset=dataset, tag=tag, store=store) if tag is not None else snapshot_id
     path = retrieve_snapshot(selected_id, dataset=dataset, store=store)
-    observations = _read_observations(path)
-    if len(observations) <= minimum_history:
-        raise ValueError("Input needs at least one observation after minimum_history")
+    versions = read_task_data(path, task)
+    cases, schedule = plan_cases(versions, experiment)
     selected_model = TrainingMean() if model is None else model
     supports_quantiles = getattr(selected_model, "supports_quantiles", False)
     supports_highest_density = getattr(selected_model, "supports_highest_density", False)
@@ -112,7 +132,7 @@ def run_backtest(
     # Round-trip before execution so a model cannot later mutate saved settings.
     configuration = json.loads(json.dumps(configuration, allow_nan=False))
     source_files = [Path(__file__), Path(__file__).with_name("models.py"),
-                    Path(__file__).with_name("uncertainty.py")]
+                    Path(__file__).with_name("uncertainty.py"), Path(__file__).with_name("experiments.py")]
     model_source = inspect.getsourcefile(type(selected_model))
     if model_source is not None:
         source_files.append(Path(model_source))
@@ -121,18 +141,22 @@ def run_backtest(
         for source in source_files
     }
     manifest = {
-        "format_version": 2,
+        "format_version": 3,
         "status": "running",
         "started_at": datetime.now(UTC).isoformat(),
         "input": {"dataset": dataset, "snapshot_id": selected_id, "selected_tag": tag},
+        "experiment": experiment.to_dict(),
+        "experiment_sha256": hashlib.sha256(json.dumps(experiment.to_dict(), sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         "task": {
-            "timestamp_column": "timestamp", "target_column": "value",
-            "frequency": "one UTC day", "horizon_days": 1,
-            "minimum_history": minimum_history, "training_window": "expanding",
-            "point_statistic": "predictive mean", "evaluation_role": "development",
-            "availability": "Each observation is available at its timestamp; no delays or revisions",
-            "issuance": "Immediately after observing the current value",
-            "units": "Input value units; no transformations",
+            "timestamp_column": task.timestamp_column, "target_column": task.target_column,
+            "frequency": "one UTC day", "horizon_days": task.horizon_days,
+            "minimum_history": task.minimum_history, "training_window": "expanding",
+            "point_statistic": "predictive mean", "evaluation_role": experiment.evaluation.role,
+            "availability": ("Each observation is available at its timestamp; no delays or revisions" if task.availability_column is None
+                             else f"Explicit {task.availability_column}; revisions={task.revision_policy}"),
+            "issuance": ("Immediately after observing the current value" if task.issuance_delay_seconds == 0 and task.availability_column is None
+                         else f"Origin period timestamp plus {task.issuance_delay_seconds} seconds; current value need not be available"),
+            "units": task.units,
         },
         "model": {"name": selected_model.name, "configuration": configuration,
                   "supports_quantiles": supports_quantiles,
@@ -151,32 +175,36 @@ def run_backtest(
     output = Path(output_directory).expanduser().absolute()
     output.mkdir(parents=True, exist_ok=False)
     _write_json(output / "manifest.json", manifest)
+    _write_csv(output / "case_schedule.csv", schedule)
 
     predictions = []
     quantile_predictions = []
     quantile_outputs = {}
     density_predictions = []
     density_outputs = {}
+    benchmark_models = {name: {"training-mean": TrainingMean, "last-value": LastValue}[name]() for name in experiment.evaluation.benchmarks}
+    benchmark_predictions = []
     history_checks_passed = True
-    for target_index in range(minimum_history, len(observations)):
-        history = observations[:target_index]
-        issued_at = history[-1].timestamp
-        target_time = issued_at + timedelta(days=1)
+    for case in cases:
+        history = case.history
+        issued_at, target_time = case.issued_at, case.target_time
         # Coordinates come from the task, never from the model. No future value
         # is included in this immutable request.
         row = {
-            "origin_index": target_index - 1,
+            "origin_index": case.origin_index,
             "issued_at": issued_at.isoformat(), "training_cutoff": issued_at.isoformat(),
             "training_start": history[0].timestamp.isoformat(), "training_count": len(history),
+            "training_end": history[-1].timestamp.isoformat(), "history_sha256": case.history_sha256,
             "target_time": target_time.isoformat(), "prediction": None,
             "status": "failed", "error": None,
         }
         try:
             if (
-                len(history) < minimum_history
+                len(history) < task.minimum_history
                 or any(observation.timestamp > issued_at for observation in history)
+                or any(item.available_at > issued_at for item in case.versions)
                 or issued_at >= target_time
-                or target_time != observations[target_index].timestamp
+                or target_time - issued_at != timedelta(days=task.horizon_days, seconds=-task.issuance_delay_seconds)
             ):
                 history_checks_passed = False
                 raise ValueError("Training history or target time violates the forecast task")
@@ -188,6 +216,14 @@ def run_backtest(
         except Exception as error:
             row["error"] = f"{type(error).__name__}: {error}"
         predictions.append(row)
+        for name, benchmark in benchmark_models.items():
+            benchmark_row = {**row, "benchmark": name, "prediction": None, "status": "failed", "error": None}
+            try:
+                value = validate_forecast(benchmark.forecast(ForecastRequest(history, issued_at, target_time)), ())
+                benchmark_row.update(prediction=value.mean, status="passed")
+            except Exception as error:
+                benchmark_row["error"] = f"{type(error).__name__}: {error}"
+            benchmark_predictions.append(benchmark_row)
         for probability in probabilities:
             quantile_predictions.append({
                 "target_time": row["target_time"], "probability": probability,
@@ -213,31 +249,24 @@ def run_backtest(
         _write_csv(output / "quantiles.csv", quantile_predictions)
     if supports_highest_density:
         _write_csv(output / "highest_density.csv", density_predictions)
-    actuals = {observation.timestamp.isoformat(): observation.value for observation in observations}
-    evaluations = []
-    for prediction in predictions:
-        actual = actuals[prediction["target_time"]]
-        row = {"target_time": prediction["target_time"], "actual": actual,
-               "prediction": prediction["prediction"], "error": None,
-               "absolute_error": None, "squared_error": None,
-               "status": prediction["status"], "failure": prediction["error"]}
-        if prediction["status"] == "passed":
-            try:
-                error = prediction["prediction"] - actual
-                squared_error = error ** 2
-                if not math.isfinite(error) or not math.isfinite(squared_error):
-                    raise ValueError("Nonfinite scoring result")
-                row.update(error=error, absolute_error=abs(error), squared_error=squared_error)
-            except (ValueError, OverflowError) as error:
-                row.update(status="failed", failure=f"{type(error).__name__}: {error}")
-        evaluations.append(row)
+    if benchmark_models:
+        _write_csv(output / "benchmark_predictions.csv", benchmark_predictions)
+    actuals = select_actuals(versions, task)
+    evaluations = _evaluate_points(predictions, actuals)
     _write_csv(output / "evaluation.csv", evaluations)
+    benchmark_scores = {"status": "not_applicable", "runs": []}
+    if benchmark_models:
+        benchmark_evaluations = _evaluate_points(benchmark_predictions, actuals)
+        _write_csv(output / "benchmark_evaluation.csv", benchmark_evaluations)
+        benchmark_scores["runs"] = [{"name": name, **_point_scores([row for row in benchmark_evaluations if row["benchmark"] == name])}
+                                    for name in benchmark_models]
+        benchmark_scores["status"] = "completed" if all(row["complete"] for row in benchmark_scores["runs"]) else "failed"
     interval_evaluations = []
     density_evaluations = []
     if supports_quantiles or supports_highest_density:
         for prediction in predictions:
             target_time = prediction["target_time"]
-            actual = actuals[target_time]
+            actual = actuals[target_time].value
             quantiles = quantile_outputs.get(target_time, {})
             rows = []
             for level in levels if supports_quantiles else ():
@@ -272,16 +301,8 @@ def run_backtest(
         _write_csv(output / "interval_evaluation.csv", interval_evaluations)
     if supports_highest_density:
         _write_csv(output / "highest_density_evaluation.csv", density_evaluations)
-    scored = [row for row in evaluations if row["status"] == "passed"]
-    complete = len(scored) == len(predictions)
     scores = {
-        "expected_count": len(predictions), "scored_count": len(scored),
-        "failed_count": len(predictions) - len(scored), "complete": complete,
-        # mean uses an exact intermediate sum, avoiding overflow when several
-        # individually finite squared errors add to more than a float can hold.
-        "mae": mean(row["absolute_error"] for row in scored) if scored else None,
-        "rmse": math.sqrt(mean(row["squared_error"] for row in scored)) if scored else None,
-        "scope": "Successful cases only; partial scores are not a complete-run comparison",
+        **_point_scores(evaluations), "benchmarks": benchmark_scores,
         "uncertainty": summarize_uncertainty(interval_evaluations, levels,
                                              expected_count=len(predictions), supported=supports_quantiles,
                                              highest_density_rows=density_evaluations,
@@ -295,7 +316,11 @@ def run_backtest(
         {"name": "forecast_outputs_valid", "required": True,
          "status": "passed" if all(row["status"] == "passed" for row in predictions) else "failed"},
         {"name": "all_expected_cases_scored", "required": True,
-         "status": "passed" if complete else "failed"},
+         "status": "passed" if scores["complete"] else "failed"},
+        {"name": "declared_case_plan_and_release_eligibility", "required": True,
+         "status": "passed" if history_checks_passed else "failed"},
+        {"name": "all_requested_benchmarks_scored", "required": bool(benchmark_models),
+         "status": benchmark_scores["status"].replace("completed", "passed")},
         {"name": "requested_observation_quantiles_valid", "required": supports_quantiles,
          "status": ("passed" if all(row["status"] == "passed" for row in predictions) else "failed")
                    if supports_quantiles else "not_applicable"},
@@ -309,8 +334,9 @@ def run_backtest(
     _write_json(output / "checks.json", checks)
     _write_json(output / "review.json", {
         "status": "pending", "decision": None,
-        "limitations": ["Synthetic development exercise; no untouched final evaluation period",
-                        "One daily series, one-step forecasts, immediate availability assumed",
+        "limitations": [f"Declared {experiment.evaluation.role} evaluation; boundary selection does not certify untouched data",
+                        "One daily series; release timestamps are caller-supplied claims, not independently verified",
+                        "Final evaluation learns from earlier final observations only when available at that origin; settings must remain predeclared",
                         "Quantiles describe future observations conditional on model assumptions",
                         "Highest-density region optimality is the adapter's responsibility, not proven by structural validation",
                         "Coverage and scores do not automatically approve uncertainty calibration",

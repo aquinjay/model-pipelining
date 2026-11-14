@@ -24,13 +24,13 @@ not a sandbox preventing an adapter from independently reading files.
 
 | Responsibility | Implemented now | Remaining design |
 |---|---|---|
-| Application/task | A daily numerical CSV task with explicit timing assumptions and function arguments | A broader versioned application specification, richer calendars/features, real-data availability rules |
+| Application/task | Versioned daily task/evaluation specs, named targets/units, issuance/release/revision rules, required benchmarks, and development/final target periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
-| Model adapter | Training mean; fixed-variance Gaussian local level; declared output capabilities | Other families, parameter learning, incremental updates, specialized checks |
+| Model adapter | Training mean and last-value point models; fixed-variance Gaussian local level; declared output capabilities; explicit local-level influence/innovation diagnostics | Parameter uncertainty and MCMC evidence (next detour), incremental updates, broader specialized checks |
 | Runner | Historical origins, eligible histories, output validation, fixed required checks, visible failures | Configurable stage/check dispatch and explicit experimental overrides |
-| Evaluation | Point errors, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
+| Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
-| Reporting | Charts and matched-case comparisons from saved artifacts | Wider reports and application delivery |
+| Reporting | Charts and matched-case comparisons from saved artifacts; saved-only diagnostic charts | Wider reports and application delivery |
 
 A run's directory and manifest identify its model/configuration and saved cases.
 There is no global run-ID registry. No orchestration service, release process,
@@ -41,7 +41,7 @@ or monitoring/deployment system is implemented.
 [models.py](../src/model_pipelining/models.py) defines immutable requests/results.
 A model receives eligible observations, issuance, target time, and requested
 quantile probabilities/highest-density masses. It returns a predictive mean and
-its declared uncertainty kinds. `TrainingMean` is point-only; `LocalLevel`
+its declared uncertainty kinds. `TrainingMean` and `LastValue` are point-only; `LocalLevel`
 supplies quantiles and highest-density regions.
 
 Both uncertainty kinds target the future observed value in original units.
@@ -58,22 +58,73 @@ responsibility. Reports prefer supplied highest-density regions. The
 
 ## Implemented artifacts and information boundaries
 
-New run manifests use format version 2; the existing point CSV remains compatible.
+New run manifests use format version 3, including version-1 experiment specs,
+case schedules, history hashes, and actual-vintage metadata. Existing point
+columns remain, with additional selection/provenance columns.
 Snapshots, acquisition events, and tags retain their separate format version 1.
-Reports can read old version-1 saved point runs without generating new uncertainty.
+Reports can read old version-1/2 saved runs without generating new uncertainty
+or inferring missing experiment/history claims.
 See [the API reference](../src/model_pipelining/README.md) and
 [run-file reference](../runs/README.md).
 
 At every forecast origin, eligibility follows the task's information assumptions.
-The synthetic task assumes each observation is immediately available and has no
-revisions. Acquisition/registration timestamps do not establish real historical
-availability. A revised series downloaded today needs a separate availability
-policy before it supports a real-data historical claim.
+The default synthetic task assumes immediate availability without revisions.
+An explicit task can use release times and latest-available revisions from an
+ordered long table. The runner selects as-of histories independently of the
+declared first/latest scoring vintage. Acquisition/registration timestamps do
+not establish availability, and supplied release claims are not independently
+verified. See [the experiment contract](experiments.md).
 
 Any later learned preprocessing or tuning must stay inside the appropriate
 training/development boundaries. Current adapters have no such tuning. A target
 held out from one forecast can become past training data for a later origin;
 this does not make the entire development series an untouched final evaluation.
+
+## Implemented experiment ownership
+
+[experiments.py](../src/model_pipelining/experiments.py) owns immutable task and
+evaluation specs plus release-aware scheduling. The runner saves the expanded
+specification/hash and selected/excluded case schedule before model execution.
+Adapters receive only eligible observations and request coordinates. Calendar
+support is daily UTC with explicit gap rejection; adapter timing support can be
+narrower, and unsupported requests fail visibly.
+
+Development/final boundaries apply to target times. Final evaluation requires a
+separate explicit invocation, and earlier final observations may enter later
+histories once available. This enforces request selection, not proof of human
+non-exposure. Declared point benchmarks use identical histories, targets, and
+actual vintages and are frozen alongside primary forecasts. Their failures
+fail overall execution; their scores do not select a model automatically.
+
+Application choice is deferred. The next modeling detour is
+[parameter uncertainty and MCMC](parameter-uncertainty.md). Experiment rules
+remain independent of inference. Current adapters/outputs are unchanged in
+statistical meaning; no sampler, chain storage, or fit-diagnostic dispatch was
+added by the experiment slice.
+
+## Implemented explicit local-level diagnostics
+
+[diagnostics.py](../src/model_pipelining/diagnostics.py) reads a verified daily
+snapshot and computes full forward paths for a caller-chosen reference and
+named alternatives, including initialization. It saves influence differences,
+conditional initial-mean derivatives, pre-observation innovations/PIT, full
+settings, failures, and pending human review in a separate artifact type.
+Plotting reads only those saved files. The diagnostic CLI orchestrates both
+actions; the backtest and its scripts do not invoke them automatically.
+
+Sensitivity describes how assumptions affect updating. Strong prior influence
+is not a computational failure, and agreement between paths is not a target.
+Initial prior location/precision and the two fixed noise variances have distinct
+interpretations. The derivative with respect to the initial mean is conditional
+on all variance settings; it is not a measure of total prior influence.
+
+Invalid inputs/options raise before creating diagnostic output. Numerical
+failures are saved per configuration, later configurations continue, and any
+failure makes the diagnostic computation failed. Successful calculation leaves
+human interpretation pending. There is no automatic residual threshold,
+configuration selection, or release gate. This implements a small evidence
+workflow, not the broader configurable check framework below. See
+[the diagnostic guide](diagnostics.md) for semantics and replay.
 
 ## Planned broader workflow
 
@@ -109,13 +160,16 @@ being allowed to omit required checks and thereby pass a run.
 |---|---|---|
 | Are assumptions plausible? | Prior predictive simulation | Feature availability and intended-use coverage |
 | Did the calculation work? | Analytic recursion verification; sampler diagnostics only when a sampler is used | Fit completion and output validity |
-| What does the fitted model miss? | Predictive replications and prior sensitivity | Residual patterns, ablation, regularization sensitivity |
+| How do assumptions shape updating? | Prior/noise influence paths, without requiring influence to be small | Feature and regularization sensitivity |
+| What does the fitted model miss? | Predictive replications and sequential innovations | Residual patterns and ablation |
 | How do held-out forecasts behave? | Compatible point/distributional scores | Point scores and any explicitly supported uncertainty |
 
-The local-level script saves one prior trajectory for human review; it does not
-implement this whole plan. Existing numerical/simulation tests verify stated
-calculation properties, rather than approving prior plausibility. The current
-analytic filter has no MCMC (Markov chain Monte Carlo) sampler.
+The local-level backtest script saves one prior trajectory for human review.
+The separate diagnostic workflow saves prior/noise influence and sequential
+predictive criticism; neither implements this whole configurable plan or
+full-data posterior predictive replication. Existing numerical/simulation tests
+verify stated calculation properties, rather than approving prior plausibility.
+The current analytic filter has no MCMC (Markov chain Monte Carlo) sampler.
 
 Simulation, parameter/state recovery, formal simulation-based calibration, and
 held-out predictive calibration answer different questions. Expensive simulation

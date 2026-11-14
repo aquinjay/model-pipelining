@@ -1,0 +1,227 @@
+"""Versioned forecasting tasks, release-aware histories, and evaluation cases."""
+
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
+import hashlib
+import json
+import math
+from numbers import Real
+from pathlib import Path
+
+from model_pipelining.ingest import read_local_table
+from model_pipelining.models import Observation
+
+
+def _utc(value, name):
+    if not isinstance(value, datetime) or value.utcoffset() is None:
+        raise ValueError(f"{name} must be a timezone-aware datetime")
+    return value.astimezone(UTC)
+
+
+@dataclass(frozen=True, kw_only=True)
+class ForecastTask:
+    name: str = "daily-value"
+    target_description: str = "Value at the future daily timestamp"
+    source_description: str = "Caller-supplied preserved CSV"
+    timestamp_column: str = "timestamp"
+    target_column: str = "value"
+    units: str = "Input value units; no transformations"
+    calendar: str = "daily_utc"
+    missing_policy: str = "reject"
+    horizon_days: int = 1
+    minimum_history: int = 30
+    issuance_delay_seconds: int = 0
+    availability_column: str | None = None
+    revision_policy: str = "reject"
+    actual_policy: str = "first_release"
+
+    def __post_init__(self):
+        for name in ("name", "target_description", "source_description", "timestamp_column", "target_column", "units"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise ValueError(f"{name} must be a nonblank string")
+        if self.calendar != "daily_utc" or self.missing_policy != "reject":
+            raise ValueError("Only daily_utc with missing_policy=reject is implemented")
+        for name in ("horizon_days", "minimum_history"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if type(self.issuance_delay_seconds) is not int or not 0 <= self.issuance_delay_seconds < 86400:
+            raise ValueError("issuance_delay_seconds must be an integer in [0, 86400)")
+        if self.availability_column is not None and (not isinstance(self.availability_column, str) or not self.availability_column.strip()):
+            raise ValueError("availability_column must be a nonblank string or None")
+        columns = [self.timestamp_column, self.target_column] + ([self.availability_column] if self.availability_column is not None else [])
+        if len(set(columns)) != len(columns):
+            raise ValueError("Timestamp, target, and availability columns must be distinct")
+        if self.revision_policy not in ("reject", "latest_available"):
+            raise ValueError("revision_policy must be reject or latest_available")
+        if self.revision_policy == "latest_available" and self.availability_column is None:
+            raise ValueError("latest_available requires an explicit availability_column")
+        if self.actual_policy not in ("first_release", "latest_in_snapshot"):
+            raise ValueError("actual_policy must be first_release or latest_in_snapshot")
+
+
+@dataclass(frozen=True, kw_only=True)
+class EvaluationPlan:
+    role: str = "development"
+    final_start: datetime | None = None
+    final_end: datetime | None = None
+    benchmarks: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        if self.role not in ("development", "final"):
+            raise ValueError("role must be development or final")
+        if (self.final_start is None) != (self.final_end is None):
+            raise ValueError("Supply both final_start and final_end, or neither")
+        if self.final_start is not None:
+            object.__setattr__(self, "final_start", _utc(self.final_start, "final_start"))
+            object.__setattr__(self, "final_end", _utc(self.final_end, "final_end"))
+            if self.final_start >= self.final_end:
+                raise ValueError("final_start must precede final_end")
+        if self.role == "final" and self.final_start is None:
+            raise ValueError("Final evaluation requires explicit start and end boundaries")
+        if (not isinstance(self.benchmarks, tuple)
+                or any(name not in ("training-mean", "last-value") for name in self.benchmarks)
+                or len(set(self.benchmarks)) != len(self.benchmarks)):
+            raise ValueError("benchmarks must be a tuple of unique training-mean/last-value names")
+
+    def includes(self, timestamp):
+        if self.final_start is None:
+            return True
+        if self.role == "development":
+            return timestamp < self.final_start
+        return self.final_start <= timestamp < self.final_end
+
+
+@dataclass(frozen=True, kw_only=True)
+class ExperimentSpec:
+    task: ForecastTask = field(default_factory=ForecastTask)
+    evaluation: EvaluationPlan = field(default_factory=EvaluationPlan)
+
+    def __post_init__(self):
+        if not isinstance(self.task, ForecastTask) or not isinstance(self.evaluation, EvaluationPlan):
+            raise ValueError("ExperimentSpec requires a ForecastTask and EvaluationPlan")
+
+    def to_dict(self):
+        evaluation = asdict(self.evaluation)
+        for name in ("final_start", "final_end"):
+            evaluation[name] = evaluation[name].isoformat() if evaluation[name] is not None else None
+        evaluation["benchmarks"] = list(evaluation["benchmarks"])
+        return {"format_version": 1, "task": asdict(self.task), "evaluation": evaluation}
+
+    @classmethod
+    def from_dict(cls, value):
+        if (not isinstance(value, dict) or set(value) != {"format_version", "task", "evaluation"}
+                or type(value["format_version"]) is not int or value["format_version"] != 1
+                or not isinstance(value["task"], dict) or not isinstance(value["evaluation"], dict)):
+            raise ValueError("Expected a version-1 experiment with task and evaluation dictionaries")
+        evaluation = dict(value["evaluation"])
+        for name in ("final_start", "final_end"):
+            if evaluation.get(name) is not None:
+                evaluation[name] = datetime.fromisoformat(evaluation[name])
+        if "benchmarks" in evaluation:
+            if not isinstance(evaluation["benchmarks"], list):
+                raise ValueError("JSON benchmarks must be a list")
+            evaluation["benchmarks"] = tuple(evaluation["benchmarks"])
+        return cls(task=ForecastTask(**value["task"]), evaluation=EvaluationPlan(**evaluation))
+
+    @classmethod
+    def load(cls, path: str | Path):
+        return cls.from_dict(json.loads(Path(path).expanduser().read_text(encoding="utf-8")))
+
+
+@dataclass(frozen=True)
+class ObservationVersion:
+    timestamp: datetime
+    value: float
+    available_at: datetime
+
+
+@dataclass(frozen=True)
+class ForecastCase:
+    origin_index: int
+    issued_at: datetime
+    target_time: datetime
+    versions: tuple[ObservationVersion, ...]
+
+    @property
+    def history(self):
+        return tuple(Observation(item.timestamp, item.value) for item in self.versions)
+
+    @property
+    def history_sha256(self):
+        content = [(item.timestamp.isoformat(), item.value, item.available_at.isoformat()) for item in self.versions]
+        return hashlib.sha256(json.dumps(content, allow_nan=False, separators=(",", ":")).encode()).hexdigest()
+
+
+def read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, ...]:
+    """Validate the daily long table; releases for each period must be ordered.
+
+    Records must be grouped by increasing period timestamp, then by strictly
+    increasing availability. No sorting, gap filling, or invented vintages.
+    """
+    if path.suffix.lower() != ".csv":
+        raise ValueError("The backtest supports CSV snapshots only")
+    table = read_local_table(path)
+    columns = [task.timestamp_column, task.target_column]
+    if task.availability_column is not None:
+        columns.append(task.availability_column)
+    if not set(columns).issubset(table.columns):
+        raise ValueError(f"Input must contain {', '.join(columns)} columns")
+    versions = []
+    for record in table[columns].itertuples(index=False, name=None):
+        timestamp = _utc(datetime.fromisoformat(str(record[0])), "Observation timestamp")
+        raw_value = record[1]
+        if isinstance(raw_value, bool) or not isinstance(raw_value, Real):
+            raise ValueError("Every value must be numeric")
+        value = float(raw_value)
+        if not math.isfinite(value):
+            raise ValueError("Every value must be finite and nonmissing")
+        available_at = _utc(datetime.fromisoformat(str(record[2])), "Availability timestamp") if task.availability_column is not None else timestamp
+        if available_at < timestamp:
+            raise ValueError("An observation cannot be available before its period timestamp")
+        if versions:
+            previous = versions[-1]
+            if timestamp == previous.timestamp:
+                if task.revision_policy != "latest_available" or available_at <= previous.available_at:
+                    raise ValueError("Duplicate periods require latest_available and strictly ordered unique releases")
+            elif timestamp - previous.timestamp != timedelta(days=1):
+                raise ValueError("Timestamps must be ordered and exactly one UTC day apart; gaps are rejected")
+        versions.append(ObservationVersion(timestamp, value, available_at))
+    return tuple(versions)
+
+
+def plan_cases(versions: tuple[ObservationVersion, ...], experiment: ExperimentSpec):
+    """Plan target-based splits and as-of histories before any model calls."""
+    periods = tuple(dict.fromkeys(item.timestamp for item in versions))
+    task = experiment.task
+    cases, schedule = [], []
+    for target_index in range(task.horizon_days, len(periods)):
+        origin_index = target_index - task.horizon_days
+        origin = periods[origin_index]
+        issued_at = origin + timedelta(seconds=task.issuance_delay_seconds)
+        selected = {}
+        for item in versions:
+            if item.timestamp <= origin and item.available_at <= issued_at:
+                selected[item.timestamp] = item
+        history = tuple(selected.values())
+        included = experiment.evaluation.includes(periods[target_index])
+        reason = "selected" if included else "outside_evaluation_role"
+        if included and len(history) < task.minimum_history:
+            reason = "insufficient_available_history"
+        schedule.append({"origin_index": origin_index, "issued_at": issued_at.isoformat(),
+                         "target_time": periods[target_index].isoformat(), "available_history_count": len(history),
+                         "selection": reason})
+        if reason == "selected":
+            cases.append(ForecastCase(origin_index, issued_at, periods[target_index], history))
+    if not cases:
+        raise ValueError("No eligible forecast cases for this experiment and minimum_history")
+    return tuple(cases), schedule
+
+
+def select_actuals(versions: tuple[ObservationVersion, ...], task: ForecastTask):
+    """Choose scoring outcomes separately from the as-of training selection."""
+    selected = {}
+    for item in versions:
+        key = item.timestamp.isoformat()
+        if task.actual_policy == "latest_in_snapshot" or key not in selected:
+            selected[key] = item
+    return selected

@@ -9,9 +9,11 @@ for current behavior and review priorities.
 
 - Preserve one local file per snapshot, identified by dataset plus SHA-256.
 - Keep acquisition, registration, tag assignment, and execution separate calls.
-- Run the training mean or fixed-variance Bayesian local-level adapter through one daily backtest.
+- Run point models or the fixed-variance Bayesian local-level adapter through shared daily experiments, with adapter-specific timing limits.
 - Save a predictive mean and each declared observation-uncertainty kind. Prefer highest-density prediction regions in reporting.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
+- Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
+- Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection and make parameter uncertainty/MCMC the next modeling detour.
 - Use CPython 3.14 with pandas, openpyxl, and matplotlib; installable packaging, a configurable check plan, and release automation remain open.
 
 ## How to read earlier entries
@@ -118,12 +120,108 @@ The November 3 proposal considered snapshots of one or more related files, compa
 - **Consistency:** distinguish case completion from empirical region coverage, snapshot/run record versions, hidden-state versus future-observation uncertainty, and library calls versus script automation. Fixed model settings, pending human review, scope limits, and failure behavior stay explicit.
 - **Evidence:** every repository Markdown file was reviewed; local links/anchors were checked. Walkthrough/library, CLI, alternate-chart, input/snapshot/tag, and CSV/XLSX examples were exercised in temporary storage. Documentation changes do not alter the runtime implementation.
 
+## Review the current workflow before extending it — 2026-11-14
+
+- **Sequence:** the user selected reviewing the existing modeling workflow now,
+  then model diagnostics/evidence, then a real-data application. The review does
+  not implement those later steps or choose their detailed design.
+- **Evidence:** at `497680f`, all 118 tests passed. Both models completed 170
+  cases on each regenerated synthetic series; local-level numerical artifacts
+  and checks replayed exactly. Saved-result reporting succeeded with model and
+  snapshot retrieval entry points patched to raise and preserved source evidence.
+  The local-level CLI also saved its separate prior trajectory with pending review.
+- **Interpretation:** no blocker was found in the exercised synthetic workflow.
+  Computation, human model approval, and application suitability remain separate.
+  Prior/noise sensitivity, fitted-model criticism, failure policy, real-data
+  availability, and a final evaluation period remain open. No runtime behavior
+  or automated approval rule changed; run review records remain pending.
+- **Record:** [Workflow review](workflow-review.md) retains concrete examples,
+  check meanings, results, and limitations. Generated stores/runs were isolated
+  in temporary storage; their retention is not implied by committing this review.
+
+## Make assumption influence explicit — 2026-11-14
+
+- **User clarification:** sensitivity should inform us how much the prior affects
+  the update path, not establish that a prior should have little effect. Strong
+  or persistent influence is evidence for interpretation, not a computational
+  failure or a quantity to minimize. Noise assumptions likewise shape updating.
+- **Scope:** implement a separate local-level diagnostic workflow on a verified
+  snapshot, with a caller-chosen reference and named alternatives. Process the
+  full series from initialization with forward updates only. Save level means,
+  state/next-observation SDs, gains, signed reference differences, full settings,
+  and conditional initial-mean weights. Prior location, prior precision, and
+  the two noise assumptions remain distinct; no automatic grid or selection.
+- **Influence semantics:** the cumulative product of `V/Q` is the derivative of
+  the updated level mean with respect to its initial mean, holding all variance
+  settings fixed. It is not total prior influence or the prior's fraction of the
+  estimate. Initial variance/noise counterfactuals change observation weights and
+  uncertainty too, so their complete paths must be inspected.
+- **Criticism:** save pre-observation standardized innovations, conditional normal
+  PIT, and mean/mean-square/lag-correlation summaries, with saved-only charts.
+  This is sequential predictive criticism, not full-data posterior predictive
+  replication or an untouched final evaluation.
+- **Failure policy:** invalid input/options raise before output creation.
+  Numerical failures remain visible per configuration, later configurations
+  continue, and any failure makes computation failed. Influence magnitude,
+  path agreement, and residual patterns have no pass/fail thresholds. Human
+  interpretation stays pending; no release gate or model ranking is added.
+- **Ownership:** `diagnostics.py` supplies calculation and separate saved-result
+  plotting; `scripts/diagnose_local_level.py` explicitly loads a JSON reference
+  and scenario overrides and calls both. Backtest behavior/formats are unchanged.
+  Expanded settings, input IDs, scope, implementation fingerprints, and errors
+  are saved for inspection/replay; no dependency is added.
+- **Evidence:** all 130 tests passed, including an independent batch-conditioning
+  derivative, a hand calculation, a persistent full-influence case that succeeds,
+  prior/noise distinctions, isolation/replay, failures, saved-only charts, and
+  CLI inheritance. Both 200-observation synthetic series completed with a
+  reference and four illustrative alternatives. See [diagnostics](diagnostics.md).
+
+## Prioritize reusable experiments before an application — 2026-11-14
+
+- **User correction:** application selection is not the immediate goal. Implement
+  the four task/evaluation responsibilities as reusable infrastructure, retaining
+  a near-term modeling detour for parameter uncertainty and MCMC considerations.
+- **Contract:** frozen `ForecastTask`, `EvaluationPlan`, and `ExperimentSpec`
+  records describe target/source intent, columns/units, daily calendar/gap rule,
+  horizon, issuance, minimum available history, release/revision selection,
+  scoring vintage, benchmarks, and target-based development/final boundaries.
+  Explicit JSON loading is available in both run scripts; no application/source
+  or inference backend is chosen. Legacy calls retain the effective 30-day,
+  immediate/unrevised development default.
+- **Information rules:** select latest available releases at or before issuance
+  for periods no later than the origin; reject ambiguous/unordered vintages.
+  Choose first-release or latest-in-snapshot actuals separately, after freezing
+  forecasts. Daily calendar gaps are rejected, not imputed. One fixed positive-day
+  horizon is supported per run; adapters can reject unsupported coordinates.
+- **Evaluation:** target timestamps define development before the final start
+  and final cases in a fixed half-open interval. Final runs are explicit caller
+  actions; earlier final observations may enter later histories once available.
+  This enforces request selection, not an assertion that humans have not seen
+  final data. Full-input validation and trusted Python boundaries remain.
+- **Benchmarks/evidence:** optional required training-mean/last-value forecasts
+  share each primary request and scoring vintage. All forecasts are frozen
+  before actual selection; any declared benchmark failure fails the run. New
+  manifest version 3 records the expanded version-1 spec/hash; case schedules,
+  history fingerprints, and actual release times preserve selection evidence.
+  Reports read versions 1/2/3 and do not infer missing legacy task claims.
+- **Next model work:** distinguish parameter/posterior-predictive uncertainty
+  from finite-computation error. Select a small independently checkable model,
+  then add relevant fit/chain metadata and diagnostics with a maintained backend
+  after runtime checks. No sampler or parameter learning is added by this slice;
+  see [the planned detour](parameter-uncertainty.md).
+- **Verification:** all 146 tests passed. New counterexamples cover release and
+  revision isolation, scoring vintages, final/development separation, matched
+  benchmark calculations/freezing/failures, task replay, history identity,
+  version-2 compatibility, and both CLIs. Both models exercised the known 200-day
+  fixture with 130 development and 40 final-role cases plus both point benchmarks;
+  Bayesian development artifacts replayed exactly. No new dependency is added.
+
 ## Working proposals
 
 - Choose installable package/build configuration when distribution is needed; current imports use `PYTHONPATH=src`.
 - Extend the first JSON/CSV run artifacts only as another model or task requires it.
-- Extend the implemented local-level adapter's prior sensitivity, fitted-model criticism, and specialized check evidence.
-- One market series as the first real-data application, followed later by a separate operational application.
+- Extend local-level criticism beyond the implemented influence/innovation evidence when an application needs it; select any broader specialized check plan explicitly.
+- Application selection is deferred; the earlier market-series proposal is not the immediate continuation plan.
 
 These are starting choices to revisit deliberately, rather than implemented interfaces or completed experiments.
 

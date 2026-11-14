@@ -108,3 +108,18 @@ class TrainingMean:
 
     def forecast(self, request: ForecastRequest) -> float:
         return fmean(observation.value for observation in request.history)
+
+
+class LastValue:
+    """Predict with the latest eligible observed value; point-only persistence."""
+
+    name = "last-value"
+    supports_quantiles = False
+    supports_highest_density = False
+
+    @property
+    def configuration(self) -> dict:
+        return {}
+
+    def forecast(self, request: ForecastRequest) -> float:
+        return request.history[-1].value

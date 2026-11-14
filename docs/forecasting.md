@@ -5,6 +5,12 @@ artificial sample data already supplied by the project, runs both implemented
 models, and shows what to inspect. Setup is in
 [the main README](../README.md#development-environment).
 
+The [November 14 computational review](workflow-review.md) records one concrete
+forecast, what each saved check establishes, replay results, and remaining gaps.
+This walkthrough uses the original default task. For reusable target/issuance,
+release/revision, benchmark, and development/final settings, use
+[experiment specifications](experiments.md); they do not require choosing an application.
+
 The objective is to verify a reusable workflow: the calculations must be correct,
 models must receive only eligible history, and saved inputs/settings must let
 us repeat a run. Comparing forecast scores is a separate use of the saved
@@ -179,6 +185,11 @@ your interpretation/decision in `review.json` if you want to retain it. There is
 no review command or automated release policy. A near-nominal coverage rate or
 a better point score does not by itself verify an implementation.
 
+For explicit prior/noise influence paths and sequential model criticism, use
+the separate [diagnostic workflow](diagnostics.md). It includes initialization,
+saves its own evidence, and does not alter these forecasts or review decisions.
+Large prior influence is a result to understand, not a failure criterion.
+
 ## Compare saved results
 
 ```python
@@ -227,16 +238,19 @@ Use an unused run/comparison directory for every invocation. Existing output
 directories and `forecast.png` files are rejected. Repeating registration/tagging
 is allowed and records another event; it does not overwrite preserved bytes.
 
-Input validation rejects missing columns, invalid/naive timestamps, unordered or
+For this default task, input validation rejects missing columns, invalid/naive timestamps, unordered or
 duplicate dates, daily gaps, missing/nonnumeric/nonfinite values, and insufficient
 history. It does not repair data. Invalid input/configuration raises before a run
 directory is created. Forecast-stage errors are recorded per case; filesystem
 errors can leave an interrupted directory. [The API reference](../src/model_pipelining/README.md)
 documents signatures and return values.
 
-For reproduction, use the saved permanent input, model configuration, minimum
-history, and requested interval levels, with matching code/environment and a new
-output directory. Timestamps will differ; numerical artifacts repeat. Source
+For reproduction of new runs, use the saved permanent input, model configuration,
+`ExperimentSpec.from_dict(manifest["experiment"])`, and requested interval levels,
+with matching code/environment and a new output directory. Choose minimum
+history inside the restored experiment and omit the legacy argument. Older runs
+without an experiment use their saved minimum history and original daily rules.
+Timestamps will differ; numerical artifacts repeat. Source
 fingerprints identify code but do not restore it. There is no automatic model
 registry or environment restoration.
 

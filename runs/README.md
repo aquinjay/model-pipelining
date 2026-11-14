@@ -6,7 +6,7 @@ For a runnable example, follow [the walkthrough](../docs/forecasting.md).
 
 ## Read these first
 
-1. `manifest.json`: overall status, permanent input, task, model settings, output
+1. `manifest.json`: overall status, permanent input, expanded experiment/task, model settings, output
    capabilities, requested levels, scoring conventions, environment, and source
    fingerprints.
 2. `checks.json`: required validation/completion outcomes.
@@ -16,7 +16,7 @@ For a runnable example, follow [the walkthrough](../docs/forecasting.md).
 
 `completed` means the required computation succeeded. `failed` means at least one
 required output/evaluation failed. `running` may indicate an interrupted run.
-Point `scores.complete` is not overall success: uncertainty can fail separately.
+Point `scores.complete` is not overall success: uncertainty or a declared benchmark can fail separately.
 Read the manifest and required checks before interpreting partial metrics.
 Empirical interval **coverage** is the fraction of evaluated actuals inside a
 region; it is different from completion of the requested cases.
@@ -28,23 +28,29 @@ update manually; no review command or automated release policy exists.
 
 For valid input/configuration, `run_backtest` creates a new, caller-named directory.
 It never reuses an existing output directory. New run manifests have format
-version 2; snapshot/tag formats remain separate version-1 records in the input
-store. Version-1 saved point runs can still be reported without backfilled bands.
+version 3, including a version-1 experiment specification and its canonical hash.
+Snapshot/tag formats remain separate version-1 records in the input store.
+Version-1/2 saved runs can still be reported without backfilled experiment claims
+or uncertainty. Comparisons require matching metadata, including declared
+experiments and history hashes when present; legacy/new metadata may differ.
 
 | File | When present | Contents |
 |---|---|---|
 | `manifest.json` | Every started run | Configuration/provenance and execution status |
-| `predictions.csv` | After forecast generation | Issuance, training selection, target time, mean, status/error; no actuals |
+| `case_schedule.csv` | Before any model calls | Candidate targets, issuance, available-history counts, and selection/exclusion reasons |
+| `predictions.csv` | After forecast generation | Issuance, training selection/end/history hash, target time, mean, status/error; no actuals |
+| `benchmark_predictions.csv` | Declared benchmarks | Same cases/histories with benchmark names and frozen point predictions/failures |
 | `quantiles.csv` | Quantile-capable adapter | Target, probability, value, status/error |
 | `highest_density.csv` | Highest-density-capable adapter | Target, mass level, segment index, lower/upper, status/error; disconnected segments stay separate |
-| `evaluation.csv` | After point scoring | Actual, prediction, signed error, absolute/squared error, status/failure |
+| `evaluation.csv` | After point scoring | Declared actual vintage and its availability time, prediction, signed/absolute/squared error, status/failure |
+| `benchmark_evaluation.csv` | Declared benchmarks, after freezing | Same actual vintages and point errors for each benchmark |
 | `interval_evaluation.csv` | Quantile-capable adapter | Equal-tail bounds, actual, membership, width, interval score, endpoint pinball losses |
 | `highest_density_evaluation.csv` | Highest-density-capable adapter | Actual, set membership, total segment width, segment count, status/failure |
-| `scores.json` | After evaluation | Point metrics/case counts and a separate uncertainty summary |
+| `scores.json` | After evaluation | Primary point metrics/counts, required benchmark summaries, and a separate uncertainty summary |
 | `checks.json` | At normal completion, including failed cases | Fixed required/optional check outcomes |
 | `review.json` | At normal completion, including failed cases | Pending decision and limitations |
 
-Point, quantile, and highest-density forecast files are written/closed before
+Point, benchmark, quantile, and highest-density forecast files are written/closed before
 actuals are joined for scoring. Failed forecasts retain required placeholder
 rows. One case can create several rows: for example, 170 cases at two region
 levels produce 340 region-evaluation rows. A disconnected region can require
@@ -78,11 +84,39 @@ method/level must have been saved. Existing `forecast.png` files are rejected:
 [the uncertainty guide](../docs/uncertainty.md#run-and-inspect) shows how to copy a
 run for another chart without refitting.
 
-Comparisons require complete matching inputs/task/training cases/actuals.
+Comparisons require complete matching inputs/experiments/tasks, training cases
+and history hashes, and actual vintages.
 Uncertainty is compared only at mutually supplied kinds and levels. No winner
 is selected automatically, and source files are not altered. Paths in the
 comparison summary identify local runs; keep those source folders when exporting
 important comparisons.
+
+The [experiment guide](../docs/experiments.md) explains available release
+selection, actual-vintage choices, required benchmarks, and separate development/
+final invocations. Declaring a final period does not certify that data remained
+untouched by humans or other tools. Earlier final observations can enter later
+training histories only once available, under a fixed predeclared model/configuration.
+
+## Separate local-level diagnostic folders
+
+Explicit `run_local_level_diagnostics` calls create a different artifact type:
+`diagnostics.json` (diagnostic format version 1), `update_paths.csv`,
+`scenario_summaries.json`, and pending `review.json`. Explicit plotting adds
+`sensitivity.png` and `innovations.png`; `scripts/diagnose_local_level.py` calls
+plotting automatically. Backtests and their run scripts do not create these
+files. These folders are not inputs to `plot_run` or `compare_runs`.
+
+Paths include initialization and show assumption effects on the updated level,
+uncertainty, gains, conditional initial-mean weights, and pre-observation errors.
+The reference and every named alternative retain full settings and completion
+or numerical failure. A failed reference leaves alternative comparisons
+unavailable; no reference path is invented. Strong influence is not a failure
+criterion, and review remains pending. See [diagnostics](../docs/diagnostics.md)
+for field meanings, reporting, replay, and caller actions. Keep the diagnostic
+folder and its whole input store together when retaining this evidence.
+This separate workflow processes its complete input snapshot; it does not apply
+an experiment's final-period exclusions. Use an appropriate development-only
+input when preserving a genuinely untouched final period.
 
 ## Reproduction and retention
 

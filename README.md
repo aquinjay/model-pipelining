@@ -18,6 +18,10 @@ an implementation is correct or that a model is suitable for an application.
 3. Read [the uncertainty guide](docs/uncertainty.md) for highest posterior density
    (HPD) regions, quantiles, their meaning, and their evaluation.
 
+The [November 14 workflow review](docs/workflow-review.md) follows one concrete
+forecast, explains the saved checks, and records the exercised results and gaps
+before model diagnostics and a real-data application.
+
 For a review of the recent modeling work, follow that same order. Then inspect
 `models.py`, `local_level.py`, `uncertainty.py`, `backtest.py`, and `reporting.py`
 in [the source directory](src/model_pipelining/). The [test guide](tests/README.md)
@@ -29,17 +33,20 @@ explains which checks support each implementation claim.
 |---|---|
 | Input preservation | One local file per snapshot; verified retrieval, registration history, optional copy receipts, and explicit dataset tags |
 | Table reading | CSV or one selected XLSX worksheet; forecasting currently accepts CSV only |
-| Forecasting task | One daily numerical series, next-day predictions, expanding training history, 30 initial observations by default |
-| Training mean | Average the eligible history; supplies a point prediction only |
+| Forecasting task | Versioned target/timing/evaluation specifications; daily UTC, expanding available history, next-day forecasts and 30 observations by default |
+| Point models/benchmarks | Training mean and last available value; optional required benchmarks on identical histories/cases |
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
+| Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
 
 The forecast uncertainty describes the **next observed value**, conditional on
 the model's assumptions. It is separate from uncertainty about the hidden level
-or a model parameter. The sample task assumes immediate observation availability
-and no revisions. All example evaluations are development evidence; there is no
-untouched final test period or automatic model approval.
+or a model parameter. The default sample task assumes immediate availability
+and no revisions. Explicit experiment specifications support release/vintage
+selection and separate development/final target periods. The synthetic examples
+remain development evidence, including demonstrations of final-role mechanics;
+model approval is a human decision.
 
 ## Workflow and caller actions
 
@@ -59,6 +66,20 @@ results automatically. Library callers invoke reporting separately; the two
 run scripts also draw their charts automatically. The local-level script adds
 a seeded prior simulation for human review.
 
+Use an [experiment specification](docs/experiments.md) to declare target/source
+descriptions, columns/units, issuance, availability/revisions, calendar behavior,
+benchmarks, and evaluation boundaries independently of the adapter. The runner
+saves the expanded plan and case exclusions, selects as-of histories, and runs
+declared benchmarks automatically. Final evaluation requires a separate explicit
+invocation. Application choice is deferred; the next planned modeling work is
+[parameter uncertainty and MCMC](docs/parameter-uncertainty.md).
+
+The separate [diagnostic workflow](docs/diagnostics.md) compares caller-chosen
+settings from the first observation and shows their influence on updating and
+uncertainty. Strong influence is evidence to understand, not a failure or a
+quantity to minimize. Invoke it explicitly; its CLI also draws saved-result
+charts. The backtest scripts do not run it automatically.
+
 A completed run means the required computational checks and scoring succeeded.
 It does not decide whether the assumptions are useful. `review.json` starts as
 a pending human review record. The [walkthrough](docs/forecasting.md#read-the-results)
@@ -77,6 +98,10 @@ explains how to read both execution and review status.
 | Find saved inputs or run files | [Data directory](data/README.md), [run directory](runs/README.md) |
 | Understand module responsibilities and future design | [Architecture](docs/architecture.md) |
 | See current status and review priorities | [Roadmap](docs/roadmap.md) |
+| Read the completed computational workflow review | [Workflow review](docs/workflow-review.md) |
+| Inspect assumption influence and sequential model discrepancies | [Local-level diagnostics](docs/diagnostics.md) |
+| Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
+| See the next Bayesian modeling detour | [Parameter uncertainty and MCMC plan](docs/parameter-uncertainty.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 

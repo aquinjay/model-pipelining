@@ -175,7 +175,7 @@ class UncertaintyWorkflowTests(unittest.TestCase):
     def test_requested_quantiles_are_frozen_saved_and_scored_reproducibly(self):
         run = self.run_model()
         manifest = self.read_json(run, "manifest.json")
-        self.assertEqual(manifest["format_version"], 2)
+        self.assertEqual(manifest["format_version"], 3)
         self.assertTrue(manifest["model"]["supports_quantiles"])
         self.assertTrue(manifest["model"]["supports_highest_density"])
         self.assertEqual(manifest["evaluation"]["primary_interval_method"], "highest_density")

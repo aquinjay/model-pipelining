@@ -29,6 +29,20 @@ The [first forecasting workflow](../docs/forecasting.md) now implements this con
 
 The [Bayesian local-level adapter](../docs/local-level.md) uses the same inputs and forecast dates. Its prior/variance settings are explicit model configuration, independent of generator truth. Its [shared quantiles and highest-density regions](../docs/uncertainty.md) describe future observed values, not hidden generator states, and remain conditional on fixed settings. The saved-result comparison requires matching permanent inputs and cases. The local-level script also saves a separate simulated prior trajectory under its run directory, not as an acquired input snapshot.
 
+The separate [influence diagnostics](../docs/diagnostics.md) use a verified CSV
+snapshot and process all observations, including initialization. They save
+model evidence under an explicitly chosen output folder, not a new acquired
+input. Reference/scenario settings are caller choices; the diagnostic does not
+read the generator's hidden settings or automatically register/tag inputs.
+
+[Experiment specifications](../docs/experiments.md) can instead name target/time
+columns and a release-time column, select historical revisions as of issuance,
+and choose first-release or latest-in-snapshot actuals for scoring. A versioned
+snapshot can preserve an ordered long release table; registration itself does
+not interpret or invent release timestamps. Calendar gaps remain rejected.
+Acquisition/registration times do not substitute for release histories. The
+default sample files remain immediate, unrevised daily fixtures.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:

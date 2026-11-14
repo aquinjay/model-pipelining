@@ -161,9 +161,20 @@ The filter trace is a training diagnostic; it is not a replacement for the
 runner's frozen historical forecasts and is not saved automatically. The
 adapter's current `forecast` return type is a record, not a float: use `.mean`.
 
+The separate [diagnostic workflow](diagnostics.md) explicitly saves complete
+forward paths, prior/noise sensitivity, and sequential predictive criticism.
+Its purpose is to understand how assumptions influence updating; small prior
+influence is not a goal. It distinguishes the conditional weight on the initial
+mean from changes in prior precision and noise settings, which also alter
+observation gains and uncertainty. The existing backtest scripts do not run it.
+
 Reproduction uses `LocalLevel(**manifest["model"]["configuration"])`, the saved
-permanent input, minimum history, and `evaluation.interval_levels`, with matching
-code/environment and a new run directory. No automatic model restoration exists.
+permanent input, restored experiment, and `evaluation.interval_levels`, with
+matching code/environment and a new run directory. Restore new runs with
+`ExperimentSpec.from_dict(manifest["experiment"])` and omit the legacy minimum-history
+argument; older runs use their saved minimum history and original daily rules.
+No automatic model restoration exists. The adapter's one-day/immediate request
+constraints still apply to explicitly declared experiments.
 
 ## Compare saved runs
 
@@ -190,5 +201,10 @@ motivated by these results is a development revision, not an untouched test.
 
 Tests verify arithmetic, isolation, replay, and some seeded simulation behavior.
 They do not establish prior plausibility or suitability for a real application.
-Prior sensitivity, fitted-model criticism, variance-parameter uncertainty, and
-automatic specialized diagnostic requirements remain open. There is no sampling algorithm requiring sampler diagnostics in this analytic filter.
+Explicit prior/noise influence paths and sequential innovation/PIT criticism
+are implemented in [diagnostics](diagnostics.md). Full-data posterior predictive
+replications, variance-parameter uncertainty, a configurable specialized check
+plan, and application-specific human/release criteria remain open. There is no
+sampling algorithm requiring sampler diagnostics in this analytic filter.
+Parameter uncertainty and MCMC evidence are the [next planned modeling detour](parameter-uncertainty.md),
+with an independently verifiable model before richer noise-parameter inference.

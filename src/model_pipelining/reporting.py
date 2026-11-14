@@ -16,7 +16,7 @@ def _read_run(run_directory: str | Path) -> tuple[dict, dict, list[dict]]:
     """Read finished evidence without touching the input store or any model."""
     run = Path(run_directory).expanduser()
     manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
-    if manifest["format_version"] not in (1, 2):
+    if manifest["format_version"] not in (1, 2, 3):
         raise ValueError("Unsupported run format version")
     if manifest["status"] not in ("completed", "failed"):
         raise ValueError("Reporting requires a finished run")
@@ -117,6 +117,14 @@ def plot_run(
     axes.plot(times, [float(row["prediction"]) if row["prediction"] else float("nan")
                       for row in rows], label="Forecast", linewidth=1.5)
     _draw_uncertainty(axes, times, run, manifest, rows, level=interval_level, method=interval_method, color="C1")
+    if scores.get("benchmarks", {}).get("runs"):
+        with (run / "benchmark_predictions.csv").open(encoding="utf-8", newline="") as stream:
+            benchmark_rows = list(csv.DictReader(stream))
+        for index, benchmark in enumerate(scores["benchmarks"]["runs"], start=2):
+            selected = [row for row in benchmark_rows if row["benchmark"] == benchmark["name"]]
+            axes.plot([datetime.fromisoformat(row["target_time"]) for row in selected],
+                      [float(row["prediction"]) if row["prediction"] else float("nan") for row in selected],
+                      label=f"Benchmark: {benchmark['name']}", linestyle="--", linewidth=1, color=f"C{index % 10}")
     case_counts = f"points {scores['scored_count']}/{scores['expected_count']}"
     uncertainty = scores.get("uncertainty", {})
     if uncertainty.get("status") not in (None, "not_applicable"):
@@ -158,7 +166,9 @@ def compare_runs(
         with (Path(run).expanduser() / "predictions.csv").open(encoding="utf-8", newline="") as stream:
             predictions = list(csv.DictReader(stream))
         keys = ("origin_index", "issued_at", "training_cutoff", "training_start", "training_count", "target_time")
-        coordinates.append([tuple(row[key] for key in keys) for row in predictions])
+        optional_keys = ("training_end", "history_sha256")
+        coordinates.append([tuple(row[key] for key in keys) + tuple(row.get(key) for key in optional_keys)
+                            for row in predictions])
         if (
             [row["target_time"] for row in predictions] != [row["target_time"] for row in rows]
             or len({row["target_time"] for row in rows}) != len(rows)
@@ -172,8 +182,10 @@ def compare_runs(
         (first_input["dataset"], first_input["snapshot_id"])
         != (second_input["dataset"], second_input["snapshot_id"])
         or manifests[0]["task"] != manifests[1]["task"]
+        or manifests[0].get("experiment") != manifests[1].get("experiment")
         or coordinates[0] != coordinates[1]
         or [row["actual"] for row in evaluations[0]] != [row["actual"] for row in evaluations[1]]
+        or [row.get("actual_available_at") for row in evaluations[0]] != [row.get("actual_available_at") for row in evaluations[1]]
     ):
         raise ValueError("Comparison inputs, tasks, training selections, and actuals must match")
 
@@ -210,6 +222,7 @@ def compare_runs(
         "format_version": 2,
         "input": {"dataset": first_input["dataset"], "snapshot_id": first_input["snapshot_id"]},
         "task": manifests[0]["task"],
+        "experiment": manifests[0].get("experiment"),
         "case_count": len(times),
         "runs": [{"path": str(Path(run).expanduser().absolute()), "model": manifest["model"], "scores": score}
                  for run, manifest, score in zip((first_run, second_run), manifests, scores)],

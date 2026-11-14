@@ -7,7 +7,7 @@ call; a tag gives a dataset's version a readable name. Start with
 [the API reference](../src/model_pipelining/README.md) for signatures.
 
 The implementation uses local files, SHA-256, and JSON. Snapshot/registration/tag
-records use format version 1. Run-manifest version 2 belongs to the separate
+records use format version 1. Run-manifest version 3 belongs to the separate
 forecasting layer and does not change these storage formats. The earlier
 multi-file design is retained as a [historical proposal](data-versioning.md).
 

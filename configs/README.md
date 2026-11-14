@@ -1,14 +1,63 @@
 # Configuration
 
-This directory is reserved for future standalone examples. **No current command
-loads a configuration file from here.** Choose settings through Python keyword
-arguments or the two run scripts; the runner saves them automatically in the run
-manifest for reference and reproduction.
+The backtest takes an optional versioned experiment through Python arguments or
+`--experiment FILE` in its two run scripts. The separate diagnostic command
+accepts an explicitly selected JSON file via `--config`. These are different
+schemas. No command discovers files from this directory automatically.
+
+## Experiment example
+
+[daily_forecast_experiment.json](daily_forecast_experiment.json) declares the
+target/source descriptions, columns/units, daily calendar/gap policy, horizon,
+minimum available history, issuance, release/revision rules, actual vintage,
+benchmark names, and development/final target boundaries. The runner saves all
+expanded defaults and a canonical specification hash in manifest version 3.
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/run_baseline.py \
+  --dataset synthetic-mean-shift --tag baseline-input \
+  --experiment configs/daily_forecast_experiment.json \
+  --output-directory runs/config-experiment-development-001
+```
+
+The sample yields 130 development cases with both point benchmarks. A separate
+explicit invocation with `--evaluation-role final` selects its 40 final targets;
+it is not started automatically. These are infrastructure demonstrations on
+known synthetic fixtures, not evidence of untouched model evaluation. Do not
+combine `--experiment` with `--minimum-history`; set the count in the task.
+See [the full contract and examples](../docs/experiments.md). Input preparation,
+model selection, preserving final-data separation, and human interpretation
+remain caller actions. No application or inference backend is selected here.
+
+## Diagnostic example
+
+[local_level_diagnostics.json](local_level_diagnostics.json) contains `reference`
+local-level settings and named `scenarios` with overrides of that reference.
+Each scenario inherits every unchanged reference setting. Omitted reference
+settings use the adapter defaults. The command saves every expanded configuration
+in `scenario_summaries.json`; retain those values for replay. Names must be
+nonblank and cannot be `reference`. Settings are illustrative caller choices,
+not a tuning grid or a rule that prior influence should be small.
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/diagnose_local_level.py \
+  --dataset synthetic-mean-shift --tag baseline-input \
+  --config configs/local_level_diagnostics.json \
+  --output-directory runs/config-diagnostics-example-001
+```
+
+Prepare the snapshot/tag first as in [the walkthrough](../docs/forecasting.md).
+The command calculates and draws diagnostics automatically; read
+[their meaning and failure policy](../docs/diagnostics.md). Use an unused output
+directory. Acquisition, registration, tagging, and human interpretation remain
+explicit caller actions.
+
+## Backtest arguments
 
 | Setting group | How it is selected | Where the run saves it |
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
-| Task | Current daily task plus `minimum_history` (default 30) | `task` |
+| Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
 | Model | `TrainingMean` by default or explicit `LocalLevel(...)` | `model.configuration` and model identity/capabilities |
 | Uncertainty request | `interval_levels=(0.8, 0.95)`; both scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
