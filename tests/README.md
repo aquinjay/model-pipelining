@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **343 tests**. They use temporary fixtures/stores rather than
+There are currently **391 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -39,6 +39,12 @@ before running sampler tests.
 | [test_joint_variance.py](test_joint_variance.py) | 13 | Independent batch/adaptive joint posterior references, limits, uncertainty, confounding, controlled studies and CLI |
 | [test_joint_evidence.py](test_joint_evidence.py) | 10 | Joint parameter dependence, fresh paths, atoms, prior mass, support restrictions and historical evidence |
 | [test_mixed_calibration.py](test_mixed_calibration.py) | 10 | Randomized transforms, discrete/mixed CDF bounds, interval mass, replay and calibration failure/CLI behavior |
+
+| [test_experiment_review.py](test_experiment_review.py) | 18 | Saved-only review, identities/receipts, scope, missing/failed evidence, version conflicts, fit requirements, complete trial records, paths/concurrency and CLI |
+
+| [test_distribution_scoring.py](test_distribution_scoring.py) | 21 | Independent CDF-integral/density losses, full mixtures/tails/units, precision, all Bayesian adapters, freezing, release/final isolation, replay, partial failures and matched saved comparisons/review |
+
+| [test_documentation_checks.py](test_documentation_checks.py) | 9 | Local links/anchors/references, ignored artifact discovery, Python/Bash syntax without execution, incomplete fences and CLI failure codes |
 
 ## Data behavior checked in detail
 
@@ -210,3 +216,18 @@ calibration exercise; it is not a difficult-posterior benchmark.
 ## Discrete/mixed calibration verification
 
 `test_mixed_calibration.py` adds 10 tests for atomic-transform uniformity, continuous identity, labelled streams, invalid bounds, discrete/mixed posterior jumps, closed interval mass, known-parameter exclusion, replay, failures, joint calibration smoke checks and CLI behavior.
+
+## Automatic repository checks
+
+[GitHub Actions](../docs/continuous-integration.md) runs the full suite from the
+locked environment, checks the interpreter/dependencies/pip export and verifies
+documentation. Run the documentation check explicitly from the repository root:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/check_documentation.py --walkthrough
+```
+
+Local paths/ATX anchors and Python/Bash syntax are checked automatically. The
+flag also runs the forecasting guide's Python blocks in temporary storage,
+verifying two 170-case runs and comparison/charts; other examples are parsed.
+Large calibration studies stay outside CI and require explicit execution.

@@ -275,3 +275,12 @@ Joint state summaries can include known-state probability atoms. Their credible
 intervals use [generalized state quantiles](joint-evidence.md), separately from
 observation HPD regions. Positive observation variance keeps these observation
 forecasts continuous; no density-based HPD claim is made for atomic states.
+
+## Scores for the entire observation law
+
+Models can now explicitly supply a full serialized distribution as well as
+quantiles/HPD regions. Backtests freeze the law and automatically evaluate CRPS
+and negative log density. A mixture retains its modes and Student-t retains its
+tails; neither is replaced by a Gaussian from interval endpoints. Existing
+coverage, interval and quantile summaries remain available. See
+[methods and comparison rules](distribution-scoring.md).

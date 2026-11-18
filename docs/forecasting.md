@@ -28,7 +28,7 @@ The two models use the same cases:
 | Model | What it calculates | Uncertainty supplied |
 |---|---|---|
 | `TrainingMean` | Average of all eligible past values | None |
-| `LocalLevel` | Updated estimate of a changing hidden level | Observation quantiles and highest-density prediction regions, conditional on fixed model settings |
+| `LocalLevel` | Updated estimate of a changing hidden level | Full Gaussian observation law, quantiles and highest-density prediction regions, conditional on fixed model settings |
 
 A **backtest** repeats forecasts at historical dates. An **origin** is when a
 forecast is issued. A **case** is one origin and its next-day target. The
@@ -171,7 +171,7 @@ For successful runs, expect `completed / not_applicable` for the baseline and
 `completed` means the required computational work succeeded; it is not approval
 of the model assumptions. `failed` means a required output or evaluation failed.
 `running` may indicate an interrupted run. Point `scores.complete` covers point
-scoring only: uncertainty can fail while point scoring succeeds. Use the overall
+scoring only: uncertainty or full-distribution scoring can fail while point scoring succeeds. Use the overall
 manifest status and checks to assess execution.
 
 Required forecast failures are saved and later origins continue. Point and
@@ -181,8 +181,9 @@ by other programs. Partial scores disclose their case counts and are not a
 complete-run comparison.
 
 Human review is a separate action: inspect assumptions and evidence and record
-your interpretation/decision in `review.json` if you want to retain it. There is
-no review command or automated release policy. A near-nominal coverage rate or
+your interpretation/decision in `review.json` if you want to retain it. The
+[saved review command](experiment-review.md) collects compatible evidence for a
+separate human decision. A near-nominal coverage rate or
 a better point score does not by itself verify an implementation.
 
 For explicit prior/noise influence paths and sequential model criticism, use
@@ -258,3 +259,12 @@ Run folders and preserved data are local and ignored by Git. Copying code to
 another machine does not copy this evidence. Keep the whole input store and
 important run folders together with matching code/locked dependencies.
 [The run-file reference](../runs/README.md) explains every saved file.
+
+## Automatic walkthrough verification
+
+[Repository CI](continuous-integration.md) executes these Python blocks verbatim
+against fresh generated inputs in temporary storage. It checks the two 170-case
+runs and saved comparison/charts, then removes the temporary output. Invoke
+`scripts/check_documentation.py --walkthrough` explicitly for the same local
+check. The local-level run now also saves [full-law scores](distribution-scoring.md);
+the baseline has no distribution comparison.

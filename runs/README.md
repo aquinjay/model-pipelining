@@ -240,3 +240,28 @@ Joint-variance fits save categorical prior/posterior W probabilities, every cond
 Joint predictive folders add `evolution_variance` to parameter draws. Prior paths add W probabilities/bounds/means and V/W covariance; plotting adds `evolution_priors.png`. Older model paths use null optional W columns and retain their original quantities. Known-state probability masses are preserved; see [joint evidence](../docs/joint-evidence.md).
 
 Calibration rows now optionally preserve left/inclusive CDF bounds, atom randomization and actual closed-interval posterior mass. Joint models save all conditional quadrature evidence; plotting remains saved-only and older continuous rows remain readable. See [discrete/mixed semantics](../docs/mixed-calibration.md).
+
+## Saved experiment review folders
+
+Explicit `scripts/review_experiment.py` writes `report.md`, `report.json`,
+`checks.json` and a new pending `review.json` into a separate unused directory.
+Source folders are unchanged. Reports link existing charts and retain all supplied
+calibration exercises, failures, omissions and source inventories. Current hashes
+record observed bytes; only earlier child receipts verify completion bytes.
+Read [statuses, compatibility and scope](../docs/experiment-review.md).
+
+## Full distribution forecasts and losses
+
+For declared distribution models, backtesting automatically freezes every origin
+in `predictive_distributions.json` before selecting scoring actuals, then writes
+`distribution_evaluation.csv` and `scores.json.distribution`. Failed cases stay
+visible and required scoring failures fail the run. Existing point/interval files
+are retained. Explicit matched comparison writes distribution losses/differences
+in `comparison.json` plus `distribution_scores.png` when both runs support them.
+Older/point-only runs have no reconstructed distributions. See
+[methods, units and numerical limits](../docs/distribution-scoring.md).
+
+[CI](../docs/continuous-integration.md) runs tests and the documented walkthrough
+with temporary stores/output, then removes walkthrough artifacts. Existing local
+scientific runs are not required. Retain larger calibration/model-comparison
+evidence through the explicit workflows; a passing CI job is computational status.

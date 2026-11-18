@@ -12,6 +12,8 @@ import platform
 from statistics import mean
 
 from model_pipelining.experiments import ExperimentSpec, ForecastTask, plan_cases, read_task_data, select_actuals
+from model_pipelining.distribution_scoring import (METHOD, evaluate_distributions,
+    summarize_distribution_scores, validate_distribution_forecast)
 from model_pipelining.inference import save_fit_evidence
 from model_pipelining.models import ForecastRequest, Forecaster, LastValue, Observation, TrainingMean
 from model_pipelining.snapshots import retrieve_snapshot
@@ -120,6 +122,9 @@ def run_backtest(
     supports_quantiles = getattr(selected_model, "supports_quantiles", False)
     supports_highest_density = getattr(selected_model, "supports_highest_density", False)
     supports_fit_evidence = getattr(selected_model, "supports_fit_evidence", False)
+    supports_distribution = getattr(selected_model, "supports_distribution", False)
+    if type(supports_distribution) is not bool:
+        raise ValueError("model.supports_distribution must be a boolean")
     requires_fit_evidence = supports_fit_evidence or bool(experiment.evidence.required_fit_checks)
     if type(supports_fit_evidence) is not bool:
         raise ValueError("model.supports_fit_evidence must be a boolean")
@@ -140,7 +145,8 @@ def run_backtest(
     configuration = json.loads(json.dumps(configuration, allow_nan=False))
     source_files = [Path(__file__), Path(__file__).with_name("models.py"),
                     Path(__file__).with_name("uncertainty.py"), Path(__file__).with_name("experiments.py"),
-                    Path(__file__).with_name("inference.py")]
+                    Path(__file__).with_name("inference.py"), Path(__file__).with_name("distribution_scoring.py"),
+                    Path(__file__).with_name("mixtures.py")]
     source_files.extend(getattr(selected_model, "implementation_files", ()))
     model_source = inspect.getsourcefile(type(selected_model))
     if model_source is not None:
@@ -175,6 +181,7 @@ def run_backtest(
                   "supports_quantiles": supports_quantiles,
                   "supports_highest_density": supports_highest_density,
                   "supports_fit_evidence": supports_fit_evidence,
+                  "supports_distribution": supports_distribution,
                   "class": f"{type(selected_model).__module__}.{type(selected_model).__qualname__}"},
         "evaluation": {"interval_levels": list(levels), "quantile_levels": list(probabilities),
                        "highest_density_levels": list(density_levels),
@@ -182,8 +189,10 @@ def run_backtest(
                        "primary_interval_method": ("highest_density" if supports_highest_density else
                                                    "equal_tail" if supports_quantiles else None),
                        "quantile_loss": "unscaled_pinball", "interval_score": "winkler_equal_tail_only",
-                       "highest_density_evaluation": "coverage_and_total_set_width"},
-        "environment": {"python": platform.python_version(), "pandas": version("pandas")},
+                       "highest_density_evaluation": "coverage_and_total_set_width",
+                       "distribution_scoring": dict(METHOD) if supports_distribution else None},
+        "environment": {"python": platform.python_version(), "pandas": version("pandas"),
+                        "numpy": version("numpy"), "scipy": version("scipy")},
         "source_sha256": source_hashes,
     }
     output = Path(output_directory).expanduser().absolute()
@@ -196,6 +205,7 @@ def run_backtest(
     quantile_outputs = {}
     density_predictions = []
     density_outputs = {}
+    distributions = []
     benchmark_models = {name: {"training-mean": TrainingMean, "last-value": LastValue}[name]() for name in experiment.evaluation.benchmarks}
     benchmark_predictions = []
     history_checks_passed = True
@@ -214,6 +224,7 @@ def run_backtest(
             "status": "failed", "error": None,
         }
         saving_fit = False
+        distribution = None
         try:
             if (
                 len(history) < task.minimum_history
@@ -244,6 +255,10 @@ def run_backtest(
             else:
                 model_output = selected_model.forecast(request)
             forecast = validate_forecast(model_output, probabilities, density_levels)
+            if supports_distribution:
+                distribution = validate_distribution_forecast(forecast.distribution, forecast)
+            elif forecast.distribution is not None:
+                raise ValueError("Full distribution output requires supports_distribution=True")
             row.update(prediction=forecast.mean, status="passed")
             quantile_outputs[row["target_time"]] = {item.probability: item.value for item in forecast.quantiles}
             density_outputs[row["target_time"]] = forecast.highest_density_regions
@@ -254,6 +269,10 @@ def run_backtest(
                 raise
             row["error"] = f"{type(error).__name__}: {error}"
         predictions.append(row)
+        if supports_distribution:
+            distributions.append({key: row[key] for key in
+                ("origin_index", "issued_at", "target_time", "history_sha256", "status", "error")})
+            distributions[-1]["distribution"] = distribution
         if requires_fit_evidence:
             relative_fit = f"fits/{case.origin_index:06d}"
             fit_rows.append({"origin_index": case.origin_index, "target_time": row["target_time"],
@@ -297,7 +316,15 @@ def run_backtest(
         _write_csv(output / "benchmark_predictions.csv", benchmark_predictions)
     if requires_fit_evidence:
         _write_csv(output / "fit_index.csv", fit_rows)
+    if supports_distribution:
+        _write_json(output / "predictive_distributions.json", distributions)
     actuals = select_actuals(versions, task)
+    distribution_evaluations = []
+    if supports_distribution:
+        # Evaluate the saved laws rather than constructing a new model output.
+        frozen = json.loads((output / "predictive_distributions.json").read_text(encoding="utf-8"))
+        distribution_evaluations = evaluate_distributions(frozen, actuals)
+        _write_csv(output / "distribution_evaluation.csv", distribution_evaluations)
     evaluations = _evaluate_points(predictions, actuals)
     _write_csv(output / "evaluation.csv", evaluations)
     benchmark_scores = {"status": "not_applicable", "runs": []}
@@ -349,6 +376,7 @@ def run_backtest(
         _write_csv(output / "highest_density_evaluation.csv", density_evaluations)
     scores = {
         **_point_scores(evaluations), "benchmarks": benchmark_scores,
+        "distribution": summarize_distribution_scores(distribution_evaluations, supported=supports_distribution),
         "uncertainty": summarize_uncertainty(interval_evaluations, levels,
                                              expected_count=len(predictions), supported=supports_quantiles,
                                              highest_density_rows=density_evaluations,
@@ -356,6 +384,12 @@ def run_backtest(
     }
     _write_json(output / "scores.json", scores)
     checks = [
+        {"name": "full_predictive_distributions_valid", "required": supports_distribution,
+         "status": ("passed" if all(row["status"] == "passed" for row in distributions) else "failed")
+                   if supports_distribution else "not_applicable"},
+        {"name": "all_distribution_cases_scored", "required": supports_distribution,
+         "status": ("passed" if scores["distribution"]["status"] == "completed" else "failed")
+                   if supports_distribution else "not_applicable"},
         {"name": "required_fit_evidence_and_checks", "required": requires_fit_evidence,
          "status": ("passed" if all(item["status"] == "passed" for item in fit_rows) else "failed")
                    if requires_fit_evidence else "not_applicable"},

@@ -1,6 +1,6 @@
 # Roadmap
 
-Updated: 2026-11-17. This page records implemented scope and review priorities.
+Updated: 2026-11-18. This page records implemented scope and review priorities.
 For usage, start with [the walkthrough](forecasting.md). For past choices, use
 [the decision history](decisions.md); historical proposals are not build checklists.
 
@@ -112,7 +112,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 343 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 391 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -288,7 +288,39 @@ All five authorized slices are implemented and independently committed:
 4. [Joint generative criticism and prior influence](joint-evidence.md): dependent W/V/state draws, fresh paths and fixed-support prior comparisons.
 5. [Mixed calibration](mixed-calibration.md): genuine atom randomization, interval mass and known-parameter exclusion.
 
-The suite has 343 tests. Numerical computation is verified separately from model
+That sequence finished with 343 tests. Numerical computation is verified separately from model
 adequacy and finite-simulation interpretation. Further model changes should follow
 the saved discrepancies; continuous-W priors, different transition laws, a real
 application and release automation remain separate decisions.
+
+## Experiment review and comparison sequence — 2026-11-18
+
+The first slice, [saved experiment review](experiment-review.md), is implemented:
+explicit compatible sources, receipts/requirements, omissions, calibration and
+chart links in one report, with human interpretation pending. Eighteen added tests
+bring the suite to 361. A 130-case development exercise assembled all three
+workflows and two small calibration runs without changing source files.
+
+The authorized sequence adds full predictive distribution scores and then CI
+for the locked environment, tests and documentation checks. Large calibration
+and scientific model/release decisions remain explicit caller actions.
+
+The second review/comparison slice, [full-law proper losses](distribution-scoring.md),
+is implemented: Student-t and full Gaussian mixtures, frozen laws, visible
+failures and complete matched saved comparisons/charts. All five Bayesian adapters
+supply laws from the same fit. Twenty-one new tests bring the suite to 382.
+No richer model or automatic selection rule was introduced.
+
+The third slice, [repository CI](continuous-integration.md), is implemented with
+pinned actions/uv/Python, lock/export checks, the complete suite, documentation
+links/anchors/example syntax and temporary walkthrough execution. Nine added
+tests bring the suite to 391. The fresh locked environment and local workflow
+linter passed. Hosted execution starts after the workflow is pushed.
+
+All three authorized review/comparison tasks are complete. The next bounded work
+is to interpret one collected experiment review, stating the remaining predictive
+discrepancies and what a proposed model change would need to explain. Further
+model complexity, continuous-W priors or MCMC-only prediction should follow a
+concrete unmet need in that evidence. Current progress supports the broader goal:
+repeatable, model-independent experiments with comparable saved results and
+explicit computational versus human review.

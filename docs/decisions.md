@@ -518,3 +518,39 @@ CDF checks agreed within 2.3e-12. A separate 1000-trial joint follow-up (seed 81
 completed without failures; its marginal CDF distances were within their saved
 simultaneous reference band. The initial 200-trial band crossing and mixed-state
 results remain retained and documented; no automatic model approval is inferred.
+
+## Saved experiment review — 2026-11-18
+
+Use a version-3 forecast as the explicit identity anchor and assemble existing
+evidence/calibration without refitting, discovery or source mutation. Compare
+expanded configurations, history/task/boundary identities, named checks and
+shared declared versions; verify existing child completion receipts. New inventories
+record current bytes rather than claiming historical authentication. Existing
+sequential/bundle environment omissions stay explicit. Readiness is computational;
+a new human review always starts pending. Eighteen tests and a saved development
+exercise support [this boundary](experiment-review.md).
+
+## Full predictive distribution losses — 2026-11-18
+
+Require an explicit model capability and serialized law from the same forecast
+fit. Freeze all laws before actual selection; score deterministic Student-t and
+full Gaussian mixtures with lower-is-better CRPS/negative natural log density.
+Do not infer laws from intervals, prune modes or floor tail density. Undefined
+first moments and unresolved numerical precision fail visibly. Saved comparisons
+require complete matching cohorts/methods/units, recompute aggregates from saved
+case scores and retain paired differences/charts without choosing a winner.
+Twenty-one tests support [the contract](distribution-scoring.md). An older overflow
+test now explicitly opts its intentionally altered region adapter out of the new
+full-law capability so it continues to test region scoring independently.
+
+## Locked-environment repository CI — 2026-11-18
+
+Define a single Ubuntu 24.04 job for branch pushes/pull requests and manual reruns.
+Pin the checkout/setup actions, uv and interpreter; install from the lock, verify
+dependency compatibility and pip-export parity, then run all tests and local
+documentation checks. Execute the forecasting guide's Python examples verbatim
+in temporary storage. Separate parsing of other examples from execution, and
+exclude ignored run/dependency artifacts from discovery. Nine checker tests, a
+fresh 24-dependency installation, the 170-case walkthrough and actionlint support
+[the workflow](continuous-integration.md). Large simulation studies and model
+interpretation remain explicit; branch protection is an administrator decision.

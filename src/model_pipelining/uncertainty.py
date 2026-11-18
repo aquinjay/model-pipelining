@@ -101,6 +101,7 @@ def validate_forecast(
         float(output.mean), tuple(Quantile(float(item.probability), float(item.value)) for item in items),
         tuple(HighestDensityRegion(float(region.level), tuple(Interval(float(segment.lower), float(segment.upper))
                                                                for segment in region.segments)) for region in regions),
+        output.distribution,
     )
 
 

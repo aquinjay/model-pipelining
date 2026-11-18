@@ -11,6 +11,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from model_pipelining.experiments import ExperimentSpec
+from model_pipelining.distribution_scoring import read_saved_distribution_scores
 from model_pipelining.uncertainty import interval_probabilities
 
 
@@ -272,6 +273,29 @@ def compare_runs(
     ):
         raise ValueError("Comparison inputs, tasks, training selections, and actuals must match")
 
+    distribution_runs = []
+    for run, manifest, rows in zip((first_run, second_run), manifests, evaluations):
+        if manifest["model"].get("supports_distribution", False):
+            with (Path(run)/"predictions.csv").open(encoding="utf-8", newline="") as stream:
+                predictions = list(csv.DictReader(stream))
+            distribution_runs.append(read_saved_distribution_scores(run, manifest, predictions, rows))
+        else:
+            distribution_runs.append(None)
+    distribution = {"status": "not_applicable", "reason": "Both runs must declare complete full predictive distributions"}
+    if all(item is not None for item in distribution_runs):
+        summaries, case_scores = zip(*distribution_runs)
+        differences = [{"target_time": first["target_time"],
+                        "crps_first_minus_second": first["crps"]-second["crps"],
+                        "log_score_first_minus_second": first["log_score"]-second["log_score"]}
+                       for first, second in zip(*case_scores)]
+        if any(not math.isfinite(value) for row in differences for key, value in row.items() if key != "target_time"):
+            raise ValueError("Nonfinite distribution score difference")
+        distribution = {"status": "completed", "method": summaries[0]["method"], "runs": list(summaries),
+                        "case_differences": differences, "difference_direction": "first_minus_second; lower losses are better",
+                        "mean_crps_first_minus_second": summaries[0]["mean_crps"]-summaries[1]["mean_crps"],
+                        "mean_log_score_first_minus_second": summaries[0]["mean_log_score"]-summaries[1]["mean_log_score"],
+                        "chart": "distribution_scores.png"}
+
     figure = Figure(figsize=(10, 4), layout="constrained")
     FigureCanvasAgg(figure)
     axes = figure.subplots()
@@ -282,7 +306,8 @@ def compare_runs(
                           label=f"{index}: {manifest['model']['name']}")
         _draw_uncertainty(axes, times, (first_run, second_run)[index - 1], manifest, rows,
                           prefix=f"{index}: ", color=line.get_color())
-    axes.set(title=f"Development comparison — {len(times)} common forecast dates",
+    role = manifests[0]["task"].get("evaluation_role", "development")
+    axes.set(title=f"{role.capitalize()} comparison — {len(times)} common forecast dates",
              xlabel="Target date (UTC)", ylabel="Value (input units)")
     axes.legend()
     figure.autofmt_xdate()
@@ -310,11 +335,24 @@ def compare_runs(
         "runs": [{"path": str(Path(run).expanduser().absolute()), "model": manifest["model"], "scores": score}
                  for run, manifest, score in zip((first_run, second_run), manifests, scores)],
         "uncertainty_comparison": uncertainty,
-        "interpretation": "Development comparison only; no automatic selection, tuning, or human approval",
+        "distribution_comparison": distribution,
+        "interpretation": f"Declared {role} comparison; no automatic selection, tuning, or human approval",
     }
     with (output / "comparison.json").open("x", encoding="utf-8") as stream:
         json.dump(summary, stream, indent=2, allow_nan=False)
         stream.write("\n")
     with (output / "comparison.png").open("xb") as stream:
         figure.savefig(stream, format="png", dpi=150)
+    if distribution["status"] == "completed":
+        score_figure = Figure(figsize=(10, 6), layout="constrained")
+        FigureCanvasAgg(score_figure)
+        for axes, key, label in zip(score_figure.subplots(2, 1, sharex=True),
+                                    ("crps", "log_score"), ("CRPS (target units)", "Negative log density")):
+            for index, (_, rows) in enumerate(distribution_runs):
+                axes.plot(times, [row[key] for row in rows], label=f"{index+1}: {manifests[index]['model']['name']}")
+            axes.set(ylabel=label, title="Saved distribution losses — lower is better")
+            axes.legend()
+        score_figure.autofmt_xdate()
+        with (output / "distribution_scores.png").open("xb") as stream:
+            score_figure.savefig(stream, format="png", dpi=150)
     return output

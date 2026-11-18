@@ -115,6 +115,7 @@ class LocalLevelJointVariance:
     supports_quantiles: ClassVar[bool] = True
     supports_highest_density: ClassVar[bool] = True
     supports_fit_evidence: ClassVar[bool] = True
+    supports_distribution: ClassVar[bool] = True
 
     def __post_init__(self):
         values=self.evolution_variances

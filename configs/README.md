@@ -172,3 +172,20 @@ Sequential checks reuse the reference settings in existing prior configurations.
 The joint prior config includes explicit `evolution_weights`, V-scale and initial-level alternatives. Evidence/prior CLIs restore list-valued JSON settings through the model configuration loader before applying comparisons. See [joint evidence](../docs/joint-evidence.md).
 
 Joint calibration uses `scripts/calibrate_model.py --model local-level-joint-variance --config configs/local_level_joint_priors.json`. Set `initial_variance: 0` explicitly to investigate known-initial mixed-state atoms. Calibration options remain separate from historical experiment evidence settings. See [the mixed calibration guide](../docs/mixed-calibration.md).
+
+## Saved review requirements
+
+`scripts/review_experiment.py` reads the evidence plan from the saved forecast;
+it accepts explicit forecast/evidence/calibration folders and a new output folder,
+without discovering configurations or running missing work. Calibration is required
+only with `--require-calibration`. See [review usage](../docs/experiment-review.md).
+
+[Full distribution scores](../docs/distribution-scoring.md) run automatically for
+adapters declaring `supports_distribution`. No scoring-specific model setting,
+extra simulation or density floor is configured. Saved comparisons require the
+same task/units/vintages and scoring method; point-only adapters remain supported.
+
+[Repository CI](../docs/continuous-integration.md) installs from `uv.lock`, checks
+the pinned interpreter and compares a regenerated temporary requirements export.
+Configuration/dependency updates must keep the declaration, lock and pip export
+together. Large calibration settings remain explicit scientific workflow choices.

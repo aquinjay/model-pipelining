@@ -30,7 +30,7 @@ not a sandbox preventing an adapter from independently reading files.
 | Runner | Historical origins, eligible histories, output validation, fit evidence with caller-required names, explicit required evidence workflows and visible failures | Arbitrary-stage dispatch and explicit exploratory overrides |
 | Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
-| Reporting | Charts and matched-case comparisons from saved artifacts; saved-only diagnostic charts | Wider reports and application delivery |
+| Reporting | Saved-only unified reviews, charts and matched-case comparisons including full-law losses | Further application delivery |
 | Predictive criticism | Constant-mean and learned-noise local-level replications/prior comparisons, release-aware development selection, descriptive evidence and saved-only charts | Further models' full-data checks, application-specific review |
 
 A run's directory and manifest identify its model/configuration and saved cases.
@@ -324,3 +324,28 @@ The categorical-W provider now supplies joint W/V/initial-state simulation and s
 ## Discrete/mixed model calibration
 
 Providers now return left/inclusive posterior CDF bounds and actual interval mass for categorical or mixed distributions. Shared [calibration transforms](mixed-calibration.md) randomize within real jumps using independent labelled streams, preserving continuous results and prior-data seeds. Fixed parameters are excluded and failed numerical inference remains visible. This supplements independent numerical and joint-dependence checks, not a release decision.
+
+## Saved experiment review boundary
+
+`experiment_review.py` assembles explicit saved sources, validates compatibility
+and records source inventories without executing model/evidence providers. The
+forecast is the task/input anchor; development evidence and data-free calibration
+retain their separate scopes. Human interpretation starts pending. See [the
+contract](experiment-review.md).
+
+## Full predictive distribution scoring
+
+An optional declared `Forecast.distribution` carries the law from the model's same
+fit. Shared execution validates summaries, freezes every origin before actual
+selection and scores saved laws. `distribution_scoring.py` owns deterministic
+Student-t/mixture proper losses and saved-cohort consistency checks; reporting
+compares complete matching cases without model calls. Point-only and older
+artifacts retain their capabilities. See [details](distribution-scoring.md).
+
+## Repository CI boundary
+
+[Repository checks](continuous-integration.md) install the pinned interpreter and
+locked dependencies, verify the pip export, check documentation and run the full
+suite. The documented walkthrough executes in temporary storage. Automatic checks
+verify repository behavior in the stated Linux environment; larger calibration
+evidence and human interpretation remain explicit workflows.

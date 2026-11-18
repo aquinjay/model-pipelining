@@ -196,6 +196,7 @@ class LocalLevelVariance:
     supports_quantiles: ClassVar[bool] = True
     supports_highest_density: ClassVar[bool] = True
     supports_fit_evidence: ClassVar[bool] = True
+    supports_distribution: ClassVar[bool] = True
 
     def __post_init__(self):
         for key in ("initial_mean", "initial_variance", "evolution_variance", "prior_shape", "prior_scale"):
@@ -365,7 +366,9 @@ class LocalLevelVariance:
                 region, evidence = mixture.highest_density(level)
                 hpds.append(region)
                 hpd_evidence.append(evidence)
-            forecast = validate_forecast(Forecast(mixture.mean, quantiles, tuple(hpds)),
+            forecast = validate_forecast(Forecast(mixture.mean, quantiles, tuple(hpds),
+                {"family": "gaussian_mixture", "weights": list(mixture.weights),
+                 "means": list(mixture.means), "variances": list(mixture.variances)}),
                                          request.quantile_levels, request.highest_density_levels)
         except (ValueError, OverflowError, FloatingPointError) as error:
             output_error = f"{type(error).__name__}: {error}"
