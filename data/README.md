@@ -56,6 +56,19 @@ normal/inverse-gamma prior. It returns exact Student-t observation forecasts.
 Its joint sampler saves parameter/future draws in the run directory. Neither
 adapter reads the generator truth or changes input acquisition/preservation.
 
+[Predictive checks](../docs/predictive-checks.md) generate whole simulated
+datasets under a separate check folder in `runs/`, not as acquired snapshots.
+Prior-only checks need no data. Observed checks verify a selected snapshot and
+choose only the releases available by an explicit development as-of time;
+declared final periods are excluded. They retain selected records/history hash
+for replay and never read generator truth. The source store remains unchanged.
+
+[Prior comparisons](../docs/prior-influence.md) use identical histories for
+every chosen prior. Each daily issuance selects only then-available releases;
+later revisions never rewrite earlier updates. The explicit final cutoff uses
+the same development-history boundary as predictive checks. Selected release
+records/hashes are saved under `runs/`; no new acquired input is created.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:

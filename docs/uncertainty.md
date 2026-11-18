@@ -34,6 +34,18 @@ includes parameter uncertainty; its saved parameter distribution remains
 separate fit evidence. Optional MCMC audits retain finite-computation MCSEs,
 which do not widen forecast intervals or substitute for predictive spread.
 
+[Whole-dataset predictive checks](predictive-checks.md) use separate saved
+artifacts to criticize the mean/variance model. Their replicated paths,
+discrepancy histograms and simulation-precision intervals are not shared
+forecast HPD regions or held-out calibration evidence. They do not alter
+forecast intervals, run scores or model approval.
+
+[Prior influence comparisons](prior-influence.md) use the same exact predictive
+laws under explicit alternative priors. Their mean-parameter HPD regions,
+variance-parameter equal-tail credible intervals and observation-predictive
+HPD regions are stored and labeled separately. Signed width differences show
+assumption influence, not improvement or approval.
+
 The [joint mean/variance model](normal-mean-variance.md) integrates an unknown
 observation variance as well. Its exact Student-t scale is not its standard
 deviation. Finite observation quantiles and HPD intervals can exist even when

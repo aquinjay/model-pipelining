@@ -104,3 +104,34 @@ a short declared development period. The computation thresholds are unchanged.
 The known-variance flags `--prior-variance` and `--observation-variance` conflict
 with this switch. Selecting an audit never changes the exact Student-t forecast
 method. See [the joint-model guide](../docs/normal-mean-variance.md).
+
+## Prior and posterior predictive checks
+
+The separate `scripts/check_normal_mean_variance.py` accepts explicit prior
+flags (`--prior-mean`, `--prior-mean-precision`, `--prior-shape`, `--prior-scale`),
+`--replications` (default 1000), and `--seed` (default 0). Exact independent
+joint draws need no MCMC config. `--prior-only --observation-count N` needs no
+input. Observed checks require `--dataset`, one snapshot/tag, and aware `--as-of`.
+
+An optional `--experiment configs/daily_forecast_experiment.json` supplies
+columns, release/revision rules, minimum history and a final boundary. Only
+development role is allowed, with as-of time strictly before `final_start`.
+Forecast horizon/delay, actual vintage and benchmarks do not schedule or score
+these replications. Configuration is saved automatically; no settings are
+discovered or selected from discrepancy results. See [commands and semantics](../docs/predictive-checks.md).
+
+## Prior influence comparisons
+
+[normal_mean_variance_priors.json](normal_mean_variance_priors.json) supplies
+`reference` settings and named `scenarios` whose overrides inherit unchanged
+reference settings. It compares location/precision and inverse-gamma shape/scale
+choices. For example, shape 30/scale 29 preserves prior expected variance 1
+while changing its concentration. These are illustrative choices, not a search
+grid, model ranking or requirement that influence be small.
+
+Use `scripts/compare_priors.py --config configs/normal_mean_variance_priors.json`
+with a dataset, one snapshot/tag, an aware `--as-of`, and a new output directory.
+An optional development `--experiment` supplies release rules, daily issuance
+delay and final boundaries; `--interval-level` defaults to 0.95. No MCMC settings
+are accepted. The CLI saves expanded settings, exact prior/learning paths and
+differences, then draws charts automatically. See [timing, quantities and examples](../docs/prior-influence.md).

@@ -11,6 +11,16 @@ the constant mean and observation variance with a normal/inverse-gamma prior.
 It supplies exact Student-t forecasts and an optional joint sampler audit.
 This page documents the original known-observation-variance model.
 
+[Prior and posterior predictive checks](predictive-checks.md) are implemented
+separately for `NormalMeanVariance`. They simulate whole datasets directly from
+the exact joint distributions, rather than extending this sampler audit or
+running automatically inside backtests.
+
+[Prior comparisons](prior-influence.md) evaluate exact learning/prediction
+paths for the joint mean/variance model under caller-chosen priors. They use
+identical historical releases and no MCMC. This known-variance model and its
+audit remain separate.
+
 ## Model and exact calculation
 
 ```text

@@ -139,6 +139,51 @@ This separate workflow processes its complete input snapshot; it does not apply
 an experiment's final-period exclusions. Use an appropriate development-only
 input when preserving a genuinely untouched final period.
 
+## Prior and posterior predictive check folders
+
+Prior/posterior predictive checks use a separate format-1 artifact kind, not a
+backtest directory. `predictive_checks.json` records configuration, seed,
+simulation rules, environment/source fingerprints and computation status.
+Observed mode also records permanent input, as-of time, experiment and selected
+release history/hash. `observations.csv` and `observed_statistics.json` retain
+the selected history and its discrepancies; prior-only mode has no observed
+comparison or posterior folder.
+
+Each `prior/` and `posterior/` folder contains `parameter_draws.csv` (one shared
+mean/variance per dataset), `replicated.csv` (every generated value),
+`statistics.csv` (dataset discrepancies/undefined reasons), and `summary.json`
+(failures, valid/missing counts, replicated quantiles, inclusive observed-tail
+fractions, MCSEs and Wilson intervals). `checks.json` measures computation;
+`review.json` remains pending. Numerical failures retain evidence, while large
+discrepancies do not fail computation. Explicit plotting, called automatically
+by the check CLI, adds `prior_predictive.png`/`posterior_predictive.png` without
+refitting or drawing new samples. These files are all local/ignored; pushing
+code does not upload them. See [the artifact and replay guide](../docs/predictive-checks.md).
+
+## Prior influence comparison folders
+
+`prior_influence.json` identifies a separate format-1 comparison artifact with
+expanded reference/scenario settings, interval level, development context and
+source/environment fingerprints. `learning_schedule.csv` records daily as-of
+selection and the final cutoff, including waiting periods with no available
+history. `selected_histories.csv` preserves the common releases per update.
+
+`learning_paths.csv` starts each configuration with its empty-history prior,
+then saves exact posterior/predictive quantities, scale components, conditional
+prior-location weights, calculation status/errors and signed reference
+differences at each update. `configuration_summaries.json` records changed
+setting groups, completion/failure counts, final rows and maxima over defined
+matched differences. `checks.json` measures computation; `review.json` remains
+pending. Strong influence never fails computation. Later updates/configurations
+continue after numerical failure; missing reference results yield null differences.
+
+Explicit `plot_prior_influence`, called automatically by the comparison CLI,
+adds `prior_learning.png` and `prior_differences.png` using saved files only.
+Mean/predictive Student-t bounds are HPD; inverse-gamma variance bounds are
+equal-tail credible intervals. Existing charts/directories are rejected. See
+[semantics and replay](../docs/prior-influence.md). All artifacts remain local
+and ignored by Git, alongside the separate predictive-check results.
+
 ## Reproduction and retention
 
 Keep the entire input store, important run folders, matching source code, and

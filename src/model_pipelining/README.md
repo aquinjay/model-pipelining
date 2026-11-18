@@ -24,6 +24,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
 | [sampling.py](sampling.py) | Independent emcee Metropolis chains, ArviZ diagnostics, exact-reference audits |
 | [sampling_variance.py](sampling_variance.py) | Joint two-coordinate audit with Jacobian and moment-aware diagnostics |
+| [predictive_checks.py](predictive_checks.py) | Exact whole-dataset prior/posterior simulations, as-of development selection, descriptive discrepancies and saved-only plots |
+| [prior_influence.py](prior_influence.py) | Exact prior/learning/prediction paths on common historical releases and descriptive reference differences |
 | [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
@@ -243,6 +245,7 @@ ExperimentSpec.to_dict() -> dict
 ExperimentSpec.from_dict(value) -> ExperimentSpec
 ExperimentSpec.load(path) -> ExperimentSpec
 read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, ...]
+select_history_as_of(versions, *, issued_at, period_end=None) -> tuple[ObservationVersion, ...]
 plan_cases(versions, experiment) -> (tuple[ForecastCase, ...], list[dict])
 select_actuals(versions, task) -> dict[str, ObservationVersion]
 ```
@@ -258,6 +261,12 @@ The parsing/planning functions support inspection without executing a run.
 validated records to `plan_cases`. A `ForecastCase` holds `origin_index`,
 `issued_at`, `target_time`, and selected `versions`; `.history` returns immutable
 model observations and `.history_sha256` hashes timestamp/value/release triples.
+`select_history_as_of` selects latest available releases from a validated,
+ordered release table. It requires aware times; periods must be no later than
+`period_end` (default issuance), and releases no later than issuance. A period
+cutoff later than issuance is rejected. The shared helper serves backtests,
+predictive checks and prior comparisons.
+
 The schedule records selected/excluded candidate targets. `select_actuals`
 chooses the declared first/latest scoring vintage, keyed by UTC ISO target time;
 the runner invokes it only after freezing forecasts. Record construction itself
@@ -406,6 +415,88 @@ The existing CLI selects this model with `--learn-variance` and uses
 known-variance flags. `plot_fit` reads saved Student-t/inverse-gamma references
 and draws three trace/density rows without refitting. See [equations, units,
 commands, diagnostics and replay](../../docs/normal-mean-variance.md).
+
+## Prior and posterior predictive checks
+
+Import these functions and records from `model_pipelining.predictive_checks`:
+
+```text
+simulate_prior_predictive(model, *, observation_count, replications=1000, seed=0)
+    -> PredictiveReplications
+simulate_posterior_predictive(model, request, *, replications=1000, seed=0)
+    -> PredictiveReplications
+dataset_statistics(values) -> dict[str, dict]
+run_prior_predictive_checks(*, model, observation_count, output_directory,
+                            replications=1000, seed=0) -> Path
+run_predictive_checks(*, dataset, model, issued_at, output_directory,
+                      snapshot_id=None, tag=None, store="data/versioned",
+                      experiment=None, replications=1000, seed=0) -> Path
+plot_predictive_checks(check_directory) -> tuple[Path, ...]
+```
+
+Supply a concrete `NormalMeanVariance` with `mcmc=None`; these are exact joint
+draws, not MCMC. Replication count and prior-only observation count are positive
+integers; seed is an integer in `[0, 2**32)`. Posterior dataset length equals the
+request history length. One shared sampled mean/variance generates every value
+in a dataset; replications use independent PCG64/SeedSequence streams.
+
+`ReplicatedDataset` fields are `replication`, `mean`, `observation_variance`, and
+`values: tuple[float, ...]`. `PredictiveReplications` fields are `kind`, `seed`,
+`requested_replications`, `observation_count`, `distribution: dict`,
+`datasets: tuple[ReplicatedDataset, ...]`, and `failures: tuple[dict, ...]`.
+Inspect failures even when the simulation function returns normally. Direct
+helpers do not persist. `dataset_statistics` returns each fixed statistic as
+`{"value": float | None, "unavailable_reason": str | None}`; invalid numeric
+calculations raise, while mathematically undefined statistics retain reasons.
+
+Persisted prior-only checks require no input. Observed checks need one snapshot
+selector and an aware explicit `issued_at`; they select latest as-of releases
+and enforce minimum history. Only development-role `ExperimentSpec`s are
+allowed, and issuance must precede any declared final boundary. Unused forecast
+scheduling/scoring settings are documented in [the workflow](../../docs/predictive-checks.md).
+
+The workflows save simulation/statistic evidence and pending review. Numerical
+failures are retained, later independent replications/phases continue, and
+required failures fail computation. Undefined quantities and large observed
+discrepancies do not. I/O failures propagate and may leave running output.
+Existing directories/charts are rejected. Library plotting is explicit;
+`scripts/check_normal_mean_variance.py` invokes it automatically. Plotting reads
+saved files only. Backtests do not call this workflow. See [statistics, scope,
+commands and replay](../../docs/predictive-checks.md).
+
+## Prior influence comparisons
+
+Import from `model_pipelining.prior_influence`:
+
+```text
+run_prior_influence(*, dataset, reference, scenarios, issued_at, output_directory,
+                    snapshot_id=None, tag=None, store="data/versioned",
+                    experiment=None, interval_level=0.95) -> Path
+plot_prior_influence(comparison_directory) -> tuple[Path, Path]
+```
+
+Supply concrete `NormalMeanVariance` models with `mcmc=None`, one reference and
+a nonempty dictionary of named alternatives. Names must be nonblank and cannot
+be `reference`. `interval_level` must be a representable probability strictly
+between 0 and 1. Input/development cutoff requirements match predictive checks.
+Minimum history is required at the final cutoff; the path starts with the
+empty-history prior and the first available observation. Daily updates use
+period+issuance delay and only then-available releases. A differing final
+as-of time is appended. Revisions trigger a refit without rewriting past rows.
+
+All configurations use the same selected histories. Saved paths contain exact
+posterior parameters, mean/variance/predictive summaries and intervals,
+conditional prior-location coefficients, scale components, status/errors and
+signed reference differences. Undefined moments/differences are explicit nulls.
+Mean/predictive Student-t intervals are HPD; variance parameter intervals are
+equal-tail. Per-update calculation failures retain evidence and later cases
+continue. Missing references never invent differences. Large influence is not
+a failure, and no model/setting is selected automatically.
+
+Library plotting is explicit; `scripts/compare_priors.py` calculates then plots
+automatically. Charts read saved files only. Output directories/charts must be
+unused; I/O failures propagate. See [quantities, timing, example configs and
+replay](../../docs/prior-influence.md).
 
 ## Local-level diagnostics
 
