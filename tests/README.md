@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **174 tests**. They use temporary fixtures/stores rather than
+There are currently **194 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -28,6 +28,7 @@ before running sampler tests.
 | [test_experiments.py](test_experiments.py) | 16 | Named targets, release/revision isolation, actual vintages, available-history counts, disjoint target roles, benchmark freezing/failures, horizons, replay/history fingerprints, legacy version 2, both CLIs |
 | [test_normal_mean.py](test_normal_mean.py) | 18 | Hand posterior, independent raw-density/predictive quadrature, HPD mass/density, strong prior influence, numerical extremes, fit identity/freezing/replay/failures, delayed releases/final roles, exact/audit CLI |
 | [test_sampling.py](test_sampling.py) | 10 | Independent-chain posterior/predictive agreement, target-density ratios, warmup/acceptance, random-state isolation, seed/replay/order invariance, biased/stuck/missing diagnostics, partial failures, saved-only trace plotting |
+| [test_normal_mean_variance.py](test_normal_mean_variance.py) | 20 | Joint posterior/raw-density quadrature, predictive mixture integration and HPD, undefined moments, nonconstant sampler Jacobian, joint/reference agreement, partial/stuck failures, isolation/replay, release/final roles, CLI and saved-only traces |
 
 ## Data behavior checked in detail
 
@@ -111,6 +112,18 @@ even with complete primary scores. Replay restores the saved experiment and
 numerical artifacts, while reporting checks history identity and still reads
 legacy version-2 artifacts. Both CLIs exercise explicit final selection.
 See [experiment semantics](../docs/experiments.md).
+
+## Joint mean and variance learning
+
+The mean/variance tests integrate the raw prior times likelihood independently
+of the conjugate update, compare joint-density ratios, and integrate the
+Gaussian/inverse-gamma predictive mixture. They verify HPD mass/boundary density
+and distinguish Student-t scale from variance. Joint sampler tests subtract
+the saved nonconstant Jacobian before comparing target ratios against raw
+densities. Exact-reference diagnostics, nullable heavy-tail moments, explicit
+audit omissions, RNG/seed isolation, saved failures, frozen fit replay, delayed
+releases/final roles, CLI conflicts and saved-only mean/variance traces are
+exercised. These are computation checks, not approval of constant-mean behavior.
 
 ## What passing tests does not decide
 

@@ -37,6 +37,7 @@ explains which checks support each implementation claim.
 | Point models/benchmarks | Training mean and last available value; optional required benchmarks on identical histories/cases |
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
 | Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
+| Bayesian mean and variance | Learn both with a normal/inverse-gamma prior, return exact Student-t forecasts, and optionally audit the joint posterior |
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
 | Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
@@ -73,7 +74,9 @@ benchmarks, and evaluation boundaries independently of the adapter. The runner
 saves the expanded plan and case exclusions, selects as-of histories, and runs
 declared benchmarks automatically. Final evaluation requires a separate explicit
 invocation. Application choice is deferred. [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md)
-now supplies an exact unknown-mean adapter and an optional per-fit sampler audit.
+supplies exact unknown-mean models and optional per-fit sampler audits.
+The [mean-and-variance model](docs/normal-mean-variance.md) also learns observation
+variance; select it with `scripts/run_normal_mean.py --learn-variance`.
 Audited forecasts still use exact integration; failed required diagnostics fail
 the case and run while retaining evidence. Unknown local-level noise variances
 and forecasts from intractable sampled distributions remain future work.
@@ -106,6 +109,7 @@ explains how to read both execution and review status.
 | Inspect assumption influence and sequential model discrepancies | [Local-level diagnostics](docs/diagnostics.md) |
 | Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
 | Learn parameters and inspect exact-reference sampler evidence | [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md) |
+| Learn mean and observation variance together | [Normal/inverse-gamma model](docs/normal-mean-variance.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 

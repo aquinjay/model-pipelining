@@ -9,7 +9,7 @@ for current behavior and review priorities.
 
 - Preserve one local file per snapshot, identified by dataset plus SHA-256.
 - Keep acquisition, registration, tag assignment, and execution separate calls.
-- Run point models, the fixed-variance Bayesian local level, or an unknown-mean Gaussian adapter through shared daily experiments, with adapter-specific timing limits.
+- Run point models, the fixed-variance Bayesian local level, or constant-mean Gaussian adapters with known or learned observation variance through shared daily experiments, with adapter-specific timing limits.
 - Save a predictive mean and each declared observation-uncertainty kind. Prefer highest-density prediction regions in reporting.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
 - Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
@@ -265,6 +265,45 @@ The November 3 proposal considered snapshots of one or more related files, compa
   forecasts/scores matched exact counterparts. Largest R-hat was 1.003979;
   smallest bulk/tail ESS were 1550.38/1329.21. Known final-role fixtures establish
   mechanics, not untouched data or model approval. See [the implemented guide](parameter-uncertainty.md).
+
+## Learn mean and observation variance against an exact reference — 2026-11-17
+
+- **Request:** extend parameter learning to observation variance before attempting
+  unknown local-level noise parameters. Application selection remains deferred.
+- **Model:** add `NormalMeanVariance` with a proper normal/inverse-gamma prior.
+  Exact joint updating yields Student-t mean-parameter and observation-predictive
+  marginals. Prediction integrates both parameters; scale is not standard
+  deviation. Existing known-variance and local-level adapters retain their models.
+- **Inference:** optional independent two-coordinate emcee Gaussian Metropolis
+  chains audit the exact reference. Conditional mean standardization and
+  centered/scaled log variance assist the audit. The target evaluates prior,
+  sufficient-statistic likelihood and the nonconstant transform Jacobian.
+  No new dependency, adaptation, cache, or sampled endpoint estimator is added.
+- **Moments:** all proper positive shape/scale/precision settings are allowed
+  when requested forecasts are representable. Undefined posterior/predictive
+  variances are explicit nulls. Moment MCSE audits require the variances of their
+  quantities to exist; omissions have saved reasons. Precision, log variance,
+  standardized conditional mean and bounded predictive checks remain required.
+  Unrepresentable existing moments and missing applicable diagnostics fail.
+- **Workflow:** reuse fit format 1/run format 3 and shared persistence, checks,
+  information boundaries and seeds. `run_normal_mean.py --learn-variance`
+  explicitly selects the new model; known/learned variance flags cannot mix.
+  A separate sampler config requests more draws for two coordinates with
+  unchanged computation thresholds. Saved-only plotting adds variance traces
+  against inverse-gamma references and reads legacy normal fits.
+- **Evidence:** independent raw prior-times-likelihood quadrature and density
+  ratios, predictive mixture integration, HPD mass/density, transform-Jacobian
+  ratios, joint sampler agreement, heavy-tail omissions, stuck/partial failures,
+  future/RNG isolation, frozen evidence/replay, release/final cases and CLI modes
+  are covered by the new tests. See [the guide](normal-mean-variance.md).
+  All 194 tests passed. Both synthetic series completed 170 exact cases and
+  three matched audit cases each, with both point benchmarks. Exact/audit
+  predictions and scores matched, and numerical artifacts and fits replayed
+  byte for byte. Saved-only charts/comparisons succeeded. Across the exercised
+  joint audits, maximum R-hat was 1.005306 and minimum bulk/tail ESS were
+  2638.73/3362.73. Artifacts are local and ignored by Git.
+  Computational success does not approve priors or the constant-mean assumption.
+  Unknown local-level variances and MCMC-only predictive estimation remain open.
 
 ## Working proposals
 

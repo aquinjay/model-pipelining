@@ -58,7 +58,7 @@ explicit caller actions.
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
 | Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
-| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` | `model.configuration` and model identity/capabilities |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` | `model.configuration` and model identity/capabilities |
 | Uncertainty request | `interval_levels=(0.8, 0.95)`; all run scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 
@@ -89,3 +89,18 @@ automatically. A requested audit's failed criteria fail the forecast case and
 run. Forecasts use exact parameter integration in either mode. Reporting and
 human review do not select inference settings. See [equations, defaults,
 commands, evidence and failure rules](../docs/parameter-uncertainty.md).
+
+## Joint mean-and-variance audit
+
+[normal_mean_variance_mcmc.json](normal_mean_variance_mcmc.json) uses the same
+`MCMCSettings` schema with 4 chains, 1500 warmup/6000 retained draws per chain
+and proposal scale 1.7 for the two-coordinate audit. Select it explicitly with
+`scripts/run_normal_mean.py --learn-variance --mcmc-config configs/normal_mean_variance_mcmc.json`
+and the usual input/output arguments. It stores 30,000 rows per fit; start with
+a short declared development period. The computation thresholds are unchanged.
+
+`--learn-variance` selects the normal/inverse-gamma model. Its prior flags are
+`--prior-mean`, `--prior-mean-precision`, `--prior-shape`, and `--prior-scale`.
+The known-variance flags `--prior-variance` and `--observation-variance` conflict
+with this switch. Selecting an audit never changes the exact Student-t forecast
+method. See [the joint-model guide](../docs/normal-mean-variance.md).

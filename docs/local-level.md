@@ -208,4 +208,6 @@ plan, and application-specific human/release criteria remain open. There is no
 sampling algorithm requiring sampler diagnostics in this analytic filter.
 Parameter uncertainty and MCMC evidence are implemented in the separate
 [unknown-mean model and exact-reference audit](parameter-uncertainty.md),
-with an independently verifiable model before richer noise-parameter inference.
+and the [joint mean/observation-variance model](normal-mean-variance.md).
+Both have independently verifiable exact references; learning local-level
+noise parameters remains future work.

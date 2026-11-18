@@ -20,8 +20,10 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [experiments.py](experiments.py) | Immutable versioned task/evaluation specs, release parsing, as-of case planning, and scoring vintage selection |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
 | [normal_mean.py](normal_mean.py) | Unknown constant mean, exact posterior/predictive integration, optional sampler audit |
+| [normal_mean_variance.py](normal_mean_variance.py) | Joint unknown mean/variance, normal/inverse-gamma posterior, exact Student-t forecasts |
 | [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
 | [sampling.py](sampling.py) | Independent emcee Metropolis chains, ArviZ diagnostics, exact-reference audits |
+| [sampling_variance.py](sampling_variance.py) | Joint two-coordinate audit with Jacobian and moment-aware diagnostics |
 | [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
@@ -368,6 +370,42 @@ predictive references. Exact-only fits have no trace. Existing charts are
 rejected; partial failed audit traces can be drawn when some draws were saved.
 The CLI requests this explicitly with `--plot-fit-origin`; it does not draw all
 fit traces automatically. See [run files](../../runs/README.md) for retention.
+
+## Joint mean and observation variance
+
+Import `NormalMeanVariance` and `NormalInverseGammaPosterior` from
+`model_pipelining.normal_mean_variance`.
+
+```text
+NormalMeanVariance(*, prior_mean=0, prior_mean_precision=0.01,
+                   prior_shape=3, prior_scale=2, mcmc=None)
+NormalMeanVariance.posterior(request) -> NormalInverseGammaPosterior
+NormalMeanVariance.predictive_distribution(request) -> frozen scipy.stats.t
+NormalMeanVariance.fit(request) -> FittedForecast
+NormalMeanVariance.forecast(request) -> Forecast
+```
+
+The posterior fields are `mean`, `mean_precision`, `shape`, `scale`, and
+`prior_mean_weight`. Properties are `degrees_of_freedom`, `mean_scale_squared`,
+`predictive_scale_squared`, `observation_variance_mean`, `mean_variance`, and
+`predictive_variance`. The last three return `None` when posterior shape is at
+most 1. Scale squared is not variance. Positive finite prior precision, shape,
+and inverse-gamma scale are required. The prior mean is finite. History/timing
+requirements match `NormalMean`.
+
+`predictive_distribution` supports SciPy `.pdf`, `.cdf`, `.ppf`, `.mean()`, and
+`.var()`; unlike the nullable posterior properties, SciPy can return infinity
+for an undefined variance. Both inference modes return exact Student-t
+forecasts; shared records, dispatch, persistence and replay are unchanged.
+Pass `mcmc=MCMCSettings(...)` explicitly to audit both parameters. The joint
+helper and shared sampler source are fingerprinted. Undefined-moment audit
+omissions have saved reasons; applicable missing/failed diagnostics still fail.
+
+The existing CLI selects this model with `--learn-variance` and uses
+`--prior-mean-precision`, `--prior-shape`, and `--prior-scale` instead of the
+known-variance flags. `plot_fit` reads saved Student-t/inverse-gamma references
+and draws three trace/density rows without refitting. See [equations, units,
+commands, diagnostics and replay](../../docs/normal-mean-variance.md).
 
 ## Local-level diagnostics
 

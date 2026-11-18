@@ -14,7 +14,7 @@ from model_pipelining.uncertainty import interval_probabilities
 
 
 def plot_fit(run_directory: str | Path, *, origin_index: int) -> Path:
-    """Draw saved NormalMean audit traces/densities, including warmup separation.
+    """Draw saved constant-mean audit traces/densities with warmup separation.
 
 Reads finished run/fit evidence only; no fitting, input-store access, or sampler
 imports. A partial failed fit can be drawn if it retained some draws. Exact-only
@@ -38,12 +38,22 @@ fits have no trace. Existing output is rejected.
     if not rows:
         raise ValueError("This fit retained no draws")
     warmup = metadata["sampler"]["settings"]["warmup"]
-    figure = Figure(figsize=(12, 7), constrained_layout=True)
+    posterior = metadata["posterior"]
+    references = metadata.get("reference_distributions")
+    if references is None:
+        references = [
+            {"column": "mu", "family": "normal", "label": "mu (parameter)",
+             "loc": posterior["mean"], "scale": math.sqrt(posterior["variance"])},
+            {"column": "future_value", "family": "normal", "label": "future observation",
+             "loc": posterior["mean"], "scale": math.sqrt(metadata["predictive_variance"])},
+        ]
+    figure = Figure(figsize=(12, 3.5 * len(references)), constrained_layout=True)
     FigureCanvasAgg(figure)
-    axes = figure.subplots(2, 2)
+    axes = figure.subplots(len(references), 2, squeeze=False)
     for chain in sorted({int(row["chain"]) for row in rows}):
         selected = [row for row in rows if int(row["chain"]) == chain]
-        for index, column in enumerate(("mu", "future_value")):
+        for index, reference in enumerate(references):
+            column = reference["column"]
             times = [int(row["draw"]) + (0 if row["warmup"] == "True" else warmup) for row in selected]
             values = [float(row[column]) for row in selected]
             if not all(math.isfinite(value) for value in values):
@@ -52,17 +62,27 @@ fits have no trace. Existing output is rejected.
             retained = [float(row[column]) for row in selected if row["warmup"] == "False"]
             if retained:
                 axes[index, 1].hist(retained, bins=40, density=True, histtype="step", alpha=0.7)
-    posterior = metadata["posterior"]
-    for index, (mean, variance, label) in enumerate((
-        (posterior["mean"], posterior["variance"], "mu (parameter)"),
-        (posterior["mean"], metadata["predictive_variance"], "future observation"),
-    )):
-        distribution = NormalDist(mean, math.sqrt(variance))
-        grid = [mean + math.sqrt(variance) * (-4 + i * 8 / 200) for i in range(201)]
+    for index, reference in enumerate(references):
+        family = reference["family"]
+        if family == "normal":
+            distribution = NormalDist(reference["loc"], reference["scale"])
+            lower, upper = distribution.inv_cdf(0.001), distribution.inv_cdf(0.999)
+        else:
+            from scipy.stats import invgamma, t
+            if family == "student_t":
+                distribution = t(df=reference["df"], loc=reference["loc"], scale=reference["scale"])
+            elif family == "inverse_gamma":
+                distribution = invgamma(a=reference["shape"], scale=reference["scale"])
+            else:
+                raise ValueError(f"Unsupported saved reference distribution: {family}")
+            lower, upper = map(float, distribution.ppf([0.001, 0.999]))
+        if not all(math.isfinite(value) for value in (lower, upper)) or lower >= upper:
+            raise ValueError("Unrepresentable saved reference plotting range")
+        grid = [lower + (upper - lower) * i / 200 for i in range(201)]
         axes[index, 1].plot(grid, [distribution.pdf(value) for value in grid], color="black", label="exact reference")
         axes[index, 0].axvspan(0, warmup, alpha=0.1, color="grey", label="excluded warmup")
-        axes[index, 0].set(xlabel="iteration", ylabel=label)
-        axes[index, 1].set(xlabel=label, ylabel="retained-draw density")
+        axes[index, 0].set(xlabel="iteration", ylabel=reference["label"])
+        axes[index, 1].set(xlabel=reference["label"], ylabel="retained-draw density")
         axes[index, 0].legend(fontsize="small")
         axes[index, 1].legend(fontsize="small")
     figure.suptitle(f"Origin {origin_index}: {summary['status']} MCMC audit; forecasts use exact integration")

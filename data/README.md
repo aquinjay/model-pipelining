@@ -50,6 +50,12 @@ the run, not as new acquired data. The mean-shift series violates its constant-
 mean assumption; sampler agreement with exact inference does not approve that
 assumption. Generator settings are never read by the adapter.
 
+The [mean-and-variance adapter](../docs/normal-mean-variance.md) also learns the
+observation variance from eligible input values, using an explicit
+normal/inverse-gamma prior. It returns exact Student-t observation forecasts.
+Its joint sampler saves parameter/future draws in the run directory. Neither
+adapter reads the generator truth or changes input acquisition/preservation.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:
