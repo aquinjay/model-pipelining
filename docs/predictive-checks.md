@@ -1,5 +1,7 @@
 # Prior and posterior predictive checks
 
+[Joint variance evidence](joint-evidence.md) also supports categorical evolution-variance priors and preserves W/V/state dependence. The sections below retain their stated original-model scope.
+
 The workflow now delegates distribution calculations to model-supplied evidence
 providers. Existing standalone calls keep their options and artifact meanings.
 An [experiment evidence plan](evidence.md) can require this workflow and execute

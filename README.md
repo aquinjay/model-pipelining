@@ -280,3 +280,5 @@ Sequential predictive diagnostics now cover learned-variance models: full-CDF PI
 Data-free [simulation calibration and parameter recovery](docs/calibration.md) now exercise exact and learned-variance inference over repeated prior/data draws. Invoke `scripts/calibrate_model.py` explicitly; it saves CDF/coverage/recovery evidence and draws its chart automatically.
 
 [Joint variance learning and dynamics investigation](docs/joint-variance.md) now compare explicit fixed dynamics and learn a categorical evolution variance jointly with observation variance. The support/prior are caller choices; forecasts average across their posterior probabilities. The new CLI draws forecast and variance-learning charts automatically.
+
+The joint model now supports [generative predictive checks and prior comparisons](docs/joint-evidence.md), preserving evolution/noise/state dependence and discrete state masses. Existing evidence commands execute these capabilities explicitly; prior charts now include evolution probabilities.

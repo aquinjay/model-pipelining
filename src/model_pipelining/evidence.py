@@ -23,6 +23,7 @@ class ReplicatedDataset:
     values: tuple[float, ...]
     initial_level: float | None = None
     latent_levels: tuple[float, ...] = ()
+    evolution_variance: float | None = None
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,7 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
             or any(not isinstance(path, Path) for path in metadata.implementation_files)
             or not isinstance(metadata.predictive_scope, dict) or not isinstance(metadata.influence_scope, dict)):
         raise ValueError("Malformed evidence source/scope metadata")
-    allowed_parameters = {"mean", "observation_variance", "initial_level"}
+    allowed_parameters = {"mean", "observation_variance", "initial_level", "evolution_variance"}
     if (not isinstance(metadata.parameter_fields, tuple)
             or not {"mean", "observation_variance"}.issubset(metadata.parameter_fields)
             or len(set(metadata.parameter_fields)) != len(metadata.parameter_fields)
@@ -101,7 +102,7 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     return provider
 
 
-def validate_replications(result, *, observation_count, replications, seed, kind, latent_paths):
+def validate_replications(result, *, observation_count, replications, seed, kind, latent_paths, parameters=()):
     """Reject omitted, duplicated, malformed or nonfinite provider output."""
     if (not isinstance(result, PredictiveReplications) or result.kind != kind or result.seed != seed
             or result.requested_replications != replications or result.observation_count != observation_count
@@ -118,6 +119,8 @@ def validate_replications(result, *, observation_count, replications, seed, kind
                 or not finite(item.observation_variance) or item.observation_variance <= 0
                 or any(not finite(value) for value in item.values)
                 or any(value is not None and not finite(value) for value in (item.mean, item.initial_level))
+                or (item.evolution_variance is not None and (not finite(item.evolution_variance) or item.evolution_variance < 0))
+                or ("evolution_variance" in parameters and item.evolution_variance is None)
                 or (latent_paths and (len(item.latent_levels) != observation_count or item.initial_level is None))
                 or any(not finite(value) for value in item.latent_levels)):
             raise ValueError("Malformed replicated dataset from evidence provider")

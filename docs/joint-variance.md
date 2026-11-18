@@ -91,10 +91,7 @@ atoms; `evolution_ppf` returns an actual support point. No interpolation creates
 an unsupported W value. `fit` saves full component evidence and labels every
 quadrature node with its W. Failed precision remains required evidence.
 
-The joint model currently supplies the `sequential_checks` provider capability.
-Generative predictive checks, prior comparisons and calibration must be extended
-explicitly before they can be required for this new model; unsupported evidence
-fails visibly. Existing models retain their established capabilities.
+The joint model supplies sequential, [generative predictive and prior-comparison](joint-evidence.md) capabilities. Calibration still requires discrete-aware treatment; unsupported evidence fails visibly. Existing models retain their established capabilities.
 
 ## Verification and limits
 

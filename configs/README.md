@@ -168,3 +168,5 @@ Sequential checks reuse the reference settings in existing prior configurations.
 `scripts/calibrate_model.py` reuses reference settings from the prior JSON files. Trial count, observation count and seed are explicit CLI options, separate from historical experiment settings. See [calibration](../docs/calibration.md).
 
 [local_level_joint_priors.json](local_level_joint_priors.json) declares the joint model reference: explicit categorical evolution-variance support/probabilities and a continuous inverse-gamma observation-variance prior. `scripts/run_joint_local_level.py` uses it explicitly. It is a discrete modeling assumption, not an automatically tuned numerical grid. See [the model](../docs/joint-variance.md).
+
+The joint prior config includes explicit `evolution_weights`, V-scale and initial-level alternatives. Evidence/prior CLIs restore list-valued JSON settings through the model configuration loader before applying comparisons. See [joint evidence](../docs/joint-evidence.md).

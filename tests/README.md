@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **323 tests**. They use temporary fixtures/stores rather than
+There are currently **333 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -197,3 +197,7 @@ calibration exercise; it is not a difficult-posterior benchmark.
 ## Joint variance and dynamics verification
 
 `test_joint_variance.py` adds 13 tests: independent batch-likelihood/adaptive quadrature references, W posterior weights, predictive CDF and confounding, scalar limit/HPD, known-state degeneracy, mixture root roundoff, numerical failures, configuration, replay/isolation, shared-noise matched studies, CLI and saved-only plots. The suite now has 323 tests.
+
+## Joint generative verification
+
+`test_joint_evidence.py` adds 10 tests for joint dependence, conditional fresh innovations, prior frequencies/covariance, atomic states, unsupported parameter omissions, matched prior support, future/final isolation, numerical failures, saved-only plots and CLI experiment execution. The suite now has 333 tests.

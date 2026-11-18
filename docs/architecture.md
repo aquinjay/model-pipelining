@@ -316,3 +316,7 @@ Provider-owned generators and marginal posterior summaries support [data-free co
 ## Categorical evolution-variance learning
 
 [The joint adapter](joint-variance.md) enumerates an explicit discrete W prior and delegates each continuous V/state calculation to the scalar adapter. Posterior support probabilities use marginal likelihoods. Shared forecasting and sequential evidence remain model-independent. Discrete support is a modeling assumption, not continuous-prior quadrature or automatic model selection.
+
+## Joint generative evidence
+
+The categorical-W provider now supplies joint W/V/initial-state simulation and summaries to the existing workflows. Shared records carry an optional W parameter and categorical prior fields. Gaussian/point state quantiles preserve known-state atoms, while observation distributions stay continuous. Saved metadata enables evolution-prior charts. See [the contract](joint-evidence.md).

@@ -9,6 +9,7 @@ import numpy as np
 from model_pipelining.evidence import EvidenceMetadata, PredictiveReplications, ReplicatedDataset
 from model_pipelining.local_level_variance import initial_posterior_components
 from model_pipelining.mixtures import NormalMixture
+from model_pipelining.state_mixtures import StateMixture
 from model_pipelining.models import ForecastRequest
 from model_pipelining.uncertainty import interval_probabilities
 
@@ -52,18 +53,16 @@ def _simulate_local(model, *, observation_count, replications, seed, request=Non
             failures.append({"replication": index, "error": f"{type(error).__name__}: {error}"})
     return PredictiveReplications(kind, seed, replications, observation_count, distribution, tuple(datasets), tuple(failures))
 
-def _local_summary(model, case, level):
-    posterior = model.prior() if case is None else model.posterior(
-        ForecastRequest(case.history, case.issued_at, case.target_time, (), ()))
+def _local_summary(model, case, level, *, posterior=None):
+    if posterior is None:
+        posterior = model.prior() if case is None else model.posterior(
+            ForecastRequest(case.history, case.issued_at, case.target_time, (), ()))
     gap = 1.0 if case is None else (case.target_time-case.history[-1].timestamp).total_seconds()/86400
     predictive = posterior.predictive(gap)
     region, hpd_check = predictive.highest_density(level)
     lower, upper = interval_probabilities(level)
-    if all(value == 0 for value in posterior.level_variances):
-        state_lower = state_upper = posterior.level_mean
-    else:
-        state = NormalMixture(posterior.weights, posterior.level_means, posterior.level_variances)
-        state_lower, state_upper = state.ppf(lower), state.ppf(upper)
+    state = StateMixture(posterior.weights, posterior.level_means, posterior.level_variances)
+    state_lower, state_upper = state.ppf(lower), state.ppf(upper)
     result = {}
     result.update(mean_location=posterior.level_mean, mean_variance=posterior.level_variance,
         mean_lower=state_lower, mean_upper=state_upper, mean_moment_status="finite_mean_and_variance",
@@ -89,7 +88,7 @@ class LocalLevelVarianceEvidence:
         self.metadata = EvidenceMetadata(
             family="local_level_variance",
             implementation_files=tuple(Path(__file__).with_name(name) for name in
-                ("evidence_local_level.py", "local_level_variance.py", "mixtures.py")),
+                ("evidence_local_level.py", "local_level_variance.py", "mixtures.py", "state_mixtures.py")),
             parameter_fields=("mean", "observation_variance", "initial_level"), latent_paths=True,
             integration_checks=True, mean_prior_settings=("initial_mean", "initial_variance"),
             predictive_scope={

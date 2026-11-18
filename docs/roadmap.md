@@ -111,7 +111,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 323 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 333 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -287,3 +287,7 @@ Implemented [posterior-CDF calibration and parameter recovery](calibration.md) f
 ## Dynamics investigation and learning task 3
 
 Implemented [controlled dynamics comparisons and categorical W/V learning](joint-variance.md). Stable and changing fixtures expose the fixed-W tradeoff. The joint adapter retains discrete support uncertainty and parameter confounding, with 13 new tests bringing the suite to 323. Broader generative evidence for this model remains explicitly unavailable until extended.
+
+## Follow-up task 4: joint generative criticism
+
+Implemented [joint predictive checks and prior comparisons](joint-evidence.md) after committing the first three tasks. Ten new tests bring the suite to 333. The final authorized follow-up is calibration that correctly accounts for categorical W and mixed state atoms.

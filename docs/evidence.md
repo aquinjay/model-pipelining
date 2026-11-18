@@ -155,8 +155,8 @@ inference semantics, helper sources, fields and plot interpretation. Plotting
 reads that saved metadata and numerical artifacts without instantiating a model.
 The two earlier artifact kinds retain explicit legacy presentation support.
 
-The existing providers are `NormalMeanVariance` with `mcmc=None` and
-`LocalLevelVariance`. Unsupported models continue to forecast through their
+The existing historical-evidence providers are `NormalMeanVariance` with
+`mcmc=None`, `LocalLevelVariance`, and [the categorical-W joint model](joint-evidence.md). Unsupported models continue to forecast through their
 existing capabilities; requiring unavailable separate evidence fails visibly.
 This bounded interface preserves the existing mean/variance/state records. It
 is not a universal parameter schema, configurable arbitrary-stage dispatcher,

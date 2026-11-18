@@ -236,3 +236,5 @@ Sequential evidence folders contain `sequential_checks.json`, frozen `predictive
 Calibration folders save `calibration.json`, frozen `trials/NNNNNN.json`, `calibration.csv`, `inference.json`, summaries/checks and pending review. The CLI also writes `calibration.png`; library plotting is explicit. [Failed trials remain visible](../docs/calibration.md).
 
 Joint-variance fits save categorical prior/posterior W probabilities, every conditional quadrature/refinement record, W-labelled V/state nodes and V/W covariance in ordinary fit artifacts. The CLI adds `joint_variances.png` from saved fits. Controlled study folders preserve generated source/store, matched sequential evidence and `dynamics.png`. See [semantics](../docs/joint-variance.md).
+
+Joint predictive folders add `evolution_variance` to parameter draws. Prior paths add W probabilities/bounds/means and V/W covariance; plotting adds `evolution_priors.png`. Older model paths use null optional W columns and retain their original quantities. Known-state probability masses are preserved; see [joint evidence](../docs/joint-evidence.md).

@@ -39,7 +39,8 @@ def simulate_prior_predictive(model: Forecaster, *, observation_count: int,
         raise ValueError("observation_count must be a positive integer")
     result = provider.simulate(observation_count=observation_count, replications=replications, seed=seed)
     return validate_replications(result, observation_count=observation_count, replications=replications,
-                                 seed=seed, kind="prior", latent_paths=provider.metadata.latent_paths)
+                                 seed=seed, kind="prior", latent_paths=provider.metadata.latent_paths,
+                                 parameters=provider.metadata.parameter_fields)
 
 
 def simulate_posterior_predictive(model: Forecaster, request: ForecastRequest, *,
@@ -53,7 +54,8 @@ def simulate_posterior_predictive(model: Forecaster, request: ForecastRequest, *
     result = provider.simulate(observation_count=len(request.history), replications=replications,
                                seed=seed, request=request)
     return validate_replications(result, observation_count=len(request.history), replications=replications,
-                                 seed=seed, kind="posterior", latent_paths=provider.metadata.latent_paths)
+                                 seed=seed, kind="posterior", latent_paths=provider.metadata.latent_paths,
+                                 parameters=provider.metadata.parameter_fields)
 
 
 _STATISTICS = (

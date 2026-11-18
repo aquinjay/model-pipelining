@@ -1,5 +1,7 @@
 # Comparing prior influence on learning and prediction
 
+[Joint variance evidence](joint-evidence.md) also supports categorical evolution-variance priors and preserves W/V/state dependence. The sections below retain their stated original-model scope.
+
 Model evidence providers now own prior/parameter/predictive summaries and validate
 which assumptions may vary. Shared code retains history selection, differences,
 persistence and saved-only reporting. An [experiment evidence plan](evidence.md)
