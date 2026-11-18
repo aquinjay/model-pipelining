@@ -111,7 +111,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 310 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 323 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -283,3 +283,7 @@ Implemented [learned-variance sequential checks](sequential-checks.md) through p
 ## Simulation validation task 2
 
 Implemented [posterior-CDF calibration and parameter recovery](calibration.md) for both existing learned-variance models. Ten new tests bring the suite to 310. Two 200-trial exercises completed with saved finite-simulation uncertainty and pending interpretation; the dynamics investigation is next.
+
+## Dynamics investigation and learning task 3
+
+Implemented [controlled dynamics comparisons and categorical W/V learning](joint-variance.md). Stable and changing fixtures expose the fixed-W tradeoff. The joint adapter retains discrete support uncertainty and parameter confounding, with 13 new tests bringing the suite to 323. Broader generative evidence for this model remains explicitly unavailable until extended.

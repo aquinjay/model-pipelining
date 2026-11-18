@@ -312,3 +312,7 @@ The optional provider `predictive(request)` supplies a serializable distribution
 ## Model-level simulation calibration
 
 Provider-owned generators and marginal posterior summaries support [data-free continuous-CDF calibration](calibration.md). Shared execution freezes truth/data, retains every failed trial, and reports finite-simulation uncertainty separately from quadrature precision. It runs outside historical forecast origins and does not approve a model or validate an MCMC sampler.
+
+## Categorical evolution-variance learning
+
+[The joint adapter](joint-variance.md) enumerates an explicit discrete W prior and delegates each continuous V/state calculation to the scalar adapter. Posterior support probabilities use marginal likelihoods. Shared forecasting and sequential evidence remain model-independent. Discrete support is a modeling assumption, not continuous-prior quadrature or automatic model selection.

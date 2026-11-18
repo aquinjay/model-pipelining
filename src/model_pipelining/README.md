@@ -671,3 +671,7 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 ## Simulation calibration
 
 `calibration.run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95) -> Path` uses provider `calibration_draw(count, generator)`, `calibration_fit(request, truth, level)` and `calibration_parameters`. `plot_calibration(directory) -> Path` reads saved records. The CDF-based workflow runs explicitly outside historical experiments. See [semantics and failure rules](../../docs/calibration.md).
+
+## Joint local-level variances
+
+`local_level_joint_variance.LocalLevelJointVariance` has Gaussian initial-state and inverse-gamma V settings plus `evolution_variances=(0,.01,.1,1)` and optional positive `evolution_weights` (uniform by default). It supplies `prior`, `posterior`, `fit`, `forecast`, `predictive_distribution`, `from_configuration` and sequential evidence. `JointVariancePosterior` integrates conditional scalar fits and exposes V CDF/PPF, W mass/quantiles, state moments, predictive mixtures and V/W covariance. `plot_joint_variances(run_directory)` reads saved fits. `dynamics_study.run_dynamics_study` compares caller-supplied W settings on controlled matched fixtures; plotting is explicit in Python. See [the full contract](../../docs/joint-variance.md).

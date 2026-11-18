@@ -62,6 +62,15 @@ class NormalMixture:
             if abs(self.cdf(lower)-probability) > 1e-8:
                 raise ValueError("Requested quantile is not representable at this location/scale")
             return lower
+        # Symmetric mixtures can have a zero median with component brackets
+        # separated by less than a CDF ulp. Verify endpoint mass before asking
+        # a sign-bracket solver to distinguish rounded equal probabilities.
+        low_error, high_error = self.cdf(lower)-probability, self.cdf(upper)-probability
+        rounding_tolerance = 32*float(np.spacing(probability))
+        if low_error >= 0 and abs(low_error) <= rounding_tolerance:
+            return lower
+        if high_error <= 0 and abs(high_error) <= rounding_tolerance:
+            return upper
         # Tail components can make the bracket enormous while the requested
         # quantile remains near the bulk. Never scale absolute root tolerance
         # by that bracket: it could then skip the whole bulk distribution.

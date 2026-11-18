@@ -116,3 +116,5 @@ Each saved receipt retains the original source, copy destination, UTC copy compl
 [Sequential checks](../docs/sequential-checks.md) use historical as-of training releases and cutoff-eligible scoring releases from the preserved snapshot. Input preparation and registration remain caller actions.
 
 [Simulation calibration](../docs/calibration.md) generates local prior/data trials without source snapshots. It saves simulated truth and observations in the selected run directory before fitting; no external/final data is used.
+
+The [controlled dynamics study](../docs/joint-variance.md) deliberately generates and registers stable/gradual/abrupt fixtures with shared noise under its selected run directory. Final targets remain excluded from its development comparisons; these known fixtures do not establish an untouched application evaluation.
