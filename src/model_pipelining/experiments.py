@@ -189,6 +189,24 @@ def read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, 
     return tuple(versions)
 
 
+def select_history_as_of(versions: tuple[ObservationVersion, ...], *, issued_at: datetime,
+                         period_end: datetime | None = None) -> tuple[ObservationVersion, ...]:
+    """Select latest eligible releases from an ordered, validated release table.
+
+    Period timestamps must be <= period_end (default issued_at); releases must
+    be <= issued_at. This selects training history, never scoring outcomes.
+    """
+    issuance = _utc(issued_at, "issued_at")
+    end = issuance if period_end is None else _utc(period_end, "period_end")
+    if end > issuance:
+        raise ValueError("period_end must be no later than issued_at")
+    selected = {}
+    for item in versions:
+        if item.timestamp <= end and item.available_at <= issuance:
+            selected[item.timestamp] = item
+    return tuple(selected.values())
+
+
 def plan_cases(versions: tuple[ObservationVersion, ...], experiment: ExperimentSpec):
     """Plan target-based splits and as-of histories before any model calls."""
     periods = tuple(dict.fromkeys(item.timestamp for item in versions))
@@ -198,11 +216,7 @@ def plan_cases(versions: tuple[ObservationVersion, ...], experiment: ExperimentS
         origin_index = target_index - task.horizon_days
         origin = periods[origin_index]
         issued_at = origin + timedelta(seconds=task.issuance_delay_seconds)
-        selected = {}
-        for item in versions:
-            if item.timestamp <= origin and item.available_at <= issued_at:
-                selected[item.timestamp] = item
-        history = tuple(selected.values())
+        history = select_history_as_of(versions, issued_at=issued_at, period_end=origin)
         included = experiment.evaluation.includes(periods[target_index])
         reason = "selected" if included else "outside_evaluation_role"
         if included and len(history) < task.minimum_history:

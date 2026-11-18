@@ -31,6 +31,7 @@ not a sandbox preventing an adapter from independently reading files.
 | Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
 | Reporting | Charts and matched-case comparisons from saved artifacts; saved-only diagnostic charts | Wider reports and application delivery |
+| Predictive criticism | Exact whole-dataset prior/posterior replication and exact prior comparisons for `NormalMeanVariance`, release-aware development selection, descriptive discrepancies/differences and saved-only charts | Other models' full-data checks, application-specific review |
 
 A run's directory and manifest identify its model/configuration and saved cases.
 There is no global run-ID registry. No orchestration service, release process,
@@ -138,6 +139,44 @@ This is a small optional dispatch boundary, not the general configurable
 check-plan engine below. See [the API](../src/model_pipelining/README.md#unknown-mean-model-and-optional-fit-evidence)
 and [model/criteria guide](parameter-uncertainty.md).
 
+## Implemented prior and posterior predictive checks
+
+`predictive_checks.py` draws independent joint normal/inverse-gamma parameters
+and whole datasets. The shared parameter pair is held across each replicated
+dataset; independent Student-t draws per position would lose that dependence.
+Prior-only simulation needs no input. Observed checks use a verified snapshot,
+explicit as-of time, task columns/release rules, minimum history and a
+development-only final boundary guard. They fit once to the selected history
+and replicate its full length; this is in-sample criticism, not backtest scoring.
+
+The workflow saves all parameter/dataset draws, observed/replicated statistics,
+valid/missing counts and descriptive tail fractions with MCSE/Wilson intervals.
+Computation failures remain distinct from large model discrepancies and
+undefined statistics. Human review stays pending. Each replication has a
+separate deterministic PCG64 stream, and prior draws ignore observed values.
+No MCMC or shared check-plan registry is required. Saved-only plotting creates
+the charts; the check CLI invokes plotting automatically, and backtests do not
+invoke this workflow. See [semantics, artifacts and replay](predictive-checks.md).
+
+## Implemented mean/variance prior comparisons
+
+`prior_influence.py` compares explicit configurations from the empty-history
+prior through matched daily as-of histories and an explicit development cutoff.
+The shared `experiments.select_history_as_of` selector serves backtests,
+predictive checks and comparisons. Daily issuance delay applies to the learning
+path; only then-available releases enter each update. The explicit end context
+uses the same selection/final-boundary guard as predictive checks. Early paths
+start with the first observation, with minimum history enforced at the cutoff.
+
+Exact normal/inverse-gamma/Student-t summaries separate mean-parameter HPD,
+variance equal-tail credible intervals and observation-predictive HPD. Paths
+save prior-location coefficients, scale components and signed differences from
+the reference. The coefficient is conditional, not total prior attribution.
+Undefined moments are explicit, failed updates remain visible, later updates
+continue and missing references never create fabricated differences. There is
+no tuning, ranking or influence/agreement threshold. Plotting reads saved files;
+the explicit CLI calculates then plots automatically. See [prior comparisons](prior-influence.md).
+
 ## Implemented explicit local-level diagnostics
 
 [diagnostics.py](../src/model_pipelining/diagnostics.py) reads a verified daily
@@ -205,6 +244,8 @@ The separate diagnostic workflow saves prior/noise influence and sequential
 predictive criticism; neither implements this whole configurable plan or
 full-data posterior predictive replication. Existing numerical/simulation tests
 verify stated calculation properties, rather than approving prior plausibility.
+The mean/variance model's separate predictive-check workflow implements its
+own whole-dataset replications, as described above.
 The current analytic filter has no MCMC (Markov chain Monte Carlo) sampler.
 
 Simulation, parameter/state recovery, formal simulation-based calibration, and

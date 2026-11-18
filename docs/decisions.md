@@ -305,6 +305,80 @@ The November 3 proposal considered snapshots of one or more related files, compa
   Computational success does not approve priors or the constant-mean assumption.
   Unknown local-level variances and MCMC-only predictive estimation remain open.
 
+## Prior and posterior predictive criticism before prior comparisons — 2026-11-17
+
+- **Request/order:** implement prior and posterior predictive checks now, then
+  work on prior influence comparisons as a separate next task.
+- **Scope:** `NormalMeanVariance` only. Draw independent exact joint prior or
+  posterior parameter pairs, with one pair shared by an entire replicated
+  dataset. Use direct inverse-gamma/conditional-normal generation; no MCMC is
+  needed. Independent marginal Student-t draws per position are not equivalent.
+- **Information boundary:** prior-only runs need no input. Observed checks pin
+  a verified snapshot and select latest eligible releases using an explicit
+  aware as-of time. Only development role is allowed, as-of must precede any
+  final boundary, and minimum available history is enforced. The posterior is
+  fitted once to that selected history. Forecast scheduling/scoring settings
+  are not reused as a hidden check schedule or as held-out claims.
+- **Evidence:** persist all parameter/dataset draws and fixed location, spread,
+  tail and temporal discrepancies. Save inclusive tail counts with valid/missing
+  denominators, MCSEs and Wilson intervals. Fractions are descriptive, not
+  calibrated test p-values. Undefined statistics are explicit; discrepancies
+  never select a model or fail computation. Review remains pending.
+- **Failures/replay:** independent PCG64 streams per phase/replication avoid
+  global RNG changes and prevent one failure from shifting later draws.
+  Simulation/statistic failures retain evidence and fail computation; a failed
+  posterior retains prior results. Persistence errors propagate. Saved-only
+  plots never fit/simulate. The explicit CLI calls calculation then plotting;
+  backtests do not run these checks automatically. No new dependency is added.
+- **Verification:** all 221 tests passed, including 27 new tests for joint
+  moments/covariance, discrepancies, no-data prior behavior, undefined values,
+  partial failures, future/releases/final isolation, seeds/replay, CLI modes and
+  saved-only plots. Both synthetic series generated 1000 prior and posterior
+  replications of their first 160 observations, excluding the final 40; numerical
+  files replayed exactly. Stable-series temporal discrepancies were ordinary in
+  these simulations; the shift series had zero upper-tail exceedances for lag
+  correlation, half-mean difference and CUSUM. Zero counts retain positive
+  Wilson upper bounds. Results are development evidence and require human
+  interpretation. See [the workflow](predictive-checks.md).
+
+## Compare prior influence through matched historical learning paths — 2026-11-17
+
+- **Request:** implement prior influence comparisons after prior/posterior checks.
+  Strong influence remains descriptive evidence, not a failure or target to reduce.
+- **Scope:** explicit reference and named alternative `NormalMeanVariance`
+  priors, with exact calculations only. Paths start at the empty-history prior,
+  then the first available observation, and continue through a development
+  cutoff. Mean location/precision and variance shape/scale overrides inherit
+  unchanged reference settings. No simulation, MCMC, tuning or ranking is added.
+- **Timing:** extract a shared latest-release selector for backtests, predictive
+  checks and comparisons, preserving their semantics. Every prior receives
+  identical as-of histories at daily period+issuance delay and the explicit
+  cutoff. Refits incorporate eligible revisions without rewriting earlier rows.
+  Minimum history applies at the cutoff; declared final boundaries are enforced.
+- **Evidence:** save posterior parameters, conditional prior-location weights,
+  scale decomposition, mean-parameter HPD, inverse-gamma equal-tail variance
+  intervals, Student-t observation-predictive HPD and signed reference
+  differences. Undefined moments and unavailable differences are explicit.
+  The conditional coefficient is not total prior attribution. Scenario groups
+  identify changed inputs, not an isolated attribution of all output effects.
+- **Failures/reporting:** per-update failures retain errors and later updates
+  continue; missing reference calculations never fabricate differences. Strong
+  persistent influence completes successfully. Charts read saved evidence,
+  with explicit log/symmetric-log display scales, and no model calls. The
+  comparison CLI calculates then plots automatically; other workflows do not
+  invoke it automatically. All affected documentation is updated together.
+- **Verification:** tests cover hand calculations/decomposition, counterfactual
+  mean effects, interval integration, variance concentration, strong influence,
+  undefined moments, release/final isolation, shared selection, replay, failed
+  updates/references, saved-only plots and CLI inheritance. Both synthetic series
+  exercised six configurations on 160 development values, with 162 points each
+  including the prior/daily updates/cutoff, and replayed six numerical files per
+  series exactly. All 240 tests passed. The shift example showed identical mean
+  locations but differing predictive widths under variance-prior concentration;
+  a stronger mean prior retained a larger conditional location coefficient.
+  See [the workflow](prior-influence.md). No new dependency
+  or human model-approval rule is introduced.
+
 ## Working proposals
 
 - Choose installable package/build configuration when distribution is needed; current imports use `PYTHONPATH=src`.

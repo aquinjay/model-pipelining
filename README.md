@@ -41,6 +41,8 @@ explains which checks support each implementation claim.
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
 | Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
+| Predictive checks | Data-free prior simulation and full selected-history posterior replication for the mean/variance model, with saved discrepancy summaries and charts |
+| Prior comparisons | Exact learning/prediction paths for explicit mean/variance priors on identical release-aware histories, with saved signed differences |
 
 The forecast uncertainty describes the **next observed value**, conditional on
 the model's assumptions. It is separate from uncertainty about the hidden level
@@ -87,6 +89,22 @@ uncertainty. Strong influence is evidence to understand, not a failure or a
 quantity to minimize. Invoke it explicitly; its CLI also draws saved-result
 charts. The backtest scripts do not run it automatically.
 
+The [predictive-check workflow](docs/predictive-checks.md) simulates whole
+datasets from the mean/variance model's exact prior or posterior. It checks
+location, spread, tails, dependence and changes in level. Prior-only checks
+need no data; observed checks use an explicit as-of development history and
+honor release rules/final boundaries. Invoke `scripts/check_normal_mean_variance.py`
+explicitly; its CLI saves evidence and draws charts automatically. Large
+discrepancies remain human review evidence.
+
+[Prior influence comparisons](docs/prior-influence.md) now show how explicit
+mean-location/precision and variance-shape/scale choices affect learning and
+Student-t prediction. They start with the empty-history prior and preserve
+historical release timing through a development cutoff. Invoke
+`scripts/compare_priors.py` explicitly; it saves exact paths/differences and
+draws charts automatically. Strong influence is descriptive, with no tuning
+or agreement threshold.
+
 A completed run means the required computational checks and scoring succeeded.
 It does not decide whether the assumptions are useful. `review.json` starts as
 a pending human review record. The [walkthrough](docs/forecasting.md#read-the-results)
@@ -110,6 +128,8 @@ explains how to read both execution and review status.
 | Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
 | Learn parameters and inspect exact-reference sampler evidence | [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md) |
 | Learn mean and observation variance together | [Normal/inverse-gamma model](docs/normal-mean-variance.md) |
+| Inspect datasets implied by the prior and fitted model | [Prior and posterior predictive checks](docs/predictive-checks.md) |
+| Compare effects of mean and variance prior assumptions | [Prior influence comparisons](docs/prior-influence.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 

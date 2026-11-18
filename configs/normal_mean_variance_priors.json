@@ -1,0 +1,15 @@
+{
+  "reference": {
+    "prior_mean": 0,
+    "prior_mean_precision": 0.01,
+    "prior_shape": 3,
+    "prior_scale": 2
+  },
+  "scenarios": {
+    "shifted-mean": {"prior_mean": 10},
+    "strong-mean": {"prior_mean": 10, "prior_mean_precision": 30},
+    "concentrated-variance": {"prior_shape": 30, "prior_scale": 29},
+    "larger-variance": {"prior_scale": 18},
+    "heavy-tailed-variance": {"prior_shape": 0.75, "prior_scale": 0.5}
+  }
+}

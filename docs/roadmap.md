@@ -42,6 +42,21 @@ existence and the transform Jacobian are explicit. Local-level observation and
 evolution variances remain fixed. Application selection and a broader
 release/check framework can wait.
 
+[Prior and posterior predictive checks](predictive-checks.md) now replicate
+whole datasets from the exact joint prior/posterior of `NormalMeanVariance`.
+Prior-only runs need no input. Observed checks use an explicit as-of development
+history with release/vintage selection and a final-boundary guard. They save
+location/spread/tail/dependence/level-change discrepancies and their simulation
+precision; human interpretation stays pending, with no discrepancy failure
+threshold.
+
+[Prior influence comparisons](prior-influence.md) now compare explicit
+mean-location/precision and variance-shape/scale alternatives from the
+empty-history prior through matched historical as-of updates. Paths save exact
+mean/variance/predictive summaries, scale components and signed reference
+differences. Later revisions cannot rewrite earlier updates. Strong influence
+and undefined moments remain explicit evidence, not computational failure.
+
 To understand or repeat the reviewed workflow:
 
 1. Follow [the workflow](forecasting.md) to see how a preserved input becomes
@@ -59,8 +74,9 @@ faster reactions, or a particular empirical interval coverage are not acceptance
 thresholds. Human interpretation of assumptions and evidence remains open.
 
 The baseline workflow was introduced in `eabd66e`. PR #1 merged unknown-mean
-parameter learning and its sampler audit; the current checkout extends that
-with joint mean/variance learning. Use Git status/history
+parameter learning and its sampler audit; PR #2 merged joint mean/variance
+learning. The current checkout adds prior/posterior predictive checking and
+prior influence comparisons. Use Git status/history
 to distinguish local edits from committed/published code.
 
 ## Implemented scope
@@ -79,11 +95,13 @@ to distinguish local edits from committed/published code.
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
 | Reporting | Saved-result charts/comparisons; HPD preferred; version-1 point artifacts still readable | [Run files](../runs/README.md) |
 | Model evidence | Explicit full-path prior/noise influence, conditional initial-mean weights, sequential criticism, saved-only diagnostic charts | [Diagnostics](diagnostics.md) |
+| Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
+| Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
 | Task/evaluation contracts | Version-1 specs; manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The suite currently has 194 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 240 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -139,11 +157,48 @@ R-hat was 1.005306 and minimum bulk/tail ESS were 2638.73/3362.73. These known
 fixtures demonstrate mechanics, not untouched final evaluation or approval of
 the constant-mean assumption. No new dependency was added.
 
+The predictive-checking slice adds 27 tests. All 221 tests passed. Independent
+joint moments, cross-position covariance, predictive probabilities, discrepancy
+arithmetic, undefined quantities, partial failures, release/final isolation,
+seed/replay behavior, saved-only plots and both CLI modes are covered. A
+data-free prior check and checks on both synthetic series each generated 1000
+replications per phase. Observed runs used the first 160 development values,
+with the remaining 40 excluded, and all numerical files replayed exactly.
+Artifacts are local under `runs/predictive-checks-20261117-te2natcp/`.
+
+For the stable series, posterior upper-tail fractions for lag correlation,
+half-mean difference and CUSUM were 0.517, 0.233 and 0.465. For the shift series,
+all three had zero exceedances out of 1000 (Wilson upper bound about 0.00383).
+This exposes temporal structure poorly reproduced by the constant-mean model,
+while computation completes and human review remains pending. These are
+descriptive development observations, not approval criteria or calibrated tests.
+
+The prior-comparison slice adds 19 tests; all 240 tests passed. They cover hand updates/scale components,
+counterfactual prior-location coefficients, independent interval mass checks,
+variance concentration with fixed prior expected variance, persistent influence,
+undefined moments, early paths, historical releases/revisions, final isolation,
+shared selector validation, predictive-check endpoints, partial reference/update
+failures, replay/order/tag behavior, saved-only charts and CLI inheritance.
+Both synthetic series exercised six configurations over the first 160 values,
+with 162 points each including the prior, daily as-of updates and explicit
+cutoff. Six numerical files per series replayed exactly; human interpretation
+remains pending. Artifacts are local under
+`runs/prior-influence-20261117-ngp8vopg/`.
+
+For the shift fixture at the cutoff, the reference and concentrated-variance
+priors had the same mean location (11.966468) but predictive HPD widths 10.255558
+and 9.105625. The stronger mean prior retained a location coefficient 0.157895
+and mean location 11.656603. These are descriptive consequences of the chosen
+settings, not a ranking or a claim that influence should disappear.
+
 ## Next decisions, not automatic implementation
 
-- **Further model evidence:** decide whether the application needs full-data
-  posterior predictive replications or other criticism beyond the implemented
-  influence/innovation evidence. A configurable shared check plan, experimental
+- **Review collected evidence:** interpret prior predictive implications,
+  posterior discrepancies and prior influence together before choosing a richer
+  model. The implemented comparisons do not tune priors, minimize influence or
+  choose an application automatically.
+- **Further model evidence:** extend whole-dataset predictive checks to another
+  model only when useful. A configurable shared check plan, experimental
   overrides, and application-specific human/release criteria remain open.
 - **Further parameter learning:** unknown observation variance is now learned
   in the exact-reference constant-mean model. Next choose whether a richer

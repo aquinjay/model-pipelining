@@ -1,5 +1,20 @@
 # Reusable forecasting experiments
 
+[Prior influence comparisons](prior-influence.md) also reuse development specs
+and the shared `select_history_as_of` release selector. Their paths evaluate
+each daily period plus the task's issuance delay, then the explicit as-of
+cutoff. They include early observations before minimum history so prior effects
+are visible; minimum history applies at the final cutoff. Actual vintage and
+benchmarks do not score these comparisons. No model setting is selected
+automatically, and backtests do not start comparisons.
+
+The separate [predictive-check workflow](predictive-checks.md) can reuse this
+specification for columns, calendar/release rules, minimum history and the final
+boundary. It accepts development role only and an explicit as-of time before
+`final_start`. It replicates the selected fitted history rather than scheduling
+forecast cases; horizon, issuance delay, scoring vintage and benchmarks do not
+produce check scores. Backtests do not invoke predictive checks automatically.
+
 An experiment declares what a forecast means independently of the model and
 any particular application. The same specification can run a point baseline,
 the fixed-variance local-level model, or the parameter-learning `NormalMean` and

@@ -210,3 +210,20 @@ prior plausibility, formal simulation-based calibration, or application approval
 
 Unknown local-level noise variances and MCMC-only predictive/HPD approximation
 remain future work. This slice adds no dependency or shared check-plan registry.
+
+## Prior and posterior predictive checking
+
+[The separate checking workflow](predictive-checks.md) now simulates whole
+datasets from this model's exact prior and posterior. It offers data-free prior
+checks and as-of development-history posterior replications, with saved mean/
+variance draws, datasets, discrepancy statistics, finite-simulation precision,
+and charts. There is no MCMC in that workflow. Large discrepancies remain
+human review evidence rather than computational failures. Invoke it explicitly;
+backtests do not run it automatically.
+
+[Prior influence comparisons](prior-influence.md) now follow the same model
+through identical historical as-of histories under explicit caller-chosen
+location/precision and shape/scale settings. They save exact learning and
+prediction paths, scale components and signed differences from a reference,
+starting before any data. Strong influence has no failure threshold. The
+comparison CLI draws saved-only charts; backtests do not invoke it automatically.

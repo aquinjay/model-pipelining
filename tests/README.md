@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **194 tests**. They use temporary fixtures/stores rather than
+There are currently **240 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -29,6 +29,8 @@ before running sampler tests.
 | [test_normal_mean.py](test_normal_mean.py) | 18 | Hand posterior, independent raw-density/predictive quadrature, HPD mass/density, strong prior influence, numerical extremes, fit identity/freezing/replay/failures, delayed releases/final roles, exact/audit CLI |
 | [test_sampling.py](test_sampling.py) | 10 | Independent-chain posterior/predictive agreement, target-density ratios, warmup/acceptance, random-state isolation, seed/replay/order invariance, biased/stuck/missing diagnostics, partial failures, saved-only trace plotting |
 | [test_normal_mean_variance.py](test_normal_mean_variance.py) | 20 | Joint posterior/raw-density quadrature, predictive mixture integration and HPD, undefined moments, nonconstant sampler Jacobian, joint/reference agreement, partial/stuck failures, isolation/replay, release/final roles, CLI and saved-only traces |
+| [test_predictive_checks.py](test_predictive_checks.py) | 27 | Independent joint/predictive moments and cross-position covariance, statistics/tails, data-free priors, seed/prefix replay, partial failures, as-of releases/final isolation, discrepancy versus execution status, saved-only plots and both CLI modes |
+| [test_prior_influence.py](test_prior_influence.py) | 19 | Hand learning/scale decomposition, counterfactual location coefficient, credible/predictive interval mass, variance concentration, persistent influence/undefined moments, common release histories, future/final isolation, reference/update failures, replay, CLI and saved-only charts |
 
 ## Data behavior checked in detail
 
@@ -124,6 +126,30 @@ densities. Exact-reference diagnostics, nullable heavy-tail moments, explicit
 audit omissions, RNG/seed isolation, saved failures, frozen fit replay, delayed
 releases/final roles, CLI conflicts and saved-only mean/variance traces are
 exercised. These are computation checks, not approval of constant-mean behavior.
+
+## Prior and posterior predictive checking
+
+Predictive-check tests compare independent hand-derived prior/posterior moments,
+Student-t probabilities and cross-position covariance. The latter rejects
+incorrect simulation from independent marginal Student-t values. Hand statistics,
+undefined quantities, missing denominators, tail precision, partial simulation/
+statistic/posterior errors, prior independence from data, stream-prefix/RNG
+isolation, tag pinning, release/final selection, replay, saved-only charts and
+both CLI modes are exercised. A conspicuous level shift produces extreme saved
+discrepancies while computation completes and human review stays pending.
+
+## Prior influence comparisons
+
+Prior comparison tests check updates and scale components by hand, compare
+the location coefficient against an explicit counterfactual, independently
+integrate interval masses, and distinguish variance equal-tail intervals from
+Student-t HPD regions. They verify concentration changes with fixed prior
+expected variance, strong persistent influence completing successfully,
+undefined moments, early learning before minimum forecast history, period/
+release cutoff separation, delayed revisions, shared predictive-check endpoints,
+future/final isolation, order/replay/tag pinning, visible reference/update failures,
+saved-only plots and CLI inheritance. These verify descriptive calculations;
+they do not decide which prior or amount of influence is appropriate.
 
 ## What passing tests does not decide
 
