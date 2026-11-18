@@ -242,7 +242,12 @@ selection, saved-only charts, and persistence failures.
 
 This supplies the known-variance model and optional fit dispatch. Unknown
 observation variance is implemented by [the joint model](normal-mean-variance.md).
-Unknown local-level observation/evolution variances, MCMC-only forecasts/HPD estimation for intractable laws,
-a general sampler/check-plan registry, adaptation/caching, full-data criticism,
-and formal simulation-based calibration remain future work. Computation does
+Local-level observation variance is learned by [the numerical model](local-level-variance.md).
+Unknown local-level evolution variance, MCMC-only forecasts/HPD estimation for intractable laws,
+a general sampler/arbitrary-stage check registry, adaptation/caching, full-data criticism
+for the known-variance mean model, and formal simulation-based calibration
+remain future work. Caller-owned named fit requirements and the existing separate
+evidence workflows are now implemented in [the evidence plan](evidence.md).
+Whole-dataset predictive checks are implemented separately
+for the mean/variance and learned local-level models. Computation does
 not approve priors, the constant-mean assumption, or an application.

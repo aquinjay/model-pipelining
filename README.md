@@ -21,6 +21,9 @@ an implementation is correct or that a model is suitable for an application.
 The [November 14 workflow review](docs/workflow-review.md) follows one concrete
 forecast, explains the saved checks, and records the exercised results and gaps
 before model diagnostics and a real-data application.
+The [November 17 modeling review](docs/modeling-review.md) assesses the completed
+parameter-learning and evidence work against the infrastructure goal, records
+remaining model discrepancies, and recommends the next bounded step.
 
 For a review of the recent modeling work, follow that same order. Then inspect
 `models.py`, `local_level.py`, `uncertainty.py`, `backtest.py`, and `reporting.py`
@@ -38,11 +41,13 @@ explains which checks support each implementation claim.
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
 | Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
 | Bayesian mean and variance | Learn both with a normal/inverse-gamma prior, return exact Student-t forecasts, and optionally audit the joint posterior |
+| Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
 | Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
 | Predictive checks | Data-free prior simulation and full selected-history posterior replication for the mean/variance model, with saved discrepancy summaries and charts |
 | Prior comparisons | Exact learning/prediction paths for explicit mean/variance priors on identical release-aware histories, with saved signed differences |
+| Experiment evidence | Model-supplied simulation/summaries, caller-required workflows/fit checks, explicit execution and saved failures |
 
 The forecast uncertainty describes the **next observed value**, conditional on
 the model's assumptions. It is separate from uncertainty about the hidden level
@@ -80,8 +85,11 @@ supplies exact unknown-mean models and optional per-fit sampler audits.
 The [mean-and-variance model](docs/normal-mean-variance.md) also learns observation
 variance; select it with `scripts/run_normal_mean.py --learn-variance`.
 Audited forecasts still use exact integration; failed required diagnostics fail
-the case and run while retaining evidence. Unknown local-level noise variances
-and forecasts from intractable sampled distributions remain future work.
+the case and run while retaining evidence. [Learned local-level observation
+variance](docs/local-level-variance.md) now uses checked one-dimensional
+integration; select `scripts/run_local_level.py --learn-observation-variance`.
+Evolution variance remains fixed. Forecasts from intractable sampled
+distributions remain future work.
 
 The separate [diagnostic workflow](docs/diagnostics.md) compares caller-chosen
 settings from the first observation and shows their influence on updating and
@@ -105,6 +113,21 @@ historical release timing through a development cutoff. Invoke
 draws charts automatically. Strong influence is descriptive, with no tuning
 or agreement threshold.
 
+Both evidence workflows also support `--model local-level-variance`. Its
+predictive checks draw a joint initial state/noise variance and simulate fresh
+state paths. Its prior comparisons separate state/variance credible intervals
+from predictive mixture HPD sets, with saved integration checks. They preserve
+the same development selection and pending human review.
+
+[Experiment evidence requirements](docs/evidence.md) now consolidate these
+workflows behind model-supplied calculations. A version-2 experiment can require
+named fit checks and separate predictive/prior-comparison workflows. Invoke
+`scripts/run_evidence.py` explicitly to execute the required separate workflows;
+the command draws charts automatically. Forecasting enforces required per-origin
+fit checks and records separate workflow requirements as pending. Completion
+does not approve assumptions or an application. Version-1 experiments and older
+saved evidence remain readable.
+
 A completed run means the required computational checks and scoring succeeded.
 It does not decide whether the assumptions are useful. `review.json` starts as
 a pending human review record. The [walkthrough](docs/forecasting.md#read-the-results)
@@ -124,12 +147,15 @@ explains how to read both execution and review status.
 | Understand module responsibilities and future design | [Architecture](docs/architecture.md) |
 | See current status and review priorities | [Roadmap](docs/roadmap.md) |
 | Read the completed computational workflow review | [Workflow review](docs/workflow-review.md) |
+| Assess the latest modeling work against project direction | [Modeling review](docs/modeling-review.md) |
+| Declare and execute required model evidence | [Experiment evidence](docs/evidence.md) |
 | Inspect assumption influence and sequential model discrepancies | [Local-level diagnostics](docs/diagnostics.md) |
 | Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
 | Learn parameters and inspect exact-reference sampler evidence | [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md) |
 | Learn mean and observation variance together | [Normal/inverse-gamma model](docs/normal-mean-variance.md) |
 | Inspect datasets implied by the prior and fitted model | [Prior and posterior predictive checks](docs/predictive-checks.md) |
 | Compare effects of mean and variance prior assumptions | [Prior influence comparisons](docs/prior-influence.md) |
+| Learn observation noise while the hidden level changes | [Local level with learned variance](docs/local-level-variance.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 

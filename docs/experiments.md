@@ -1,5 +1,13 @@
 # Reusable forecasting experiments
 
+The learned-observation-variance `LocalLevelVariance` adapter accepts selected
+gapped histories and delayed issuance, scaling fixed state variation by elapsed
+UTC days. It supports future horizons through its marginal mixture forecast.
+The runner's daily calendar/release/final rules are unchanged. The original
+fixed-variance `LocalLevel` still has its narrower daily next-observation timing
+contract. Both evidence workflows accept `--model local-level-variance` with
+the same development-only selection and final-boundary guard.
+
 [Prior influence comparisons](prior-influence.md) also reuse development specs
 and the shared `select_history_as_of` release selector. Their paths evaluate
 each daily period plus the task's issuance delay, then the explicit as-of
@@ -21,12 +29,13 @@ the fixed-variance local-level model, or the parameter-learning `NormalMean` and
 `NormalMeanVariance` adapters.
 The preserved dataset/ID and model/settings are selected separately for each run.
 
-The version-1 specification has two immutable records:
+The version-2 specification has three immutable records (version 1 remains readable):
 
 | Record | Declares |
 |---|---|
 | `ForecastTask` | Target/source descriptions, columns, units, calendar/gap rule, horizon, minimum available history, issuance timing, release/revision rules, and scoring vintage |
 | `EvaluationPlan` | Development or final role, optional final-period boundaries, and required point benchmarks |
+| `EvidencePlan` | Required separate workflows, per-origin fit check names and evidence replication/seed/interval settings |
 
 `ExperimentSpec` combines them and supports `to_dict()`, `from_dict(value)`, and
 `load(path)`. Expanded settings are saved in every new run, including defaults.
@@ -190,18 +199,39 @@ legacy `minimum_history=` argument remains available in that mode. With an
 experiment, choose minimum history in `experiment.task` and omit that argument;
 conflicting interfaces raise before output creation.
 
+## Caller-owned evidence requirements
+
+`ExperimentSpec(evidence=EvidencePlan(...))` declares required separate
+`predictive_checks`/`prior_influence` workflows and optional named per-origin fit
+checks. Defaults require none and preserve earlier calls. Models still enforce
+their own required numerical checks. `run_backtest` additionally enforces the
+caller's requested fit names, saving missing/failed requirements before rejecting
+forecasts; no fit capability cannot bypass a requested check. Benchmarks retain
+their point-only role.
+
+Invoke `run_experiment_evidence` or `scripts/run_evidence.py` explicitly to run
+required separate development workflows on one pinned input/history. Their
+replication count/seed and comparison interval come from the plan. Missing
+capabilities/scenarios and mandatory checks fail the evidence run, while later
+workflows continue. Forecasting records those separate requirements as pending
+and does not execute them or certify human approval. The evidence runner does
+not score forecasts or rewrite a saved forecast run. The [evidence guide](evidence.md)
+defines fields, examples, status scope and artifact receipts.
+
 ## Evidence and compatibility
 
-New runs use manifest format version 3; experiment specs have their own version 1.
-The manifest saves expanded task/evaluation choices and a canonical specification
+New runs use manifest format version 3; experiment specs now emit version 2.
+Version-1 specs load with default empty evidence requirements. The manifest
+saves expanded task/evaluation/evidence choices and a canonical specification
 hash. `predictions.csv` adds training end and a hash of selected timestamp/value/
 release triples; scoring adds `actual_available_at`. These identify vintage
 selection without passing release tables or future outcomes to the adapter.
 Requested benchmarks add `benchmark_predictions.csv` and
 `benchmark_evaluation.csv`; their scores live in `scores.json.benchmarks`.
 
-Reports still read version-1/2 artifacts. Comparisons require matching declared
-experiments, case coordinates/history fingerprints, inputs, and actual vintages.
+Reports still read version-1/2 artifacts. Comparisons normalize explicit version-1/2
+experiment specifications, then require matching task/evaluation/evidence settings,
+case coordinates/history fingerprints, inputs, and actual vintages.
 Legacy runs without experiment/history metadata can compare with matching
 legacy runs; comparisons to newer runs may reject insufficient or differing
 metadata rather than infer missing task claims. No old artifacts are backfilled.

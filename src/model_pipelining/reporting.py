@@ -10,6 +10,7 @@ from statistics import NormalDist
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
+from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.uncertainty import interval_probabilities
 
 
@@ -256,11 +257,15 @@ def compare_runs(
         scores.append(score)
         evaluations.append(rows)
     first_input, second_input = (manifest["input"] for manifest in manifests)
+    # Version-1 specs have the same meaning as version-2 specs with default
+    # evidence requirements. Missing experiment metadata stays missing.
+    experiments = [ExperimentSpec.from_dict(manifest["experiment"]).to_dict()
+                   if manifest.get("experiment") is not None else None for manifest in manifests]
     if (
         (first_input["dataset"], first_input["snapshot_id"])
         != (second_input["dataset"], second_input["snapshot_id"])
         or manifests[0]["task"] != manifests[1]["task"]
-        or manifests[0].get("experiment") != manifests[1].get("experiment")
+        or experiments[0] != experiments[1]
         or coordinates[0] != coordinates[1]
         or [row["actual"] for row in evaluations[0]] != [row["actual"] for row in evaluations[1]]
         or [row.get("actual_available_at") for row in evaluations[0]] != [row.get("actual_available_at") for row in evaluations[1]]

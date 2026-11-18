@@ -1,0 +1,7 @@
+{
+  "minimum_nodes": 32,
+  "maximum_nodes": 1024,
+  "relative_tolerance": 0.000001,
+  "tail_tolerance": 0.00000001,
+  "maximum_expansions": 9
+}

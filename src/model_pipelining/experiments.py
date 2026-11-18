@@ -10,6 +10,8 @@ from pathlib import Path
 
 from model_pipelining.ingest import read_local_table
 from model_pipelining.models import Observation
+from model_pipelining.snapshots import retrieve_snapshot
+from model_pipelining.tags import resolve_tag
 
 
 def _utc(value, name):
@@ -92,27 +94,66 @@ class EvaluationPlan:
 
 
 @dataclass(frozen=True, kw_only=True)
+class EvidencePlan:
+    """Caller-owned computational requirements; no model-approval thresholds.
+
+    Separate workflows run only through explicit evidence execution. Fit-check
+    names apply at every primary-model forecast origin, including final runs.
+    """
+
+    required_workflows: tuple[str, ...] = ()
+    required_fit_checks: tuple[str, ...] = ()
+    replications: int = 1000
+    seed: int = 0
+    interval_level: float = 0.95
+
+    def __post_init__(self):
+        for name in ("required_workflows", "required_fit_checks"):
+            value = getattr(self, name)
+            if (not isinstance(value, tuple)
+                    or any(not isinstance(item, str) or not item.strip() for item in value)
+                    or len(set(value)) != len(value)):
+                raise ValueError(f"{name} must be a tuple of unique nonblank names")
+        if any(name not in ("predictive_checks", "prior_influence") for name in self.required_workflows):
+            raise ValueError("Required evidence workflows must be predictive_checks or prior_influence")
+        if type(self.replications) is not int or self.replications < 1:
+            raise ValueError("replications must be a positive integer")
+        if type(self.seed) is not int or not 0 <= self.seed < 2**32:
+            raise ValueError("seed must be an integer in [0, 2**32)")
+        if (isinstance(self.interval_level, bool) or not isinstance(self.interval_level, Real)
+                or not math.isfinite(self.interval_level) or not 0 < self.interval_level < 1):
+            raise ValueError("interval_level must be finite and in (0, 1)")
+
+
+@dataclass(frozen=True, kw_only=True)
 class ExperimentSpec:
     task: ForecastTask = field(default_factory=ForecastTask)
     evaluation: EvaluationPlan = field(default_factory=EvaluationPlan)
+    evidence: EvidencePlan = field(default_factory=EvidencePlan)
 
     def __post_init__(self):
-        if not isinstance(self.task, ForecastTask) or not isinstance(self.evaluation, EvaluationPlan):
-            raise ValueError("ExperimentSpec requires a ForecastTask and EvaluationPlan")
+        if (not isinstance(self.task, ForecastTask) or not isinstance(self.evaluation, EvaluationPlan)
+                or not isinstance(self.evidence, EvidencePlan)):
+            raise ValueError("ExperimentSpec requires a ForecastTask, EvaluationPlan and EvidencePlan")
 
     def to_dict(self):
         evaluation = asdict(self.evaluation)
         for name in ("final_start", "final_end"):
             evaluation[name] = evaluation[name].isoformat() if evaluation[name] is not None else None
         evaluation["benchmarks"] = list(evaluation["benchmarks"])
-        return {"format_version": 1, "task": asdict(self.task), "evaluation": evaluation}
+        evidence = asdict(self.evidence)
+        for name in ("required_workflows", "required_fit_checks"):
+            evidence[name] = list(evidence[name])
+        return {"format_version": 2, "task": asdict(self.task), "evaluation": evaluation, "evidence": evidence}
 
     @classmethod
     def from_dict(cls, value):
-        if (not isinstance(value, dict) or set(value) != {"format_version", "task", "evaluation"}
-                or type(value["format_version"]) is not int or value["format_version"] != 1
+        if (not isinstance(value, dict) or type(value.get("format_version")) is not int
+                or value["format_version"] not in (1, 2)
+                or set(value) != ({"format_version", "task", "evaluation"} |
+                                 ({"evidence"} if value["format_version"] == 2 else set()))
                 or not isinstance(value["task"], dict) or not isinstance(value["evaluation"], dict)):
-            raise ValueError("Expected a version-1 experiment with task and evaluation dictionaries")
+            raise ValueError("Expected a version-1/2 experiment with task/evaluation and version-2 evidence")
         evaluation = dict(value["evaluation"])
         for name in ("final_start", "final_end"):
             if evaluation.get(name) is not None:
@@ -121,7 +162,17 @@ class ExperimentSpec:
             if not isinstance(evaluation["benchmarks"], list):
                 raise ValueError("JSON benchmarks must be a list")
             evaluation["benchmarks"] = tuple(evaluation["benchmarks"])
-        return cls(task=ForecastTask(**value["task"]), evaluation=EvaluationPlan(**evaluation))
+        evidence = value.get("evidence", {})
+        if not isinstance(evidence, dict):
+            raise ValueError("Experiment evidence must be a dictionary")
+        evidence = dict(evidence)
+        for name in ("required_workflows", "required_fit_checks"):
+            if name in evidence:
+                if not isinstance(evidence[name], list):
+                    raise ValueError(f"JSON {name} must be a list")
+                evidence[name] = tuple(evidence[name])
+        return cls(task=ForecastTask(**value["task"]), evaluation=EvaluationPlan(**evaluation),
+                   evidence=EvidencePlan(**evidence))
 
     @classmethod
     def load(cls, path: str | Path):
@@ -239,3 +290,35 @@ def select_actuals(versions: tuple[ObservationVersion, ...], task: ForecastTask)
         if task.actual_policy == "latest_in_snapshot" or key not in selected:
             selected[key] = item
     return selected
+
+
+def select_development_history(*, dataset: str, issued_at: datetime, snapshot_id: str | None = None,
+                         tag: str | None = None, store: str | Path = "data/versioned",
+                         experiment: ExperimentSpec | None = None):
+    """Common verified end-history/context for predictive and prior comparisons."""
+    if (snapshot_id is None) == (tag is None):
+        raise ValueError("Supply exactly one of snapshot_id or tag")
+    if not isinstance(issued_at, datetime) or issued_at.utcoffset() is None:
+        raise ValueError("issued_at must be a timezone-aware datetime")
+    issued_at = issued_at.astimezone(UTC)
+    specification = ExperimentSpec() if experiment is None else experiment
+    if not isinstance(specification, ExperimentSpec) or specification.evaluation.role != "development":
+        raise ValueError("A development ExperimentSpec is required")
+    boundary = specification.evaluation.final_start
+    if boundary is not None and issued_at >= boundary:
+        raise ValueError("issued_at must precede the experiment's final_start")
+    target_time = issued_at + timedelta(days=specification.task.horizon_days)
+    selected_id = resolve_tag(dataset=dataset, tag=tag, store=store) if tag is not None else snapshot_id
+    versions = read_task_data(retrieve_snapshot(selected_id, dataset=dataset, store=store), specification.task)
+    selected = select_history_as_of(versions, issued_at=issued_at)
+    if len(selected) < specification.task.minimum_history:
+        raise ValueError("Insufficient available development history")
+    case = ForecastCase(0, issued_at, target_time, selected)
+    context = {"input": {"dataset": dataset, "snapshot_id": selected_id, "selected_tag": tag},
+               "issued_at": issued_at.isoformat(), "history_sha256": case.history_sha256,
+               "experiment": specification.to_dict(),
+               "selection": "Latest available release per period with period and availability <= issued_at",
+               "unused_forecast_settings": "horizon/issuance delay/actual policy/benchmarks do not score or select check datasets; issued_at is explicit",
+               "selected_history": [{"timestamp": item.timestamp.isoformat(), "available_at": item.available_at.isoformat(), "value": item.value}
+                                    for item in selected]}
+    return specification, versions, case, context

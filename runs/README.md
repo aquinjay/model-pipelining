@@ -28,7 +28,8 @@ update manually; no review command or automated release policy exists.
 
 For valid input/configuration, `run_backtest` creates a new, caller-named directory.
 It never reuses an existing output directory. New run manifests have format
-version 3, including a version-1 experiment specification and its canonical hash.
+version 3, including a version-2 experiment specification and its canonical hash.
+Version-1 experiment specifications remain readable with default evidence plans.
 Snapshot/tag formats remain separate version-1 records in the input store.
 Version-1/2 saved runs can still be reported without backfilled experiment claims
 or uncertainty. Comparisons require matching metadata, including declared
@@ -38,7 +39,7 @@ experiments and history hashes when present; legacy/new metadata may differ.
 |---|---|---|
 | `manifest.json` | Every started run | Configuration/provenance and execution status |
 | `case_schedule.csv` | Before any model calls | Candidate targets, issuance, available-history counts, and selection/exclusion reasons |
-| `fit_index.csv` | Adapters declaring fit evidence | Every case's fit directory/history hash, acceptance or error; written before actual selection |
+| `fit_index.csv` | Adapter supplies fit evidence or experiment requires fit checks | Every case's fit directory/history hash, acceptance or missing-evidence error; written before actual selection |
 | `fits/NNNNNN/fit.json` | Successful evidence construction, including failed computation | Fit format 1; runner-owned identity, posterior, settings, checks, diagnostics, sampler provenance |
 | `fits/NNNNNN/draws.csv` | Fits with sampler draws | Chain/draw dimensions, separate warmup, original/transformed parameter, paired future observation, log target, acceptance |
 | `predictions.csv` | After forecast generation | Issuance, training selection/end/history hash, target time, mean, status/error; no actuals |
@@ -183,6 +184,43 @@ Mean/predictive Student-t bounds are HPD; inverse-gamma variance bounds are
 equal-tail credible intervals. Existing charts/directories are rejected. See
 [semantics and replay](../docs/prior-influence.md). All artifacts remain local
 and ignored by Git, alongside the separate predictive-check results.
+
+## Learned local-level numerical evidence
+
+`LocalLevelVariance` uses existing run/fit formats. Its `fit.json` records
+log-variance quadrature settings, dependency versions, support/refinement/tail
+checks, weighted nodes and conditional filtered moments, elapsed target time,
+predictive HPD resolution checks and output errors. These nodes are numerical
+integration evidence, not MCMC draws. Failed required precision/output checks
+retain evidence and reject that case. Undefined source-model predictive variance
+is explicitly null even though a finite numerical mixture has finite moments.
+
+Predictive checks use kind `local_level_variance_predictive_checks`:
+`parameter_draws.csv` adds `initial_level`, with the constant `mean` empty;
+`latent_levels.csv` retains each fresh trajectory. Posterior metadata saves
+quadrature evidence and numerical failure details. Prior comparisons use kind
+`local_level_variance_prior_influence`, adding `integration_checks.json`,
+predictive segment JSON/counts and numerical precision fields. Undefined or
+inapplicable static-model fields stay null. State/variance intervals are
+equal-tail; predictive intervals are mixture HPD and retain gaps. Saved-only
+plots support both old and new kinds. See [inference, artifacts and replay](../docs/local-level-variance.md).
+
+## Explicit experiment evidence folders
+
+`run_experiment_evidence` creates `evidence.json`, `checks.json`, `review.json`
+and child `predictive_checks/` or `prior_influence/` folders for the experiment's
+required workflows. The manifest saves version-1 evidence-run metadata, the
+expanded version-2 evidence plan, pinned input/history/model, each required
+outcome, source hashes and child manifest/check SHA-256 receipts. Missing
+capabilities/scenarios and failed/missing mandatory checks fail requirements;
+later workflows continue. Human review stays pending. I/O can leave `running`.
+
+Per-origin `fit.json` may add `experiment_requirements` independently of model
+checks. Missing requested names or no fit capability fail forecasts. Forecast
+manifests record separate workflow requirements as pending; successful forecasting
+does not certify their completion. The explicit evidence runner does not alter
+saved forecasts or perform a final evaluation. Its CLI draws child charts;
+library callers invoke plotting separately. See [usage and limits](../docs/evidence.md).
 
 ## Reproduction and retention
 

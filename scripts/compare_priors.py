@@ -8,11 +8,13 @@ from pathlib import Path
 
 from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.normal_mean_variance import NormalMeanVariance
+from model_pipelining.local_level_variance import LocalLevelVariance
 from model_pipelining.prior_influence import plot_prior_influence, run_prior_influence
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=("normal-mean-variance", "local-level-variance"), default="normal-mean-variance")
     parser.add_argument("--dataset", required=True)
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--snapshot-id")
@@ -29,7 +31,9 @@ def main() -> int:
             or not isinstance(config["reference"], dict) or not isinstance(config["scenarios"], dict)
             or any(not isinstance(value, dict) for value in config["scenarios"].values())):
         raise ValueError("Config must contain reference settings and named scenario override dictionaries")
-    reference = NormalMeanVariance(**config["reference"])
+    kind = options.pop("model")
+    reference = (LocalLevelVariance.from_configuration(config["reference"]) if kind == "local-level-variance"
+                 else NormalMeanVariance(**config["reference"]))
     scenarios = {name: replace(reference, **overrides) for name, overrides in config["scenarios"].items()}
     experiment = options.pop("experiment")
     options["issued_at"] = options.pop("as_of")

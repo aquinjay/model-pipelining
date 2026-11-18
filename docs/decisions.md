@@ -9,12 +9,13 @@ for current behavior and review priorities.
 
 - Preserve one local file per snapshot, identified by dataset plus SHA-256.
 - Keep acquisition, registration, tag assignment, and execution separate calls.
-- Run point models, the fixed-variance Bayesian local level, or constant-mean Gaussian adapters with known or learned observation variance through shared daily experiments, with adapter-specific timing limits.
+- Run point models, Bayesian local-level adapters with fixed or learned observation variance, or constant-mean Gaussian adapters with known or learned observation variance through shared daily experiments, with adapter-specific timing limits.
 - Save a predictive mean and each declared observation-uncertainty kind. Prefer highest-density prediction regions in reporting.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
 - Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
 - Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection. Unknown-mean parameter integration and optional independent-chain MCMC audits are implemented.
-- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, a configurable check plan, and release automation remain open.
+- Use model-supplied evidence calculations and experiment-owned fit names/separate workflow requirements; execute separate evidence explicitly and retain failed or unavailable requirements.
+- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, arbitrary-stage checks, and release automation remain open.
 
 ## How to read earlier entries
 
@@ -378,6 +379,94 @@ The November 3 proposal considered snapshots of one or more related files, compa
   a stronger mean prior retained a larger conditional location coefficient.
   See [the workflow](prior-influence.md). No new dependency
   or human model-approval rule is introduced.
+
+## Connect state dynamics with learned observation variance — 2026-11-17
+
+- **Request/order:** implement observation-variance learning for the local-level
+  model, integrate its uncertainty into prediction, extend predictive checks
+  and prior comparisons, document and test the work, then review broader project
+  direction after those tasks are complete.
+- **Model:** `LocalLevelVariance` retains fixed evolution variance and an
+  independent Gaussian initial-state prior, with an inverse-gamma observation-
+  variance prior. Evolution scales by actual elapsed UTC days. The prior is
+  before the first one-day transition. This is not a conjugate common-scale DLM
+  and its general predictive law is not Student-t. The old adapter is unchanged.
+- **Inference:** one-dimensional log-variance Gauss-Legendre integration with
+  support expansion, two successful node refinements, marginal-CDF checks and
+  probability/first-moment tail bounds. Fixed-variance Kalman likelihood/state
+  calculations integrate latent states analytically. No new sampler/dependency
+  is needed. Numerical settings/versions and failed precision evidence are saved.
+- **Prediction:** use the integrated Gaussian mixture for means, quantiles and
+  density-threshold HPD sets. Never average conditional endpoints. Preserve
+  disconnected segments; require numerical grid-refinement/mass/boundary checks.
+  This is explicit approximation evidence, not a completeness proof for every
+  pathological mixture. Undefined source moments are null; unrepresentable or
+  unresolved calculations fail. Tail brackets do not loosen bulk root precision.
+- **Replications:** draw variance and initial state jointly from their posterior,
+  using conditional Gaussian smoothing within the selected history, then draw
+  fresh process innovations and observation noise. Replicating a fitted latent
+  path would check a different conditional object and is not used here.
+  Independent per-replication streams, data boundaries and descriptive discrepancy
+  semantics remain intact. Quadrature precision and Monte Carlo error are separate.
+- **Prior comparisons:** vary initial-state and observation-variance priors on
+  common historical releases; hold evolution variance/numerical settings fixed.
+  State and variance intervals are equal-tail, predictive sets are mixture HPD.
+  Inapplicable scalar prior coefficients, conjugate parameters/decompositions and
+  Student-t degrees of freedom are null. Strong influence remains descriptive.
+- **Verification:** independent batch Gaussian likelihood and initial-state
+  conditioning, separate adaptive scalar integration, the known-level conjugate
+  limit, mixture HPD/gaps, fresh-state-path moments, source isolation/replay,
+  failure persistence and all CLI modes are checked. The model/check/comparison
+  guide records precision limits and caller actions. The broader context review
+  is performed after implementation verification, as requested.
+  All 269 tests passed. Both fixtures completed 130 development forecasts,
+  excluding 40 final values, and all 143 numerical/fit files per series replayed
+  exactly. Each also exercised 1000 prior/posterior fresh-path replications and
+  five prior configurations over 162 points. Accepted quadrature used at most
+  1024 nodes with maximum tail probability estimate 7.842e-9. Saved discrepancy
+  fractions remain descriptive; no model approval follows from completion.
+- **Subsequent direction review:** after completing the three tasks and their
+  verification, [the modeling review](modeling-review.md) finds the slice aligned
+  with repeatable forecasting infrastructure. It records remaining stable/shift
+  discrepancies and recommends consolidating existing evidence capabilities and
+  experiment-owned requirements before adding another model/backend. This is a
+  next-step recommendation, not an implemented check framework or model approval.
+
+## Consolidate existing evidence and experiment requirements — 2026-11-17
+
+- **Order:** preserve the verified learned local-level work first in commit
+  `40b9d2b`, then consolidate its existing evidence workflows. No new model or
+  sampler was needed to complete this infrastructure step.
+- **Provider boundary:** optional `model.evidence_provider()` supplies simulation,
+  prior/parameter/predictive summaries, scenario constraints and source/presentation
+  metadata. Conjugate and learned local-level calculations live in separate
+  provider modules. Shared workflows no longer branch on concrete model classes;
+  they retain selection, discrepancies, differences, persistence and structural
+  validation. Existing records are intentionally bounded to mean/variance/state
+  evidence rather than inventing a universal parameter schema or registry.
+- **Experiment ownership:** `EvidencePlan` declares required existing workflows,
+  named primary-model fit checks and replication/seed/interval settings. Specs
+  emit version 2; version 1 loads with default empty requirements. Reports
+  normalize explicit v1/v2 specs for comparison without inventing missing metadata.
+- **Execution:** the explicit `run_experiment_evidence`/`scripts/run_evidence.py`
+  entry point pins a snapshot/history once, executes requested development
+  workflows, checks child identity/settings and mandatory check names, and saves
+  failed requirements when capability/scenarios/checks are missing. Later
+  workflows continue; I/O propagates. `run_backtest` separately enforces named
+  fit checks, saves independent experiment requirements and records separate
+  workflow requirements as pending. Neither run claims to complete human review.
+- **Compatibility:** standalone workflows keep their explicit options, RNG streams,
+  statistics and numerical records. Saved presentation metadata drives new plots;
+  legacy artifact kinds remain readable without fitting. Artifact hashes are
+  receipts, not a release system or immutable storage guarantee.
+- **Verification:** all 291 tests passed, including 22 new interface/requirement
+  tests covering an adapter unknown to shared workflow code, omitted/duplicated
+  replications, malformed summaries, missing/optional checks, unsupported evidence,
+  pinned tags/history/settings, replay/final isolation, numerical/I/O failures,
+  v1/v2 comparison and both CLI modes. On each original synthetic history, 18
+  evidence files replayed byte for byte, 324 prior-learning rows matched, and
+  both selected prior-summary records matched. Artifacts remain local under
+  `runs/evidence-interface-20261117-fewaws1h/`. See [the contract](evidence.md).
 
 ## Working proposals
 

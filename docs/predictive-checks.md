@@ -1,5 +1,17 @@
 # Prior and posterior predictive checks
 
+The workflow now delegates distribution calculations to model-supplied evidence
+providers. Existing standalone calls keep their options and artifact meanings.
+An [experiment evidence plan](evidence.md) can require this workflow and execute
+it explicitly alongside prior comparisons on one pinned development history;
+forecast execution does not start it automatically.
+
+The workflow also supports `--model local-level-variance`: it learns observation
+variance with checked numerical integration, draws the joint initial state,
+then resimulates a fresh latent trajectory and observations. The rest of this
+page describes the original constant-mean mode; [the dynamic guide](local-level-variance.md)
+details its inference, timing, extra artifacts and numerical error checks.
+
 This workflow checks the datasets implied by `NormalMeanVariance`, our model
 with an unknown **constant** mean and unknown **constant** observation variance.
 It is separate from historical forecast scoring and from the MCMC audit.

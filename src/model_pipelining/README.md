@@ -17,15 +17,21 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [snapshots.py](snapshots.py) | Preserve exact file bytes, verify retrieval, inspect registrations |
 | [tags.py](tags.py) | Assign readable dataset references and retain assignment history |
 | [models.py](models.py) | Shared requests/results, capabilities, training mean, and last-value baseline |
-| [experiments.py](experiments.py) | Immutable versioned task/evaluation specs, release parsing, as-of case planning, and scoring vintage selection |
+| [experiments.py](experiments.py) | Versioned task/evaluation/evidence requirements, verified development selection, as-of planning and actual vintages |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
+| [local_level_variance.py](local_level_variance.py) | Fixed evolution variance, learned observation variance, checked log-variance quadrature and conditional state inference |
+| [mixtures.py](mixtures.py) | Weighted Gaussian PDF/CDF, marginal quantiles and numerically resolved disconnected HPD sets |
 | [normal_mean.py](normal_mean.py) | Unknown constant mean, exact posterior/predictive integration, optional sampler audit |
 | [normal_mean_variance.py](normal_mean_variance.py) | Joint unknown mean/variance, normal/inverse-gamma posterior, exact Student-t forecasts |
 | [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
 | [sampling.py](sampling.py) | Independent emcee Metropolis chains, ArviZ diagnostics, exact-reference audits |
 | [sampling_variance.py](sampling_variance.py) | Joint two-coordinate audit with Jacobian and moment-aware diagnostics |
-| [predictive_checks.py](predictive_checks.py) | Exact whole-dataset prior/posterior simulations, as-of development selection, descriptive discrepancies and saved-only plots |
-| [prior_influence.py](prior_influence.py) | Exact prior/learning/prediction paths on common historical releases and descriptive reference differences |
+| [evidence.py](evidence.py) | Provider protocol/metadata, replication records, structural validation and artifact helpers |
+| [evidence_normal.py](evidence_normal.py) | Exact conjugate simulation and prior/parameter/predictive summaries |
+| [evidence_local_level.py](evidence_local_level.py) | Numerical local-level evidence, joint initial-state draws and fresh state paths |
+| [evidence_workflows.py](evidence_workflows.py) | Explicit experiment-owned workflow execution, required outcomes and saved-only child plotting |
+| [predictive_checks.py](predictive_checks.py) | Provider-based whole-dataset replication, descriptive discrepancies and saved-only plots |
+| [prior_influence.py](prior_influence.py) | Provider-based prior/learning paths on common historical releases and descriptive reference differences |
 | [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
@@ -43,7 +49,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | Registration/acquisition record | One successful `register_snapshot` event; may carry an earlier ingestion receipt |
 | Snapshot manifest | File identity/layout record, format version 1 |
 | Run manifest | Input/experiment/task/model/evaluation/environment/status record, format version 3 for new runs |
-| Experiment specification | Version-1 model-independent target/timing, benchmark, and evaluation contract |
+| Experiment specification | Version-2 task/evaluation/evidence requirements; version 1 loads with default evidence requirements |
 | Run | One model/configuration executed over selected historical forecast cases |
 
 The different manifest versions apply to different record types. Adding run
@@ -233,11 +239,12 @@ levels only; a point-only baseline has no uncertainty comparison.
 
 ## Experiment specifications and planning
 
-Import `ForecastTask`, `EvaluationPlan`, and `ExperimentSpec` from
+Import `ForecastTask`, `EvaluationPlan`, `EvidencePlan`, and `ExperimentSpec` from
 `model_pipelining.experiments`. All are frozen keyword-only dataclasses.
 `ForecastTask()` supplies the original daily immediate/unrevised task with
 30 minimum observations. `EvaluationPlan()` supplies development-only evaluation
-with no extra benchmarks. `ExperimentSpec(task=..., evaluation=...)` combines
+with no extra benchmarks. `EvidencePlan()` requires no separate workflows or
+named fit checks. `ExperimentSpec(task=..., evaluation=..., evidence=...)` combines
 them. See [fields, defaults, semantics, and examples](../../docs/experiments.md).
 
 ```text
@@ -248,11 +255,15 @@ read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, ...]
 select_history_as_of(versions, *, issued_at, period_end=None) -> tuple[ObservationVersion, ...]
 plan_cases(versions, experiment) -> (tuple[ForecastCase, ...], list[dict])
 select_actuals(versions, task) -> dict[str, ObservationVersion]
+select_development_history(*, dataset, issued_at, snapshot_id=None, tag=None,
+                           store="data/versioned", experiment=None)
+    -> (ExperimentSpec, tuple[ObservationVersion, ...], ForecastCase, dict)
 ```
 
-`load` reads version-1 JSON explicitly; unknown constructor fields/versions or
-invalid settings raise. `to_dict` expands defaults, serializes UTC boundary
-timestamps, and emits benchmark names as a list. `from_dict` restores them.
+`load` reads version-1/2 JSON explicitly; unknown constructor fields/versions or
+invalid settings raise. `to_dict` emits version 2 with expanded defaults, UTC
+boundary timestamps and benchmark/requirement names as lists. `from_dict` restores
+them; version 1 receives a default empty `EvidencePlan`.
 No function fetches data, executes a model, or automatically starts final evaluation.
 
 The parsing/planning functions support inspection without executing a run.
@@ -367,8 +378,9 @@ when auditing. Existing adapters need neither optional capability.
 
 For direct callers, `fit` retains failed audit evidence without persisting it;
 `forecast` raises on failed required audits. `save_fit_evidence(result, directory,
-*, identity) -> bool` validates/persists records and returns required-check
-success; the runner invokes it automatically. Direct library callers choose
+*, identity, required_checks=()) -> bool` validates/persists records and returns
+success for model-required and caller-named checks; the runner supplies
+`experiment.evidence.required_fit_checks` automatically. Direct library callers choose
 whether to persist. Persistence errors propagate, leaving possible partial
 running output. This is one optional evidence boundary, not a configurable
 shared check-plan engine.
@@ -415,6 +427,53 @@ The existing CLI selects this model with `--learn-variance` and uses
 known-variance flags. `plot_fit` reads saved Student-t/inverse-gamma references
 and draws three trace/density rows without refitting. See [equations, units,
 commands, diagnostics and replay](../../docs/normal-mean-variance.md).
+
+## Learned local-level observation variance
+
+Import from `model_pipelining.local_level_variance`:
+
+```text
+QuadratureSettings(*, minimum_nodes=32, maximum_nodes=1024,
+                   relative_tolerance=1e-6, tail_tolerance=1e-8,
+                   maximum_expansions=9)
+LocalLevelVariance(*, initial_mean=0, initial_variance=100,
+                   evolution_variance=0.1, prior_shape=3, prior_scale=2,
+                   quadrature=QuadratureSettings())
+LocalLevelVariance.posterior(request) -> VariancePosterior
+LocalLevelVariance.prior() -> VariancePosterior
+LocalLevelVariance.predictive_distribution(request) -> NormalMixture
+LocalLevelVariance.fit(request) -> FittedForecast
+LocalLevelVariance.forecast(request) -> Forecast
+LocalLevelVariance.from_configuration(configuration) -> LocalLevelVariance
+conditional_filter(model, history, variances, *, paths=False) -> tuple
+initial_posterior_components(posterior) -> (initial_means, initial_variances)
+```
+
+The initial/evolution variances are nonnegative fixed squared-unit values,
+independent of the unknown observation variance. Prior shape/scale are positive
+and finite; the initial mean is finite. Histories must be nonempty, aware,
+strictly ordered, finite and no later than issuance; targets must be after
+issuance. Transitions use elapsed UTC days, including gaps and fractional
+projection times. The initial prior is one day before the first selected value.
+
+`VariancePosterior` retains model/history, variance nodes/weights, conditional
+level means/variances, log support/evidence and precision metadata. Properties
+give integrated level mean/variance and nullable expected observation variance.
+`.cdf(value)`/`.ppf(probability)` evaluate observation-variance probabilities
+using additional quadrature; `.predictive(elapsed_days=1)` returns the finite
+numerical mixture. That finite representation has finite moments even when the
+source-model predictive variance is undefined; the fit metadata preserves nulls
+for undefined source moments. Numerical quadrature tails/refinement must pass.
+`NumericalIntegrationError` carries failed evidence. Direct `fit` retains
+failed candidates; `forecast` rejects failed required checks.
+
+`NormalMixture(weights, means, variances)` lives in `mixtures.py`. It exposes
+`.mean`, `.variance`, `.pdf(x)`, `.cdf(x)`, `.ppf(p)`, and
+`.highest_density(level, tolerance=1e-7) -> (HighestDensityRegion, dict)`.
+PDF/CDF accept scalars or arrays. Weights normalize; zero weights are discarded.
+HPD regions retain disconnected segments and require agreement after grid
+refinement. This is explicit numerical evidence, not an arbitrary-mixture
+completeness proof. See [inference, tolerances and limits](../../docs/local-level-variance.md).
 
 ## Prior and posterior predictive checks
 
@@ -464,6 +523,15 @@ Existing directories/charts are rejected. Library plotting is explicit;
 saved files only. Backtests do not call this workflow. See [statistics, scope,
 commands and replay](../../docs/predictive-checks.md).
 
+These functions also accept a concrete `LocalLevelVariance`. Posterior variance
+nodes are sampled by their checked numerical weights, then a joint initial
+state is drawn using conditional Gaussian smoothing. Replicated states use
+fresh process innovations; fitted state paths are not copied. `ReplicatedDataset`
+adds `initial_level: float | None=None` and `latent_levels: tuple=()`; its `mean`
+is nullable and empty for this model. Gaps use selected elapsed time. Artifacts
+record numerical integration separately from independent-replication MCSE.
+Select this mode with `--model local-level-variance` in the existing check CLI.
+
 ## Prior influence comparisons
 
 Import from `model_pipelining.prior_influence`:
@@ -497,6 +565,16 @@ Library plotting is explicit; `scripts/compare_priors.py` calculates then plots
 automatically. Charts read saved files only. Output directories/charts must be
 unused; I/O failures propagate. See [quantities, timing, example configs and
 replay](../../docs/prior-influence.md).
+
+Prior comparisons also accept matching `LocalLevelVariance` instances. They
+must share evolution variance and quadrature settings. Initial mean/variance
+and observation-variance prior shape/scale may change. State/variance bounds
+are equal-tail credible intervals; predictive bounds preserve mixture HPD
+segments as JSON/counts, with total segment width. Inapplicable static fields
+(conjugate parameters/degrees of freedom/location coefficient/scale components)
+remain null. `integration_checks.json` saves numerical evidence per update.
+The comparison CLI selects this with `--model local-level-variance`. See
+[dynamic model details](../../docs/local-level-variance.md).
 
 ## Local-level diagnostics
 
@@ -535,6 +613,40 @@ paths. Either preexisting chart is rejected before rendering. The diagnostics
 CLI reads `--config` JSON and calls both functions; existing backtest commands
 do not call them. These are development diagnostics, not backtest forecasts,
 posterior predictive replications, or automatic model approval.
+
+## Evidence providers and explicit experiment evidence
+
+`NormalMeanVariance.evidence_provider()` (exact mode) and
+`LocalLevelVariance.evidence_provider()` implement `evidence.EvidenceProvider`.
+`EvidenceMetadata` declares the supported workflows, source files, simulation
+parameter fields, numerical evidence and presentation. Providers implement
+`simulate(*, observation_count, replications, seed, request=None)`,
+`summarize(case, level)` and `validate_scenarios(models)`; shared workflows do
+not dispatch on model classes. The existing records cover mean/variance/state
+summaries, rather than arbitrary parameter types. `ReplicatedDataset` and
+`PredictiveReplications` now live in `evidence.py` and remain importable from
+`predictive_checks.py` for existing callers.
+
+```text
+get_evidence_provider(model, workflow) -> EvidenceProvider
+assess_checks(checks, *, required_names=()) -> (bool, tuple[dict, ...])
+save_fit_evidence(result, directory, *, identity, required_checks=()) -> bool
+run_experiment_evidence(*, dataset, model, issued_at, experiment, output_directory,
+                        snapshot_id=None, tag=None, store="data/versioned", scenarios=None) -> Path
+plot_experiment_evidence(evidence_directory) -> tuple[Path, ...]
+```
+
+The last two functions are in `evidence_workflows`; the check/persistence helpers
+are in `inference`. `run_experiment_evidence` requires nonempty
+`experiment.evidence.required_workflows` and uses its replication/seed/interval
+settings. It pins input selection once and checks child identity/settings and
+mandatory checks. Missing capability/scenarios or failed checks are retained as
+failed required outcomes; I/O propagates. Library plotting is explicit and reads
+saved metadata only. `scripts/run_evidence.py` performs both calls automatically.
+Standalone workflows keep their explicit options and do not certify the entire
+plan. Per-origin fit names are enforced by `run_backtest`, while separate workflow
+requirements remain pending in forecast manifests. See [the evidence guide](../../docs/evidence.md)
+for all `EvidencePlan` fields, statuses, compatibility and examples.
 
 ## Naming, errors, and limits
 

@@ -29,6 +29,14 @@ See [the full contract and examples](../docs/experiments.md). Input preparation,
 model selection, preserving final-data separation, and human interpretation
 remain caller actions. No application or inference backend is selected here.
 
+[daily_evidence_experiment.json](daily_evidence_experiment.json) is a version-2
+experiment with the same task/evaluation and explicit required predictive checks
+and prior comparisons. `scripts/run_evidence.py --experiment FILE` executes those
+workflows only when invoked; the backtest does not start them. Its evidence plan
+sets replication count/seed and comparison probability, with optional named
+per-origin fit requirements. Version-1 experiments load with empty requirements.
+See [the evidence guide](../docs/evidence.md) for a complete command and statuses.
+
 ## Diagnostic example
 
 [local_level_diagnostics.json](local_level_diagnostics.json) contains `reference`
@@ -58,7 +66,7 @@ explicit caller actions.
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
 | Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
-| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` | `model.configuration` and model identity/capabilities |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` / `LocalLevelVariance(...)` | `model.configuration` and model identity/capabilities |
 | Uncertainty request | `interval_levels=(0.8, 0.95)`; all run scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 
@@ -129,9 +137,28 @@ choices. For example, shape 30/scale 29 preserves prior expected variance 1
 while changing its concentration. These are illustrative choices, not a search
 grid, model ranking or requirement that influence be small.
 
+[local_level_variance_priors.json](local_level_variance_priors.json) supplies
+the equivalent reference/overrides for the evolving-level model. Select it
+with `scripts/compare_priors.py --model local-level-variance`. Alternatives may
+change initial mean/variance and inverse-gamma shape/scale; evolution variance
+and numerical settings must match across priors. No single prior-location
+coefficient or conjugate scale decomposition is claimed for this model.
+
 Use `scripts/compare_priors.py --config configs/normal_mean_variance_priors.json`
 with a dataset, one snapshot/tag, an aware `--as-of`, and a new output directory.
 An optional development `--experiment` supplies release rules, daily issuance
 delay and final boundaries; `--interval-level` defaults to 0.95. No MCMC settings
 are accepted. The CLI saves expanded settings, exact prior/learning paths and
 differences, then draws charts automatically. See [timing, quantities and examples](../docs/prior-influence.md).
+
+## Learned local-level observation variance
+
+[local_level_quadrature.json](local_level_quadrature.json) explicitly selects
+`QuadratureSettings` for controlled log-variance integration. Use it with
+`scripts/run_local_level.py --learn-observation-variance --quadrature-config FILE`
+or the predictive-check CLI with `--model local-level-variance`. Omit it for
+defaults. The model keeps fixed evolution variance and an independent Gaussian
+initial-state prior. `--prior-shape`/`--prior-scale` configure the observation-
+variance prior; `--observation-variance` conflicts with learned mode. Numerical
+settings are saved and required failures reject a forecast; they do not tune
+model assumptions. See [methods, precision and commands](../docs/local-level-variance.md).

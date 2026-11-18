@@ -1,5 +1,10 @@
 # Local data
 
+The [explicit experiment evidence runner](../docs/evidence.md) uses this same
+verified store and pins a selected tag once across its required workflows.
+It does not acquire or register new input. Generated evidence stays under the
+caller-selected run directory, separately from preserved snapshots.
+
 Keep input snapshots here while developing. Git ignores other contents of this directory by default; this orientation file is tracked.
 
 Reproduction requires the preserved snapshot and its dataset/ID reference, together with the relevant source and availability assumptions. A hash alone cannot recreate data. Small synthetic fixtures may later be committed deliberately in a separate fixture location.
@@ -68,6 +73,14 @@ every chosen prior. Each daily issuance selects only then-available releases;
 later revisions never rewrite earlier updates. The explicit final cutoff uses
 the same development-history boundary as predictive checks. Selected release
 records/hashes are saved under `runs/`; no new acquired input is created.
+
+[The learned-variance local-level model](../docs/local-level-variance.md) uses
+the same preserved sources and as-of histories, with fixed evolution variance
+and learned observation variance. Its predictive checks save fresh latent
+trajectories as well as observations. Posterior replication draws initial state
+and variance jointly, then resimulates process innovations; it does not copy a
+fitted state path. Smoothing is confined to the selected development history
+for these checks. Forecast filtering never receives future actuals.
 
 ## Copy and preserve an input
 
