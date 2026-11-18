@@ -2,7 +2,7 @@
 
 An experiment declares what a forecast means independently of the model and
 any particular application. The same specification can run a point baseline,
-the current fixed-variance Bayesian model, or a later parameter-learning adapter.
+the fixed-variance local-level model, or the parameter-learning `NormalMean` adapter.
 The preserved dataset/ID and model/settings are selected separately for each run.
 
 The version-1 specification has two immutable records:
@@ -41,6 +41,10 @@ The shared runner supports these coordinates independently of adapter support.
 at its last observation, and a target one day later. Delayed/gapped histories,
 issuance offsets, or longer horizons can fail its requests visibly; the runner
 does not silently substitute a different timing convention.
+`NormalMean` accepts any strictly ordered eligible past history and future target:
+its exchangeable constant-mean assumption permits delayed/gapped histories and
+longer horizons. Its optional sampler audit follows each immutable request;
+see [parameter uncertainty](parameter-uncertainty.md).
 
 ## Availability and revisions
 
@@ -138,7 +142,7 @@ PYTHONPATH=src .venv/bin/python scripts/run_local_level.py \
 ```
 
 Expect 130 development cases and 40 final cases with 30 minimum observations.
-Both scripts accept these flags. `--evaluation-role` overrides only the role;
+All three run scripts accept these flags. `--evaluation-role` overrides only the role;
 it requires `--experiment`. Use the same permanent `--snapshot-id ID` instead
 of a tag for an input shared across separate invocations. Final evaluation is a
 separate caller action; the first command does not start it automatically.

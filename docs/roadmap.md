@@ -27,12 +27,16 @@ selection, explicit daily calendar/gap validation, required benchmarks on matchi
 cases, and separate development/final target periods. The example uses known
 synthetic fixtures; it does not choose a real application or certify untouched data.
 
-The next modeling detour is [parameter uncertainty and MCMC](parameter-uncertainty.md):
-start with an independently verifiable unknown-parameter model, integrate its
-posterior into prediction, and add fit/chain evidence and relevant computational
-diagnostics when introducing a sampler. The concrete model/backend remain open.
-Prior influence remains descriptive, not a quantity to minimize. Application
-selection, richer calendars, and a broader release/check framework can wait.
+The [parameter-uncertainty detour](parameter-uncertainty.md) is implemented:
+`NormalMean` learns a constant mean, computes exact marginalized observation
+forecasts, and optionally audits each fit with independent emcee Metropolis
+chains and ArviZ diagnostics. Optional fit-evidence dispatch saves posterior,
+chain/draw, warmup, seed, transform, precision/reference checks, and partial
+failures before scoring. Required audit failures fail cases/runs. Both modes
+use exact forecast integration; MCMC-only forecast/HPD estimation remains open.
+Prior influence remains descriptive, not a quantity to minimize. Next model
+work can extend parameter learning to unknown variances around another verified
+reference. Application selection and a broader release/check framework can wait.
 
 To understand or repeat the reviewed workflow:
 
@@ -65,6 +69,7 @@ to distinguish local edits from committed/published code.
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
 | Execution | Daily model-independent experiments, release-aware expanding histories, one fixed positive-day horizon per run; defaults preserve the original next-day task | [Experiments](experiments.md) |
 | Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering | [Model guide](local-level.md) |
+| Parameter learning | Unknown constant Gaussian mean with exact marginalized predictions; optional independent-chain MCMC audit and saved per-request fit evidence | [Parameter uncertainty](parameter-uncertainty.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
 | Reporting | Saved-result charts/comparisons; HPD preferred; version-1 point artifacts still readable | [Run files](../runs/README.md) |
@@ -73,7 +78,7 @@ to distinguish local edits from committed/published code.
 
 ## Verification at this checkpoint
 
-The suite currently has 146 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 174 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -99,9 +104,24 @@ quantiles, HPD segments, evaluations, and scores. The documentation walkthrough
 is also checked in temporary storage. These observations establish the stated
 local behavior, not calibration or approval of a real-data model.
 
-The local-level/shared-uncertainty work adds no dependency beyond the existing
-pandas/openpyxl/matplotlib environment. The filter uses the standard library;
-independent batch-conditioning tests use NumPy already installed through pandas.
+The local-level filter still uses the standard library. The parameter-learning
+slice declares NumPy, SciPy, emcee and pre-1.0 ArviZ explicitly, with regenerated
+lockfile/pip export. CPython 3.14.10 imports, installed compatibility, and the full
+suite passed. The 28 new tests cover independent quadrature, exact HPD semantics,
+prior influence, sampler target ratios and posterior/predictive agreement,
+biased/stuck/missing diagnostics, partial backend failures, global-RNG isolation,
+fit persistence/freezing/replay, delayed releases/final roles, both inference CLI
+modes, and saved-only traces. Human approval remains pending.
+
+Saved local exercises under `runs/parameter-uncertainty-final-20261114/` completed
+170 exact cases on each synthetic series. Each series also completed five
+explicit final-role audit cases at target indices 100–104, with both point
+benchmarks, and an exact matched-cohort run. Every fit/draw and numerical forecast
+file replayed exactly; exact/audit forecasts and scores matched. The largest
+R-hat was 1.003979 and smallest bulk/tail ESS were 1550.38/1329.21 across the
+exercised diagnostics. Saved-only charts and comparisons succeeded. These known
+fixtures demonstrate mechanics, not untouched final evaluation or scientific
+model approval. Generated artifacts are local and ignored by Git.
 
 ## Next decisions, not automatic implementation
 
@@ -109,11 +129,11 @@ independent batch-conditioning tests use NumPy already installed through pandas.
   posterior predictive replications or other criticism beyond the implemented
   influence/innovation evidence. A configurable shared check plan, experimental
   overrides, and application-specific human/release criteria remain open.
-- **Parameter uncertainty and MCMC (next detour):** select the first verifiable
-  unknown-parameter model, inference method, posterior/predictive evidence, and
-  computational diagnostic requirements. Current local-level uncertainty remains
-  conditional on fixed variances. [The plan](parameter-uncertainty.md) separates
-  parameter uncertainty from Monte Carlo error and describes the proposed sequence.
+- **Further parameter learning:** choose unknown observation variance or a richer
+  unknown-variance local-level model, with an independently validated reference
+  and explicit inference evidence. Intractable sampled prediction needs its own
+  quantile/HPD approximation and precision design; current audit forecasts remain
+  exact. Local-level variances are still fixed. See [current scope](parameter-uncertainty.md).
 - **Real-data application (deferred):** fill the implemented task/evaluation
   contract with an actual source and verified historical release claims when
   application choice becomes useful; it is not the immediate project objective.

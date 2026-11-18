@@ -77,6 +77,10 @@ class Forecaster(Protocol):
     supports_quantiles declares whether every requested quantile is required.
     supports_highest_density declares whether requested density regions are required.
     Older float-returning adapters without the flag remain point-only.
+    An optional supports_fit_evidence=True capability selects fit(request)
+    returning inference.FittedForecast instead; the runner saves evidence and
+    requires its checks before accepting the forecast. Legacy models need no
+    fit method. Additional implementation_files may identify helper sources.
     This is a trusted Python interface, not a security sandbox.
     """
 

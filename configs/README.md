@@ -1,7 +1,7 @@
 # Configuration
 
 The backtest takes an optional versioned experiment through Python arguments or
-`--experiment FILE` in its two run scripts. The separate diagnostic command
+`--experiment FILE` in its three run scripts. The separate diagnostic command
 accepts an explicitly selected JSON file via `--config`. These are different
 schemas. No command discovers files from this directory automatically.
 
@@ -58,8 +58,8 @@ explicit caller actions.
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
 | Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
-| Model | `TrainingMean` by default or explicit `LocalLevel(...)` | `model.configuration` and model identity/capabilities |
-| Uncertainty request | `interval_levels=(0.8, 0.95)`; both scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` | `model.configuration` and model identity/capabilities |
+| Uncertainty request | `interval_levels=(0.8, 0.95)`; all run scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 
 [The model guide](../docs/local-level.md#settings-and-timing) defines the four
@@ -73,3 +73,19 @@ code/environment into a new run directory. There is no automatic tuning or model
 registry. Acquisition receipts describe input history and are not configuration
 files or permanent input paths. Start with [the walkthrough](../docs/forecasting.md)
 for an executable example.
+
+## Unknown-mean sampler audit
+
+[normal_mean_mcmc.json](normal_mean_mcmc.json) selects independent-chain sampler
+settings and computation/reference tolerances. Use it explicitly with
+`scripts/run_normal_mean.py --mcmc-config configs/normal_mean_mcmc.json` alongside
+the usual input/output arguments. Omitted fields use `MCMCSettings` defaults;
+unknown fields and invalid settings raise before run creation. `--mcmc` selects
+defaults without a file. Omit both for exact-only inference. The prior/noise
+flags select model assumptions separately; this file does not tune priors.
+
+The runner saves expanded settings, per-fit checks, seeds, diagnostics and draws
+automatically. A requested audit's failed criteria fail the forecast case and
+run. Forecasts use exact parameter integration in either mode. Reporting and
+human review do not select inference settings. See [equations, defaults,
+commands, evidence and failure rules](../docs/parameter-uncertainty.md).

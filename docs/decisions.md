@@ -9,12 +9,12 @@ for current behavior and review priorities.
 
 - Preserve one local file per snapshot, identified by dataset plus SHA-256.
 - Keep acquisition, registration, tag assignment, and execution separate calls.
-- Run point models or the fixed-variance Bayesian local-level adapter through shared daily experiments, with adapter-specific timing limits.
+- Run point models, the fixed-variance Bayesian local level, or an unknown-mean Gaussian adapter through shared daily experiments, with adapter-specific timing limits.
 - Save a predictive mean and each declared observation-uncertainty kind. Prefer highest-density prediction regions in reporting.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
 - Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
-- Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection and make parameter uncertainty/MCMC the next modeling detour.
-- Use CPython 3.14 with pandas, openpyxl, and matplotlib; installable packaging, a configurable check plan, and release automation remain open.
+- Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection. Unknown-mean parameter integration and optional independent-chain MCMC audits are implemented.
+- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, a configurable check plan, and release automation remain open.
 
 ## How to read earlier entries
 
@@ -215,6 +215,56 @@ The November 3 proposal considered snapshots of one or more related files, compa
   version-2 compatibility, and both CLIs. Both models exercised the known 200-day
   fixture with 130 development and 40 final-role cases plus both point benchmarks;
   Bayesian development artifacts replayed exactly. No new dependency is added.
+
+## Verify parameter integration and a maintained sampler against an exact model — 2026-11-14
+
+- **Request:** implement the next modeling detour thoroughly after reusable
+  experiments, keeping application selection deferred. Work is on
+  `feature/parameter-uncertainty`.
+- **Model:** learn a constant Gaussian mean with a normal prior and known
+  observation variance. Exact posterior and next-observation integration provide
+  independent testable references; predictive variance includes parameter and
+  observation uncertainty. Positive finite variance settings are caller choices;
+  prior influence is saved descriptively without a magnitude criterion.
+- **Inference decision:** keep forecasts exact in both modes and introduce MCMC
+  as an explicitly labeled optional per-fit audit. This avoids adding sampled
+  quantile/HPD estimation around a law already available exactly. It does not
+  implement MCMC-only prediction or unknown local-level variance fitting.
+- **Backend:** emcee GaussianMove, with a separate one-walker Metropolis sampler
+  per independent chain. Do not treat interacting ensemble walkers as independent
+  chains. Exact centering/scaling deliberately aids this calibration task.
+  ArviZ's exercised pre-1.0 API supplies rank R-hat, bulk/tail ESS and mean MCSE.
+  NumPy/SciPy are explicit direct dependencies; declaration, lock and pip export
+  were updated together and exercised on CPython 3.14.10. More complex gradient/
+  compiled backends and a home-grown sampler were unnecessary for this target.
+- **Evidence boundary:** optional `fit(request)` returns a forecast with finite
+  metadata/checks/diagnostics/draws. The runner pins history/input/coordinate
+  identity, saves per-fit evidence, requires valid checks before accepting a
+  forecast, and freezes everything before scoring. Existing adapters remain on
+  `forecast`. Fit format 1 extends run format 3 without backfilling legacy runs.
+- **Computation:** explicit saved defaults require R-hat <=1.01, bulk/tail ESS
+  >=400, MCSE/SD <=0.1 and exact-reference agreement within 6 MCSE plus floating-
+  point allowance for each diagnosed parameter/predictive quantity. Warmup is
+  retained but excluded. Paired future draws and conditional CDF/HPD probabilities
+  audit prediction. MCSE is not predictive uncertainty. HMC evidence is
+  inapplicable, and acceptance fractions remain available.
+- **Failure/replay:** partial chain errors retain rows and continue other chains;
+  required diagnostic failures reject that forecast and fail the run while later
+  origins continue. No analytic bypass occurs when an audit was requested.
+  Persistence errors propagate and can leave running output. Seeds depend only
+  on eligible history/coordinates/base seed/chain, never whole-snapshot future
+  contents or execution order. Saved-only trace reporting never refits. Human
+  interpretation remains pending.
+- **Verification:** all 174 tests passed, including independent raw-density/
+  predictive quadrature, HPD mass/density, strong prior influence, sampler target
+  ratios, posterior/predictive agreement, stuck/biased/missing diagnostics,
+  partial backend failures, future/release/final isolation, seed/global-RNG
+  behavior, persistence/freezing, CLI modes and exact evidence replay. Both
+  synthetic series completed 170 exact cases and five matched audit cases at
+  target indices 100–104 with both benchmarks. All audit fit/draw files replayed;
+  forecasts/scores matched exact counterparts. Largest R-hat was 1.003979;
+  smallest bulk/tail ESS were 1550.38/1329.21. Known final-role fixtures establish
+  mechanics, not untouched data or model approval. See [the implemented guide](parameter-uncertainty.md).
 
 ## Working proposals
 
