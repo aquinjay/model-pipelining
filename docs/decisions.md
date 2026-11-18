@@ -492,3 +492,7 @@ These are starting choices to revisit deliberately, rather than implemented inte
 ## Record a consequential change
 
 Use a dated entry with the question, decision, rationale, alternatives considered, consequences, and evidence or issue/PR links. Preserve superseded choices so later changes remain understandable.
+
+## Sequential learned-variance diagnostics — 2026-11-18
+
+Task 1 extends criticism through provider-supplied serialized predictive laws. Predictions are written before scoring; historical issuance controls training releases and the development cutoff controls eligible scoring releases. Full mixture/Student-t CDFs supply PIT. Undefined variance is explicit; residual patterns have no approval threshold. Existing fixed-variance diagnostics remain readable. The workflow is explicitly invoked and can be experiment-required; its CLI plots automatically. Nine new tests exercise calculation and information boundaries. See [the contract](sequential-checks.md).

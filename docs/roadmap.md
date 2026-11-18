@@ -111,7 +111,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 291 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 300 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -275,3 +275,7 @@ and monitoring remain possible extensions. git-annex is optional; DVC or another
 execution tool is unselected. Neither is a prerequisite to reviewing the current
 working path. See [the historical storage proposal](data-versioning.md) for the
 broader requirements and alternatives that have been retained for reference.
+
+## Sequential validation task 1
+
+Implemented [learned-variance sequential checks](sequential-checks.md) through providers and experiment requirements. Nine new tests bring the suite to 300. Next in the authorized sequence: simulation-based calibration, then controlled evolution-variance investigation and parameter-learning extension. Further tasks will be chosen from those findings.

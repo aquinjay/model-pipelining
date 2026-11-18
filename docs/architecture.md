@@ -304,3 +304,7 @@ suites should run at a documented model/configuration scope, not automatically
 inside every forecast origin. A future iteration record should preserve parent
 runs, the motivating discrepancy, changed assumptions, and review decisions.
 These records and configurable release rules are not implemented today.
+
+## Sequential criticism with learned variance
+
+The optional provider `predictive(request)` supplies a serializable distribution before observing a target. Shared [sequential checks](sequential-checks.md) own release-aware scheduling, freezing, cutoff-eligible actual selection, PIT/errors and saved-only reporting. The explicit experiment evidence runner can require the workflow.

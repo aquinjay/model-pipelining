@@ -114,8 +114,8 @@ class EvidencePlan:
                     or any(not isinstance(item, str) or not item.strip() for item in value)
                     or len(set(value)) != len(value)):
                 raise ValueError(f"{name} must be a tuple of unique nonblank names")
-        if any(name not in ("predictive_checks", "prior_influence") for name in self.required_workflows):
-            raise ValueError("Required evidence workflows must be predictive_checks or prior_influence")
+        if any(name not in ("predictive_checks", "prior_influence", "sequential_checks") for name in self.required_workflows):
+            raise ValueError("Required evidence workflows must be predictive_checks, prior_influence or sequential_checks")
         if type(self.replications) is not int or self.replications < 1:
             raise ValueError("replications must be a positive integer")
         if type(self.seed) is not int or not 0 <= self.seed < 2**32:

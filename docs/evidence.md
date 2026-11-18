@@ -23,7 +23,7 @@ experiment = ExperimentSpec(evidence=EvidencePlan(
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `required_workflows` | `()` | Explicitly requested separate workflows; supported names are `predictive_checks` and `prior_influence`, with no duplicates |
+| `required_workflows` | `()` | Explicitly requested separate workflows; supported names are `predictive_checks`, `prior_influence` and `sequential_checks`, with no duplicates |
 | `required_fit_checks` | `()` | Named checks that must pass at every primary-model forecast origin, in addition to model-required checks |
 | `replications` | `1000` | Positive number of independent prior and posterior datasets for predictive checks |
 | `seed` | `0` | Integer in `[0, 2**32)` for predictive simulations |
@@ -162,3 +162,5 @@ This bounded interface preserves the existing mean/variance/state records. It
 is not a universal parameter schema, configurable arbitrary-stage dispatcher,
 sampler registry, exploratory override policy or release framework. Further
 extensions should follow a concrete model/evidence need.
+
+[Sequential checks](sequential-checks.md) also implement a required development workflow; their predictive laws are frozen before scoring and use full predictive CDFs.

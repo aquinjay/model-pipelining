@@ -230,3 +230,5 @@ receipts remain in the snapshot store, not as separate receipts in `runs/`.
 Source fingerprints identify code but do not retrieve it. [The walkthrough](../docs/forecasting.md#repetition-errors-and-reproduction)
 explains replay arguments. Backup, retention, automatic restoration, and iteration
 lineage remain caller actions or future work.
+
+Sequential evidence folders contain `sequential_checks.json`, frozen `predictive_distributions.json`, `sequential.csv`, `summary.json`, `checks.json` and pending `review.json`. Explicit plotting adds `sequential.png`. See [the artifact semantics](../docs/sequential-checks.md).

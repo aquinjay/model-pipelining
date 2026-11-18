@@ -274,3 +274,5 @@ probabilistic extensions, and model-specific checks belong in
 Repository: [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining).
 Licensed under [Apache License 2.0](LICENSE). The Bayesian workflow background
 and mathematical references are collected in [references](docs/references.md).
+
+Sequential predictive diagnostics now cover learned-variance models: full-CDF PIT, forecast errors and residual dependence on historical as-of histories. See [the guide](docs/sequential-checks.md). Invoke the separate workflow explicitly; its CLI draws saved charts automatically.

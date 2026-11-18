@@ -194,3 +194,7 @@ from `scenario_summaries.json`, with matching code/environment and a new output
 directory. Numerical CSV/summaries repeat; execution timestamps differ. Retain
 the complete input store and diagnostic folder with matching source and locked
 dependencies. Local data/results are ignored by Git.
+
+## Learned-variance models
+
+Use [the sequential-check workflow](sequential-checks.md) for learned observation variance. It evaluates full mixture/Student-t CDFs on release-aware historical cases and an explicit development cutoff. The original fixed-variance command and its conditional coefficient retain their earlier meaning.

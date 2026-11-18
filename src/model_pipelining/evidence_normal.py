@@ -115,6 +115,13 @@ class NormalMeanVarianceEvidence:
         return _simulate(kind="prior" if request is None else "posterior", distribution=distribution,
             observation_count=observation_count, replications=replications, seed=seed)
 
+    def predictive(self, request):
+        posterior = self.model.posterior(request)
+        return {"family": "student_t", "location": posterior.mean,
+                "scale": math.sqrt(posterior.predictive_scale_squared),
+                "df": posterior.degrees_of_freedom, "mean": posterior.mean,
+                "variance": posterior.predictive_variance, "inference": {"method": "exact_conjugate"}}
+
     def summarize(self, case, level):
         return _summary(self.model, case, level)
 

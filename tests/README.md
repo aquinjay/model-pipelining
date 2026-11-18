@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **291 tests**. They use temporary fixtures/stores rather than
+There are currently **300 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -185,3 +185,7 @@ criteria for its sampler, including reference tolerances based on MCSE. Passing
 them does not validate the constant-mean assumption or provide formal simulation-
 based calibration. Exact centering/scaling deliberately assists this tractable
 calibration exercise; it is not a difficult-posterior benchmark.
+
+## Sequential evidence verification
+
+`test_sequential.py` adds 9 tests for independent mixture/Student-t PIT, frozen distributions, own-target exclusion, replay, final isolation, numerical failures, saved-only plotting, both CLI models and experiment requirements. The suite now has 300 tests.

@@ -112,6 +112,15 @@ class LocalLevelVarianceEvidence:
     def summarize(self, case, level):
         return _local_summary(self.model, case, level)
 
+    def predictive(self, request):
+        posterior = self.model.posterior(request)
+        gap = (request.target_time-request.history[-1].timestamp).total_seconds()/86400
+        law = posterior.predictive(gap)
+        return {"family": "gaussian_mixture", "weights": law.weights, "means": law.means,
+                "variances": law.variances, "mean": law.mean,
+                "variance": law.variance if posterior.observation_variance_mean is not None else None,
+                "inference": posterior.evidence}
+
     def validate_scenarios(self, models):
         if any(type(model) is not type(self.model) for model in models):
             raise ValueError("Use matching local-level models")

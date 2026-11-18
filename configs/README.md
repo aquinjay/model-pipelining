@@ -162,3 +162,5 @@ initial-state prior. `--prior-shape`/`--prior-scale` configure the observation-
 variance prior; `--observation-variance` conflicts with learned mode. Numerical
 settings are saved and required failures reject a forecast; they do not tune
 model assumptions. See [methods, precision and commands](../docs/local-level-variance.md).
+
+Sequential checks reuse the reference settings in existing prior configurations. Select `scripts/check_sequential.py --config FILE` explicitly; add `sequential_checks` to an experiment evidence plan to require it. See [usage](../docs/sequential-checks.md).

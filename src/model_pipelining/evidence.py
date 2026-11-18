@@ -43,7 +43,7 @@ class EvidenceMetadata:
     predictive_scope: dict
     influence_scope: dict
     presentation: dict
-    workflows: tuple[str, ...] = ("predictive_checks", "prior_influence")
+    workflows: tuple[str, ...] = ("predictive_checks", "prior_influence", "sequential_checks")
     parameter_fields: tuple[str, ...] = ("mean", "observation_variance")
     latent_paths: bool = False
     integration_checks: bool = False
@@ -61,6 +61,8 @@ class EvidenceProvider(Protocol):
 
     def validate_scenarios(self, models: tuple) -> None: ...
 
+    def predictive(self, request: ForecastRequest) -> dict: ...
+
 
 def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     factory = getattr(model, "evidence_provider", None)
@@ -75,9 +77,11 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     if workflow not in metadata.workflows:
         raise ValueError(f"Model does not supply {workflow} evidence")
     if (not isinstance(metadata.workflows, tuple)
-            or any(name not in ("predictive_checks", "prior_influence") for name in metadata.workflows)
+            or any(name not in ("predictive_checks", "prior_influence", "sequential_checks") for name in metadata.workflows)
             or len(set(metadata.workflows)) != len(metadata.workflows)):
         raise ValueError("Malformed evidence workflow capabilities")
+    if workflow == "sequential_checks" and not callable(getattr(provider, "predictive", None)):
+        raise ValueError("Model does not supply sequential predictive distributions")
     if (not isinstance(metadata.implementation_files, tuple)
             or any(not isinstance(path, Path) for path in metadata.implementation_files)
             or not isinstance(metadata.predictive_scope, dict) or not isinstance(metadata.influence_scope, dict)):

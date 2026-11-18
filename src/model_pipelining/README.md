@@ -663,3 +663,7 @@ whole snapshot store, including manifests/events/tags. Git excludes local data
 and run evidence. Remote storage, crash recovery, retention, and backups remain
 caller concerns or future work. The Python model boundary is trusted code, not a
 security sandbox. [Tests](../../tests/README.md) map claims to supporting evidence.
+
+## Sequential predictive checks
+
+`sequential.run_sequential_checks(*, dataset, model, issued_at, output_directory, snapshot_id=None, tag=None, store="data/versioned", experiment=None) -> Path` freezes provider-supplied observation laws before scoring. `plot_sequential_checks(directory) -> tuple[Path, ...]` reads saved results. Providers implement `predictive(request) -> dict`; `EvidencePlan` accepts `sequential_checks`. See [selection, moment and failure rules](../../docs/sequential-checks.md).
