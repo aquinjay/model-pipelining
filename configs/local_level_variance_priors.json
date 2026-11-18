@@ -1,0 +1,15 @@
+{
+  "reference": {
+    "initial_mean": 0,
+    "initial_variance": 100,
+    "evolution_variance": 0.1,
+    "prior_shape": 3,
+    "prior_scale": 2
+  },
+  "scenarios": {
+    "initial-level-ten": {"initial_mean": 10},
+    "strong-initial-level": {"initial_mean": 10, "initial_variance": 0.1},
+    "concentrated-observation-variance": {"prior_shape": 30, "prior_scale": 29},
+    "larger-observation-variance": {"prior_scale": 18}
+  }
+}

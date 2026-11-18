@@ -1,5 +1,13 @@
 # Reusable forecasting experiments
 
+The learned-observation-variance `LocalLevelVariance` adapter accepts selected
+gapped histories and delayed issuance, scaling fixed state variation by elapsed
+UTC days. It supports future horizons through its marginal mixture forecast.
+The runner's daily calendar/release/final rules are unchanged. The original
+fixed-variance `LocalLevel` still has its narrower daily next-observation timing
+contract. Both evidence workflows accept `--model local-level-variance` with
+the same development-only selection and final-boundary guard.
+
 [Prior influence comparisons](prior-influence.md) also reuse development specs
 and the shared `select_history_as_of` release selector. Their paths evaluate
 each daily period plus the task's issuance delay, then the explicit as-of

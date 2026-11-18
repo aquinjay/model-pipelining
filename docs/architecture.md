@@ -26,12 +26,12 @@ not a sandbox preventing an adapter from independently reading files.
 |---|---|---|
 | Application/task | Versioned daily task/evaluation specs, named targets/units, issuance/release/revision rules, required benchmarks, and development/final target periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
-| Model adapter | Point benchmarks, fixed-variance Gaussian local level, exact unknown-mean/variance integration, optional independent-chain audits, local-level influence/innovation diagnostics | Unknown local-level variances, intractable sampled prediction, incremental updates, broader checks |
+| Model adapter | Point benchmarks, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, conjugate unknown-mean/variance models, optional sampler audits | Unknown evolution variance, intractable sampled prediction, incremental updates, broader checks |
 | Runner | Historical origins, eligible histories, output validation, optional per-request fit-evidence persistence/checks, visible failures | Configurable stage/check dispatch and explicit experimental overrides |
 | Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
 | Reporting | Charts and matched-case comparisons from saved artifacts; saved-only diagnostic charts | Wider reports and application delivery |
-| Predictive criticism | Exact whole-dataset prior/posterior replication and exact prior comparisons for `NormalMeanVariance`, release-aware development selection, descriptive discrepancies/differences and saved-only charts | Other models' full-data checks, application-specific review |
+| Predictive criticism | Constant-mean and learned-noise local-level replications/prior comparisons, release-aware development selection, descriptive evidence and saved-only charts | Further models' full-data checks, application-specific review |
 
 A run's directory and manifest identify its model/configuration and saved cases.
 There is no global run-ID registry. No orchestration service, release process,
@@ -43,7 +43,7 @@ or monitoring/deployment system is implemented.
 A model receives eligible observations, issuance, target time, and requested
 quantile probabilities/highest-density masses. It returns a predictive mean and
 its declared uncertainty kinds. `TrainingMean` and `LastValue` are point-only; `LocalLevel`
-and both `NormalMean` and `NormalMeanVariance` supply quantiles and highest-density regions.
+and `NormalMean`, `NormalMeanVariance`, and `LocalLevelVariance` supply quantiles and highest-density regions.
 
 Both uncertainty kinds target the future observed value in original units.
 State or parameter distributions belong in separate diagnostic outputs.
@@ -139,6 +139,22 @@ This is a small optional dispatch boundary, not the general configurable
 check-plan engine below. See [the API](../src/model_pipelining/README.md#unknown-mean-model-and-optional-fit-evidence)
 and [model/criteria guide](parameter-uncertainty.md).
 
+## Implemented numerical local-level parameter integration
+
+`local_level_variance.py` filters the state conditional on each observation
+variance, evaluates its marginal likelihood and integrates that variance in
+log coordinates. Initial-state and evolution variances retain independent
+fixed scales. Saved refinement and tail checks gate numerical acceptance.
+`mixtures.py` computes marginal Gaussian-mixture quantiles and density-threshold
+HPD sets, retaining disconnected segments and explicit numerical resolution
+evidence. No Student-t shape or endpoint averaging is assumed.
+
+The model uses existing optional fit dispatch/persistence; failed numerical
+checks save candidate evidence and reject the forecast. Quadrature nodes are
+metadata, not sampler draws. Conditional initial-state smoothing is used only
+for full-history replications, never to bring future actuals into forecasts.
+The public APIs and numerical limits are in [the model guide](local-level-variance.md).
+
 ## Implemented prior and posterior predictive checks
 
 `predictive_checks.py` draws independent joint normal/inverse-gamma parameters
@@ -158,6 +174,14 @@ No MCMC or shared check-plan registry is required. Saved-only plotting creates
 the charts; the check CLI invokes plotting automatically, and backtests do not
 invoke this workflow. See [semantics, artifacts and replay](predictive-checks.md).
 
+The same workflow also accepts `LocalLevelVariance`. Prior replicas draw an
+initial state/noise variance and a fresh process path. Posterior replicas draw
+variance nodes by checked weights and an initial state from its conditional
+Gaussian posterior, then resimulate state innovations and observations. They
+preserve joint uncertainty without copying a fitted trajectory. Quadrature
+error is recorded separately from independent-replication MCSE. Extra artifact
+kinds/latent-level columns preserve static artifact compatibility.
+
 ## Implemented mean/variance prior comparisons
 
 `prior_influence.py` compares explicit configurations from the empty-history
@@ -176,6 +200,12 @@ Undefined moments are explicit, failed updates remain visible, later updates
 continue and missing references never create fabricated differences. There is
 no tuning, ranking or influence/agreement threshold. Plotting reads saved files;
 the explicit CLI calculates then plots automatically. See [prior comparisons](prior-influence.md).
+
+For `LocalLevelVariance`, comparisons hold evolution variance and numerical
+settings fixed, varying only initial-state and observation-variance priors.
+They preserve equal-tail state/variance intervals, predictive mixture HPD
+segments and integration checks at each update. Inapplicable conjugate fields,
+Student-t degrees of freedom and scalar prior coefficients remain null.
 
 ## Implemented explicit local-level diagnostics
 
@@ -244,8 +274,8 @@ The separate diagnostic workflow saves prior/noise influence and sequential
 predictive criticism; neither implements this whole configurable plan or
 full-data posterior predictive replication. Existing numerical/simulation tests
 verify stated calculation properties, rather than approving prior plausibility.
-The mean/variance model's separate predictive-check workflow implements its
-own whole-dataset replications, as described above.
+The mean/variance and learned local-level models' separate predictive-check
+workflow implements their whole-dataset replications, as described above.
 The current analytic filter has no MCMC (Markov chain Monte Carlo) sampler.
 
 Simulation, parameter/state recovery, formal simulation-based calibration, and

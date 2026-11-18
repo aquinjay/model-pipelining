@@ -19,6 +19,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [models.py](models.py) | Shared requests/results, capabilities, training mean, and last-value baseline |
 | [experiments.py](experiments.py) | Immutable versioned task/evaluation specs, release parsing, as-of case planning, and scoring vintage selection |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
+| [local_level_variance.py](local_level_variance.py) | Fixed evolution variance, learned observation variance, checked log-variance quadrature and conditional state inference |
+| [mixtures.py](mixtures.py) | Weighted Gaussian PDF/CDF, marginal quantiles and numerically resolved disconnected HPD sets |
 | [normal_mean.py](normal_mean.py) | Unknown constant mean, exact posterior/predictive integration, optional sampler audit |
 | [normal_mean_variance.py](normal_mean_variance.py) | Joint unknown mean/variance, normal/inverse-gamma posterior, exact Student-t forecasts |
 | [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
@@ -416,6 +418,53 @@ known-variance flags. `plot_fit` reads saved Student-t/inverse-gamma references
 and draws three trace/density rows without refitting. See [equations, units,
 commands, diagnostics and replay](../../docs/normal-mean-variance.md).
 
+## Learned local-level observation variance
+
+Import from `model_pipelining.local_level_variance`:
+
+```text
+QuadratureSettings(*, minimum_nodes=32, maximum_nodes=1024,
+                   relative_tolerance=1e-6, tail_tolerance=1e-8,
+                   maximum_expansions=9)
+LocalLevelVariance(*, initial_mean=0, initial_variance=100,
+                   evolution_variance=0.1, prior_shape=3, prior_scale=2,
+                   quadrature=QuadratureSettings())
+LocalLevelVariance.posterior(request) -> VariancePosterior
+LocalLevelVariance.prior() -> VariancePosterior
+LocalLevelVariance.predictive_distribution(request) -> NormalMixture
+LocalLevelVariance.fit(request) -> FittedForecast
+LocalLevelVariance.forecast(request) -> Forecast
+LocalLevelVariance.from_configuration(configuration) -> LocalLevelVariance
+conditional_filter(model, history, variances, *, paths=False) -> tuple
+initial_posterior_components(posterior) -> (initial_means, initial_variances)
+```
+
+The initial/evolution variances are nonnegative fixed squared-unit values,
+independent of the unknown observation variance. Prior shape/scale are positive
+and finite; the initial mean is finite. Histories must be nonempty, aware,
+strictly ordered, finite and no later than issuance; targets must be after
+issuance. Transitions use elapsed UTC days, including gaps and fractional
+projection times. The initial prior is one day before the first selected value.
+
+`VariancePosterior` retains model/history, variance nodes/weights, conditional
+level means/variances, log support/evidence and precision metadata. Properties
+give integrated level mean/variance and nullable expected observation variance.
+`.cdf(value)`/`.ppf(probability)` evaluate observation-variance probabilities
+using additional quadrature; `.predictive(elapsed_days=1)` returns the finite
+numerical mixture. That finite representation has finite moments even when the
+source-model predictive variance is undefined; the fit metadata preserves nulls
+for undefined source moments. Numerical quadrature tails/refinement must pass.
+`NumericalIntegrationError` carries failed evidence. Direct `fit` retains
+failed candidates; `forecast` rejects failed required checks.
+
+`NormalMixture(weights, means, variances)` lives in `mixtures.py`. It exposes
+`.mean`, `.variance`, `.pdf(x)`, `.cdf(x)`, `.ppf(p)`, and
+`.highest_density(level, tolerance=1e-7) -> (HighestDensityRegion, dict)`.
+PDF/CDF accept scalars or arrays. Weights normalize; zero weights are discarded.
+HPD regions retain disconnected segments and require agreement after grid
+refinement. This is explicit numerical evidence, not an arbitrary-mixture
+completeness proof. See [inference, tolerances and limits](../../docs/local-level-variance.md).
+
 ## Prior and posterior predictive checks
 
 Import these functions and records from `model_pipelining.predictive_checks`:
@@ -464,6 +513,15 @@ Existing directories/charts are rejected. Library plotting is explicit;
 saved files only. Backtests do not call this workflow. See [statistics, scope,
 commands and replay](../../docs/predictive-checks.md).
 
+These functions also accept a concrete `LocalLevelVariance`. Posterior variance
+nodes are sampled by their checked numerical weights, then a joint initial
+state is drawn using conditional Gaussian smoothing. Replicated states use
+fresh process innovations; fitted state paths are not copied. `ReplicatedDataset`
+adds `initial_level: float | None=None` and `latent_levels: tuple=()`; its `mean`
+is nullable and empty for this model. Gaps use selected elapsed time. Artifacts
+record numerical integration separately from independent-replication MCSE.
+Select this mode with `--model local-level-variance` in the existing check CLI.
+
 ## Prior influence comparisons
 
 Import from `model_pipelining.prior_influence`:
@@ -497,6 +555,16 @@ Library plotting is explicit; `scripts/compare_priors.py` calculates then plots
 automatically. Charts read saved files only. Output directories/charts must be
 unused; I/O failures propagate. See [quantities, timing, example configs and
 replay](../../docs/prior-influence.md).
+
+Prior comparisons also accept matching `LocalLevelVariance` instances. They
+must share evolution variance and quadrature settings. Initial mean/variance
+and observation-variance prior shape/scale may change. State/variance bounds
+are equal-tail credible intervals; predictive bounds preserve mixture HPD
+segments as JSON/counts, with total segment width. Inapplicable static fields
+(conjugate parameters/degrees of freedom/location coefficient/scale components)
+remain null. `integration_checks.json` saves numerical evidence per update.
+The comparison CLI selects this with `--model local-level-variance`. See
+[dynamic model details](../../docs/local-level-variance.md).
 
 ## Local-level diagnostics
 

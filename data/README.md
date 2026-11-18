@@ -69,6 +69,14 @@ later revisions never rewrite earlier updates. The explicit final cutoff uses
 the same development-history boundary as predictive checks. Selected release
 records/hashes are saved under `runs/`; no new acquired input is created.
 
+[The learned-variance local-level model](../docs/local-level-variance.md) uses
+the same preserved sources and as-of histories, with fixed evolution variance
+and learned observation variance. Its predictive checks save fresh latent
+trajectories as well as observations. Posterior replication draws initial state
+and variance jointly, then resimulates process innovations; it does not copy a
+fitted state path. Smoothing is confined to the selected development history
+for these checks. Forecast filtering never receives future actuals.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:

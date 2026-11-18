@@ -1,5 +1,10 @@
 # The local-level Bayesian model
 
+This page describes the original fixed-variance adapter. The separate
+[LocalLevelVariance](local-level-variance.md) now learns observation variance
+with controlled numerical integration while keeping evolution variance fixed.
+Select it with `scripts/run_local_level.py --learn-observation-variance`.
+
 This page explains the implemented model and its assumptions. Follow
 [the forecasting walkthrough](forecasting.md) to run it; use
 [the API reference](../src/model_pipelining/README.md) for signatures and

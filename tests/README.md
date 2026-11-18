@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **240 tests**. They use temporary fixtures/stores rather than
+There are currently **269 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -31,6 +31,8 @@ before running sampler tests.
 | [test_normal_mean_variance.py](test_normal_mean_variance.py) | 20 | Joint posterior/raw-density quadrature, predictive mixture integration and HPD, undefined moments, nonconstant sampler Jacobian, joint/reference agreement, partial/stuck failures, isolation/replay, release/final roles, CLI and saved-only traces |
 | [test_predictive_checks.py](test_predictive_checks.py) | 27 | Independent joint/predictive moments and cross-position covariance, statistics/tails, data-free priors, seed/prefix replay, partial failures, as-of releases/final isolation, discrepancy versus execution status, saved-only plots and both CLI modes |
 | [test_prior_influence.py](test_prior_influence.py) | 19 | Hand learning/scale decomposition, counterfactual location coefficient, credible/predictive interval mass, variance concentration, persistent influence/undefined moments, common release histories, future/final isolation, reference/update failures, replay, CLI and saved-only charts |
+| [test_local_level_variance.py](test_local_level_variance.py) | 18 | Independent batch Gaussian likelihood, adaptive scalar integration, known-level conjugate limit, initial-state smoothing, Gaussian-mixture quantiles/disconnected HPD, broad-tail root precision, failures, horizons, pipeline replay and both CLI modes |
+| [test_dynamic_evidence.py](test_dynamic_evidence.py) | 11 | Random-walk covariance, joint initial-state/variance posterior replication with fresh innovations, gaps, replay/RNG isolation, numerical failure evidence, dynamic prior comparisons, undefined moments, final isolation and workflow CLIs |
 
 ## Data behavior checked in detail
 
@@ -150,6 +152,23 @@ release cutoff separation, delayed revisions, shared predictive-check endpoints,
 future/final isolation, order/replay/tag pinning, visible reference/update failures,
 saved-only plots and CLI inheritance. These verify descriptive calculations;
 they do not decide which prior or amount of influence is appropriate.
+
+## Learned local-level variance
+
+New tests construct independent batch Gaussian likelihoods and conditional
+moments, then use adaptive scalar integration as a reference for the production
+quadrature. A known constant-level limit has an independently checked
+inverse-gamma variance posterior and Student-t forecast. Separate tests check
+smoothed initial-state moments, Gaussian-mixture probability and disconnected
+HPD mass, refinement/tail failures, gapped timing, replay and legacy CLI behavior.
+
+Dynamic replication tests verify random-walk covariance and fresh zero-mean
+state innovations after drawing the joint initial-state/variance posterior.
+Reusing a fitted latent trajectory would fail those checks. Workflow tests
+cover numerical failure persistence, exact endpoint selection, prior-comparison
+semantics, undefined prior moments, source-data isolation, saved-only charts
+and both dynamic CLI modes. These are numerical and behavioral checks, not
+model approval or a proof of HPD resolution for all pathological mixtures.
 
 ## What passing tests does not decide
 

@@ -1,7 +1,9 @@
-"""Exact joint prior/posterior replications and descriptive model criticism.
+"""Joint prior/posterior replications and descriptive model criticism.
 
-One (mu, variance) pair generates a whole replicated dataset. Discrepancies
-never decide model approval. These simulations are independent draws, not MCMC.
+Constant-mean replications share a (mu, variance) pair. Dynamic replications
+share an initial level/variance pair and draw fresh process innovations.
+Discrepancies never decide approval. Draws are independent, not MCMC; dynamic
+posterior variance integration has explicit numerical precision checks.
 """
 
 import csv
@@ -19,6 +21,7 @@ import numpy as np
 from model_pipelining.experiments import ExperimentSpec, ForecastCase, read_task_data, select_history_as_of
 from model_pipelining.models import ForecastRequest
 from model_pipelining.normal_mean_variance import NormalMeanVariance
+from model_pipelining.local_level_variance import LocalLevelVariance, initial_posterior_components
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
 
@@ -26,9 +29,11 @@ from model_pipelining.tags import resolve_tag
 @dataclass(frozen=True)
 class ReplicatedDataset:
     replication: int
-    mean: float
+    mean: float | None
     observation_variance: float
     values: tuple[float, ...]
+    initial_level: float | None = None
+    latent_levels: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -43,8 +48,8 @@ class PredictiveReplications:
 
 
 def _validate(model, replications, seed):
-    if type(model) is not NormalMeanVariance or model.mcmc is not None:
-        raise ValueError("Checks require a concrete NormalMeanVariance with mcmc=None; draws are exact")
+    if type(model) not in (NormalMeanVariance, LocalLevelVariance) or (type(model) is NormalMeanVariance and model.mcmc is not None):
+        raise ValueError("Checks require NormalMeanVariance with mcmc=None or LocalLevelVariance")
     if type(replications) is not int or replications < 1:
         raise ValueError("replications must be a positive integer")
     if type(seed) is not int or not 0 <= seed < 2**32:
@@ -77,7 +82,7 @@ def _simulate(*, kind, distribution, observation_count, replications, seed):
                                   tuple(datasets), tuple(failures))
 
 
-def simulate_prior_predictive(model: NormalMeanVariance, *, observation_count: int,
+def simulate_prior_predictive(model: NormalMeanVariance | LocalLevelVariance, *, observation_count: int,
                               replications: int = 1000, seed: int = 0) -> PredictiveReplications:
     """Draw joint prior parameters and whole datasets without observations.
 
@@ -87,24 +92,70 @@ def simulate_prior_predictive(model: NormalMeanVariance, *, observation_count: i
     _validate(model, replications, seed)
     if type(observation_count) is not int or observation_count < 1:
         raise ValueError("observation_count must be a positive integer")
+    if type(model) is LocalLevelVariance:
+        return _simulate_local(model, observation_count=observation_count, replications=replications, seed=seed)
     distribution = {"mean": model.prior_mean, "mean_precision": model.prior_mean_precision,
                     "shape": model.prior_shape, "scale": model.prior_scale}
     return _simulate(kind="prior", distribution=distribution, observation_count=observation_count,
                      replications=replications, seed=seed)
 
 
-def simulate_posterior_predictive(model: NormalMeanVariance, request: ForecastRequest, *,
+def simulate_posterior_predictive(model: NormalMeanVariance | LocalLevelVariance, request: ForecastRequest, *,
                                   replications: int = 1000, seed: int = 0) -> PredictiveReplications:
     """Draw exact joint-posterior parameters, then replicate the fitted history.
 
-    The dataset length equals len(request.history). This is in-sample criticism,
-    not a sequence of held-out forecasts or draws from independent marginal t's.
+    Length equals len(request.history). Dynamic replicas simulate fresh paths
+    from the joint initial-state/variance posterior. This is in-sample criticism,
+    not a sequence of held-out forecasts or independent marginal t draws.
     """
     _validate(model, replications, seed)
+    if type(model) is LocalLevelVariance:
+        return _simulate_local(model, observation_count=len(request.history), replications=replications, seed=seed, request=request)
     posterior = model.posterior(request)
     distribution = {key: getattr(posterior, key) for key in ("mean", "mean_precision", "shape", "scale")}
     return _simulate(kind="posterior", distribution=distribution, observation_count=len(request.history),
                      replications=replications, seed=seed)
+
+
+def _simulate_local(model, *, observation_count, replications, seed, request=None):
+    kind = "prior" if request is None else "posterior"
+    posterior = None if request is None else model.posterior(request)
+    initial_means, initial_variances = (None, None) if posterior is None else initial_posterior_components(posterior)
+    gaps = [1.0]*observation_count
+    if request is not None:
+        gaps[1:] = [(second.timestamp-first.timestamp).total_seconds()/86400
+                    for first, second in zip(request.history, request.history[1:])]
+    distribution = {"family": "local_level_with_unknown_observation_variance", "configuration": model.configuration,
+                    "replication": "Fresh state trajectory from joint initial-state/variance posterior; state innovations resimulated",
+                    "elapsed_days": gaps, "quadrature": posterior.evidence if posterior else None}
+    datasets, failures = [], []
+    for index in range(replications):
+        generator = np.random.Generator(np.random.PCG64(np.random.SeedSequence([seed, 0 if kind == "prior" else 1, index])))
+        try:
+            if posterior is None:
+                precision = float(generator.gamma(model.prior_shape))
+                if precision <= 0:
+                    raise ValueError("Unrepresentable precision draw")
+                variance = model.prior_scale/precision
+                initial = float(generator.normal(model.initial_mean, math.sqrt(model.initial_variance)))
+            else:
+                weights = np.asarray(posterior.weights)
+                component = generator.choice(len(weights), p=weights/weights.sum())
+                variance = posterior.variances[component]
+                initial = float(generator.normal(initial_means[component], math.sqrt(initial_variances[component])))
+            if not math.isfinite(variance) or variance <= 0 or not math.isfinite(initial):
+                raise ValueError("Invalid initial state or variance draw")
+            state, levels, values = initial, [], []
+            for gap in gaps:
+                state = float(generator.normal(state, math.sqrt(model.evolution_variance*gap)))
+                levels.append(state)
+                values.append(float(generator.normal(state, math.sqrt(variance))))
+            if not all(math.isfinite(x) for x in (*levels, *values)):
+                raise ValueError("Nonfinite replicated trajectory")
+            datasets.append(ReplicatedDataset(index, None, variance, tuple(values), initial, tuple(levels)))
+        except (ValueError, OverflowError, FloatingPointError) as error:
+            failures.append({"replication": index, "error": f"{type(error).__name__}: {error}"})
+    return PredictiveReplications(kind, seed, replications, observation_count, distribution, tuple(datasets), tuple(failures))
 
 
 _STATISTICS = (
@@ -196,7 +247,7 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
     output = Path(output_directory).expanduser().absolute()
     output.mkdir(parents=True, exist_ok=False)
     manifest = {
-        "format_version": 1, "kind": "normal_mean_variance_predictive_checks", "status": "running",
+        "format_version": 1, "kind": "local_level_variance_predictive_checks" if type(model) is LocalLevelVariance else "normal_mean_variance_predictive_checks", "status": "running",
         "started_at": datetime.now(UTC).isoformat(), "configuration": model.configuration,
         "replications": replications, "observation_count": observation_count, "seed": seed,
         "context": context,
@@ -216,6 +267,11 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
         "source_sha256": {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                           for name in ("predictive_checks.py", "normal_mean_variance.py", "experiments.py", "ingest.py")},
     }
+    if type(model) is LocalLevelVariance:
+        manifest["scope"].update(generation="One observation variance and initial state per fresh trajectory; state innovations resimulated",
+            posterior="Joint variance/initial-state posterior via checked quadrature and conditional Gaussian smoothing; fresh process path, not a reused fitted path")
+        manifest["source_sha256"].update({name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                                        for name in ("local_level_variance.py", "mixtures.py")})
     _write_json(output / "predictive_checks.json", manifest)
     observations = context["selected_history"] if context else []
     _write_csv(output / "observations.csv", ("observation_index", "timestamp", "available_at", "value"),
@@ -232,13 +288,14 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
         directory = output / kind
         directory.mkdir()
         simulation = None
-        error = None
+        error, inference_failure = None, None
         try:
             simulation = (simulate_prior_predictive(model, observation_count=observation_count,
                                                    replications=replications, seed=seed) if kind == "prior" else
                           simulate_posterior_predictive(model, request, replications=replications, seed=seed))
         except (ValueError, OverflowError, FloatingPointError) as failure:
             error = f"{type(failure).__name__}: {failure}"
+            inference_failure = getattr(failure, "evidence", None)
         datasets = simulation.datasets if simulation else ()
         failures = simulation.failures if simulation else ()
         parameter_rows = [{"replication": item.replication, "mean": item.mean,
@@ -246,7 +303,17 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                           for item in datasets]
         parameter_rows.extend({"replication": item["replication"], "mean": None, "observation_variance": None,
                                "status": "failed", "error": item["error"]} for item in failures)
-        _write_csv(directory / "parameter_draws.csv", ("replication", "mean", "observation_variance", "status", "error"),
+        parameter_fields = ("replication", "mean", "observation_variance", "status", "error")
+        if type(model) is LocalLevelVariance:
+            for row, item in zip(parameter_rows, datasets):
+                row["initial_level"] = item.initial_level
+            for row in parameter_rows[len(datasets):]:
+                row["initial_level"] = None
+            parameter_fields += ("initial_level",)
+            _write_csv(directory/"latent_levels.csv", ("replication", "observation_index", "level"),
+                ({"replication": item.replication, "observation_index": i, "level": value}
+                 for item in datasets for i, value in enumerate(item.latent_levels)))
+        _write_csv(directory / "parameter_draws.csv", parameter_fields,
                    sorted(parameter_rows, key=lambda row: row["replication"]))
         _write_csv(directory / "replicated.csv", ("replication", "observation_index", "value"),
                    ({"replication": item.replication, "observation_index": i, "value": value}
@@ -285,6 +352,8 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                    "distribution": simulation.distribution if simulation else None,
                    "error": error, "simulation_failures": failures, "statistic_failures": statistic_failures,
                    "comparisons": comparisons}
+        if type(model) is LocalLevelVariance:
+            summary["inference_failure"] = inference_failure
         _write_json(directory / "summary.json", summary)
         summaries[kind] = summary
     checks = [{"name": f"{kind}_simulation_and_statistics", "required": True,
@@ -299,9 +368,9 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                       "Which observed tail, dependence or level-change patterns are poorly reproduced?",
                       "Do discrepancies motivate changing the model or further investigation?"],
         "limitations": ["In-sample replication is not held-out calibration or model approval",
-                        "The model assumes one constant mean/variance and conditionally independent observations",
+                        "The model assumes Gaussian observations and the configured mean/state structure",
                         "Finite-replication tail fractions are descriptive and have no automatic acceptance threshold",
-                        "Prior influence comparisons are a separate future task"],
+                        "Prior influence comparisons are a separate explicit workflow"],
     })
     manifest.update(status="completed" if all(c["status"] == "passed" for c in checks if c["required"]) else "failed",
                     finished_at=datetime.now(UTC).isoformat(),
@@ -310,7 +379,7 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
     return output
 
 
-def run_prior_predictive_checks(*, model: NormalMeanVariance, observation_count: int,
+def run_prior_predictive_checks(*, model: NormalMeanVariance | LocalLevelVariance, observation_count: int,
                                 output_directory: str | Path, replications: int = 1000, seed: int = 0) -> Path:
     """Persist prior datasets/statistics before observing data. Plot separately."""
     _validate(model, replications, seed)
@@ -352,7 +421,7 @@ def _select_development_history(*, dataset: str, issued_at: datetime, snapshot_i
     return specification, versions, case, context
 
 
-def run_predictive_checks(*, dataset: str, model: NormalMeanVariance, issued_at: datetime,
+def run_predictive_checks(*, dataset: str, model: NormalMeanVariance | LocalLevelVariance, issued_at: datetime,
                          output_directory: str | Path, snapshot_id: str | None = None,
                          tag: str | None = None, store: str | Path = "data/versioned",
                          experiment: ExperimentSpec | None = None, replications: int = 1000, seed: int = 0) -> Path:
@@ -383,7 +452,7 @@ def plot_predictive_checks(check_directory: str | Path) -> tuple[Path, ...]:
 
     directory = Path(check_directory).expanduser()
     manifest = json.loads((directory / "predictive_checks.json").read_text(encoding="utf-8"))
-    if (manifest.get("format_version") != 1 or manifest.get("kind") != "normal_mean_variance_predictive_checks"
+    if (manifest.get("format_version") != 1 or manifest.get("kind") not in ("normal_mean_variance_predictive_checks", "local_level_variance_predictive_checks")
             or manifest.get("status") not in ("completed", "failed")):
         raise ValueError("Plotting requires finished version-1 predictive checks")
     kinds = tuple(manifest["phase_status"])
@@ -410,8 +479,8 @@ def plot_predictive_checks(check_directory: str | Path) -> tuple[Path, ...]:
         axes = figure.subplots(4, 2)
         label = "Prior predictive" if kind == "prior" else "Posterior predictive (in-sample replication)"
         figure.suptitle(f"{label} — computation {summary['status']}; human review pending\n"
-                       f"{summary['completed_replications']}/{summary['expected_replications']} datasets generated; "
-                       "one mean/variance pair per dataset")
+                       f"{summary['completed_replications']}/{summary['expected_replications']} datasets generated; " +
+                       ("one variance and fresh latent path per dataset" if manifest["kind"] == "local_level_variance_predictive_checks" else "one mean/variance pair per dataset"))
         for index, values in paths.items():
             axes[0, 0].plot(range(len(values)), values, color="tab:blue", alpha=0.12, linewidth=0.8,
                             label="First up to 20 replications" if index == next(iter(paths)) else None)

@@ -208,8 +208,10 @@ reporting. The model's constant-mean assumption is false for the mean-shift
 fixture. Passing tests or audits verifies computation, not that assumption,
 prior plausibility, formal simulation-based calibration, or application approval.
 
-Unknown local-level noise variances and MCMC-only predictive/HPD approximation
-remain future work. This slice adds no dependency or shared check-plan registry.
+[Learned local-level observation variance](local-level-variance.md) is now
+implemented using checked scalar integration. Evolution variance remains fixed;
+MCMC-only predictive/HPD approximation remains future work. No shared check-plan
+registry or new dependency is added by that extension.
 
 ## Prior and posterior predictive checking
 

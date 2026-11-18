@@ -38,8 +38,9 @@ Prior influence remains descriptive, not a quantity to minimize. Parameter
 learning now also includes an unknown observation variance:
 [NormalMeanVariance](normal-mean-variance.md) uses normal/inverse-gamma updates,
 exact Student-t forecasts and an optional joint sampler audit. Heavy-tail moment
-existence and the transform Jacobian are explicit. Local-level observation and
-evolution variances remain fixed. Application selection and a broader
+existence and the transform Jacobian are explicit. [Local-level observation
+variance](local-level-variance.md) is now learned with checked scalar integration;
+evolution variance remains fixed. Application selection and a broader
 release/check framework can wait.
 
 [Prior and posterior predictive checks](predictive-checks.md) now replicate
@@ -75,8 +76,9 @@ thresholds. Human interpretation of assumptions and evidence remains open.
 
 The baseline workflow was introduced in `eabd66e`. PR #1 merged unknown-mean
 parameter learning and its sampler audit; PR #2 merged joint mean/variance
-learning. The current checkout adds prior/posterior predictive checking and
-prior influence comparisons. Use Git status/history
+learning. PR #3 added prior/posterior predictive checking and prior influence
+comparisons; the current checkout adds learned local-level observation variance
+and its forecast/check/comparison workflows. Use Git status/history
 to distinguish local edits from committed/published code.
 
 ## Implemented scope
@@ -97,11 +99,12 @@ to distinguish local edits from committed/published code.
 | Model evidence | Explicit full-path prior/noise influence, conditional initial-mean weights, sequential criticism, saved-only diagnostic charts | [Diagnostics](diagnostics.md) |
 | Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
+| Dynamic parameter learning | Fixed evolution variance, unknown observation variance, checked quadrature/mixture forecasts and dynamic evidence workflows | [Learned local-level variance](local-level-variance.md) |
 | Task/evaluation contracts | Version-1 specs; manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The suite currently has 240 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 269 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -191,8 +194,39 @@ and 9.105625. The stronger mean prior retained a location coefficient 0.157895
 and mean location 11.656603. These are descriptive consequences of the chosen
 settings, not a ranking or a claim that influence should disappear.
 
+The learned local-level slice adds 29 tests; all 269 tests passed. Independent
+batch Gaussian likelihood/state calculations, adaptive scalar integration and
+a known-level conjugate limit support the numerical claims. Tests also cover
+mixture gaps and wide-tail root precision, smoothing for initial-state draws,
+fresh process innovations, undefined prior moments, required precision failures,
+replay, future/final isolation, and legacy/new CLI modes.
+
+Both synthetic series completed 130 development forecasts on the first 160
+values, with the final 40 excluded. All 143 numerical/fit files per series
+replayed byte for byte, excluding manifest timestamps and PNGs. Each series
+also generated 1000 prior and posterior fresh-path replications and compared
+five priors across 162 points. Maximum accepted quadrature order was 1024 and
+maximum omitted-tail probability estimate was 7.842e-9. Artifacts are local in
+`runs/local-level-variance-20261117-bs3pk_xh/`.
+
+Posterior upper-tail fractions for lag correlation/half-mean difference/CUSUM
+were 1.000/0.480/1.000 on the stable fixture and 0.104/0.047/0.002 on the shift
+fixture. These are descriptive model criticism, not calibrated tests or an
+approval threshold. Computational completion leaves their interpretation open.
+
 ## Next decisions, not automatic implementation
 
+The [completed modeling review](modeling-review.md) follows implementation and
+verification of the three learned local-level tasks. It finds the work aligned
+with repeatable, model-independent forecasting infrastructure while retaining
+the synthetic discrepancies as open modeling evidence.
+
+- **Consolidate existing evidence boundaries:** predictive checks and prior
+  comparisons now support two model structures through concrete-model branches.
+  Define a small capability/metadata boundary and experiment-owned evidence
+  requirements using those existing workflows before adding a new backend or
+  model family. Preserve selection, replay, failed evidence and the separation
+  of human review from computational status. This remains future work.
 - **Review collected evidence:** interpret prior predictive implications,
   posterior discrepancies and prior influence together before choosing a richer
   model. The implemented comparisons do not tune priors, minimize influence or
@@ -200,12 +234,11 @@ settings, not a ranking or a claim that influence should disappear.
 - **Further model evidence:** extend whole-dataset predictive checks to another
   model only when useful. A configurable shared check plan, experimental
   overrides, and application-specific human/release criteria remain open.
-- **Further parameter learning:** unknown observation variance is now learned
-  in the exact-reference constant-mean model. Next choose whether a richer
-  unknown-variance local-level model is needed, with an independently validated reference
-  and explicit inference evidence. Intractable sampled prediction needs its own
-  quantile/HPD approximation and precision design; current audit forecasts remain
-  exact. Local-level variances are still fixed. See [current scope](parameter-uncertainty.md).
+- **Further parameter learning:** observation variance is now learned in both
+  constant-mean and evolving-level models. Evolution variance remains fixed.
+  Choosing to learn it requires its own reference and evidence design. Generic
+  MCMC-only prediction still needs an explicit precision/HPD design; the new
+  local-level model uses controlled scalar quadrature rather than sampled forecasts.
 - **Real-data application (deferred):** fill the implemented task/evaluation
   contract with an actual source and verified historical release claims when
   application choice becomes useful; it is not the immediate project objective.

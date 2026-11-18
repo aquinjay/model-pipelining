@@ -1,5 +1,13 @@
 # Shared forecast uncertainty and highest-density regions
 
+[LocalLevelVariance](local-level-variance.md) now integrates an unknown
+observation variance into a marginal Gaussian-mixture forecast. Quantiles solve
+that mixture CDF; HPD regions use density thresholds and retain disconnected
+segments. Conditional endpoints are not averaged. Required quadrature and HPD
+resolution evidence must pass before a forecast is accepted. Source-model
+undefined predictive variance is retained as null. State credible intervals
+in prior comparisons remain distinct from observation prediction regions.
+
 This page explains what the saved uncertainty means, then gives the detailed
 adapter/storage contract. Start with [the walkthrough](forecasting.md) for a run
 and [the model guide](local-level.md) for Bayesian calculations. The shared output

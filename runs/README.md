@@ -184,6 +184,26 @@ equal-tail credible intervals. Existing charts/directories are rejected. See
 [semantics and replay](../docs/prior-influence.md). All artifacts remain local
 and ignored by Git, alongside the separate predictive-check results.
 
+## Learned local-level numerical evidence
+
+`LocalLevelVariance` uses existing run/fit formats. Its `fit.json` records
+log-variance quadrature settings, dependency versions, support/refinement/tail
+checks, weighted nodes and conditional filtered moments, elapsed target time,
+predictive HPD resolution checks and output errors. These nodes are numerical
+integration evidence, not MCMC draws. Failed required precision/output checks
+retain evidence and reject that case. Undefined source-model predictive variance
+is explicitly null even though a finite numerical mixture has finite moments.
+
+Predictive checks use kind `local_level_variance_predictive_checks`:
+`parameter_draws.csv` adds `initial_level`, with the constant `mean` empty;
+`latent_levels.csv` retains each fresh trajectory. Posterior metadata saves
+quadrature evidence and numerical failure details. Prior comparisons use kind
+`local_level_variance_prior_influence`, adding `integration_checks.json`,
+predictive segment JSON/counts and numerical precision fields. Undefined or
+inapplicable static-model fields stay null. State/variance intervals are
+equal-tail; predictive intervals are mixture HPD and retain gaps. Saved-only
+plots support both old and new kinds. See [inference, artifacts and replay](../docs/local-level-variance.md).
+
 ## Reproduction and retention
 
 Keep the entire input store, important run folders, matching source code, and

@@ -129,9 +129,28 @@ choices. For example, shape 30/scale 29 preserves prior expected variance 1
 while changing its concentration. These are illustrative choices, not a search
 grid, model ranking or requirement that influence be small.
 
+[local_level_variance_priors.json](local_level_variance_priors.json) supplies
+the equivalent reference/overrides for the evolving-level model. Select it
+with `scripts/compare_priors.py --model local-level-variance`. Alternatives may
+change initial mean/variance and inverse-gamma shape/scale; evolution variance
+and numerical settings must match across priors. No single prior-location
+coefficient or conjugate scale decomposition is claimed for this model.
+
 Use `scripts/compare_priors.py --config configs/normal_mean_variance_priors.json`
 with a dataset, one snapshot/tag, an aware `--as-of`, and a new output directory.
 An optional development `--experiment` supplies release rules, daily issuance
 delay and final boundaries; `--interval-level` defaults to 0.95. No MCMC settings
 are accepted. The CLI saves expanded settings, exact prior/learning paths and
 differences, then draws charts automatically. See [timing, quantities and examples](../docs/prior-influence.md).
+
+## Learned local-level observation variance
+
+[local_level_quadrature.json](local_level_quadrature.json) explicitly selects
+`QuadratureSettings` for controlled log-variance integration. Use it with
+`scripts/run_local_level.py --learn-observation-variance --quadrature-config FILE`
+or the predictive-check CLI with `--model local-level-variance`. Omit it for
+defaults. The model keeps fixed evolution variance and an independent Gaussian
+initial-state prior. `--prior-shape`/`--prior-scale` configure the observation-
+variance prior; `--observation-variance` conflicts with learned mode. Numerical
+settings are saved and required failures reject a forecast; they do not tune
+model assumptions. See [methods, precision and commands](../docs/local-level-variance.md).
