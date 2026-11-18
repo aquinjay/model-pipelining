@@ -120,6 +120,7 @@ def run_backtest(
     supports_quantiles = getattr(selected_model, "supports_quantiles", False)
     supports_highest_density = getattr(selected_model, "supports_highest_density", False)
     supports_fit_evidence = getattr(selected_model, "supports_fit_evidence", False)
+    requires_fit_evidence = supports_fit_evidence or bool(experiment.evidence.required_fit_checks)
     if type(supports_fit_evidence) is not bool:
         raise ValueError("model.supports_fit_evidence must be a boolean")
     if supports_fit_evidence and not callable(getattr(selected_model, "fit", None)):
@@ -155,6 +156,10 @@ def run_backtest(
         "input": {"dataset": dataset, "snapshot_id": selected_id, "selected_tag": tag},
         "experiment": experiment.to_dict(),
         "experiment_sha256": hashlib.sha256(json.dumps(experiment.to_dict(), sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+        "separate_evidence": {
+            "required_workflows": list(experiment.evidence.required_workflows),
+            "status": "pending" if experiment.evidence.required_workflows else "not_requested",
+            "execution": "Invoke run_experiment_evidence explicitly; forecast completion does not complete these requirements"},
         "task": {
             "timestamp_column": task.timestamp_column, "target_column": task.target_column,
             "frequency": "one UTC day", "horizon_days": task.horizon_days,
@@ -220,6 +225,8 @@ def run_backtest(
                 history_checks_passed = False
                 raise ValueError("Training history or target time violates the forecast task")
             request = ForecastRequest(history, issued_at, target_time, probabilities, density_levels)
+            if requires_fit_evidence and not supports_fit_evidence:
+                raise ValueError("Experiment requires fit checks, but model does not supply fit evidence")
             if supports_fit_evidence:
                 fitted = selected_model.fit(request)
                 relative_fit = f"fits/{case.origin_index:06d}"
@@ -229,7 +236,7 @@ def run_backtest(
                     "origin_index": case.origin_index, "issued_at": row["issued_at"],
                     "target_time": row["target_time"], "history_sha256": case.history_sha256,
                     "training_count": len(history),
-                })
+                }, required_checks=experiment.evidence.required_fit_checks)
                 saving_fit = False
                 if not fit_passed:
                     raise ValueError("Required fit checks failed; inspect saved per-origin fit evidence")
@@ -247,7 +254,7 @@ def run_backtest(
                 raise
             row["error"] = f"{type(error).__name__}: {error}"
         predictions.append(row)
-        if supports_fit_evidence:
+        if requires_fit_evidence:
             relative_fit = f"fits/{case.origin_index:06d}"
             fit_rows.append({"origin_index": case.origin_index, "target_time": row["target_time"],
                              "history_sha256": case.history_sha256,
@@ -288,7 +295,7 @@ def run_backtest(
         _write_csv(output / "highest_density.csv", density_predictions)
     if benchmark_models:
         _write_csv(output / "benchmark_predictions.csv", benchmark_predictions)
-    if supports_fit_evidence:
+    if requires_fit_evidence:
         _write_csv(output / "fit_index.csv", fit_rows)
     actuals = select_actuals(versions, task)
     evaluations = _evaluate_points(predictions, actuals)
@@ -349,9 +356,9 @@ def run_backtest(
     }
     _write_json(output / "scores.json", scores)
     checks = [
-        {"name": "required_fit_evidence_and_checks", "required": supports_fit_evidence,
+        {"name": "required_fit_evidence_and_checks", "required": requires_fit_evidence,
          "status": ("passed" if all(item["status"] == "passed" for item in fit_rows) else "failed")
-                   if supports_fit_evidence else "not_applicable"},
+                   if requires_fit_evidence else "not_applicable"},
         {"name": "input_schema_and_daily_calendar", "required": True, "status": "passed"},
         {"name": "eligible_history_and_target_alignment", "required": True,
          "status": "passed" if history_checks_passed else "failed"},

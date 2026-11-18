@@ -81,6 +81,12 @@ comparisons; the current checkout adds learned local-level observation variance
 and its forecast/check/comparison workflows. Use Git status/history
 to distinguish local edits from committed/published code.
 
+The subsequent [evidence consolidation](evidence.md) implements model-supplied
+simulation/summary providers and version-2 experiment evidence requirements.
+The explicit evidence runner executes requested existing workflows on one pinned
+history; forecast execution independently enforces caller-required fit names.
+No new model, sampler, application or automatic human decision is introduced.
+
 ## Implemented scope
 
 | Area | Implemented | Detailed reference |
@@ -100,11 +106,12 @@ to distinguish local edits from committed/published code.
 | Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
 | Dynamic parameter learning | Fixed evolution variance, unknown observation variance, checked quadrature/mixture forecasts and dynamic evidence workflows | [Learned local-level variance](local-level-variance.md) |
+| Evidence requirements | Provider-based calculations, caller-required fit names/workflows, explicit pinned-history execution and failure receipts | [Experiment evidence](evidence.md) |
 | Task/evaluation contracts | Version-1 specs; manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The suite currently has 269 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 291 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -214,6 +221,17 @@ were 1.000/0.480/1.000 on the stable fixture and 0.104/0.047/0.002 on the shift
 fixture. These are descriptive model criticism, not calibrated tests or an
 approval threshold. Computational completion leaves their interpretation open.
 
+The evidence consolidation adds 22 tests, including a model unknown to shared
+workflow code, missing/duplicated replication output, malformed summaries,
+missing mandatory checks, caller-required fits, unavailable capabilities, tag
+movement between workflows, version migration/comparison, replay/final isolation,
+legacy saved-only charts, I/O and both CLI modes. The full suite has 291 tests.
+On both original synthetic histories, the consolidated workflows reproduced
+18 saved evidence files byte for byte, 324 learning rows and both selected prior
+summary records. Artifacts are local under
+`runs/evidence-interface-20261117-fewaws1h/`; the evidence plan used 1000 prior
+and posterior replications and two priors over 162 learning points each.
+
 ## Next decisions, not automatic implementation
 
 The [completed modeling review](modeling-review.md) follows implementation and
@@ -221,18 +239,17 @@ verification of the three learned local-level tasks. It finds the work aligned
 with repeatable, model-independent forecasting infrastructure while retaining
 the synthetic discrepancies as open modeling evidence.
 
-- **Consolidate existing evidence boundaries:** predictive checks and prior
-  comparisons now support two model structures through concrete-model branches.
-  Define a small capability/metadata boundary and experiment-owned evidence
-  requirements using those existing workflows before adding a new backend or
-  model family. Preserve selection, replay, failed evidence and the separation
-  of human review from computational status. This remains future work.
+- **Evidence consolidation completed:** [the provider/experiment boundary](evidence.md)
+  now separates model calculations from shared workflow responsibilities. Caller-owned
+  fit names and required separate workflows fail visibly when evidence is missing.
+  Further abstraction should follow a concrete need rather than adding a registry
+  or another backend by default.
 - **Review collected evidence:** interpret prior predictive implications,
   posterior discrepancies and prior influence together before choosing a richer
   model. The implemented comparisons do not tune priors, minimize influence or
   choose an application automatically.
 - **Further model evidence:** extend whole-dataset predictive checks to another
-  model only when useful. A configurable shared check plan, experimental
+  model only when useful. An arbitrary-stage configurable check plan, exploratory
   overrides, and application-specific human/release criteria remain open.
 - **Further parameter learning:** observation variance is now learned in both
   constant-mean and evolving-level models. Evolution variance remains fixed.

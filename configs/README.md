@@ -29,6 +29,14 @@ See [the full contract and examples](../docs/experiments.md). Input preparation,
 model selection, preserving final-data separation, and human interpretation
 remain caller actions. No application or inference backend is selected here.
 
+[daily_evidence_experiment.json](daily_evidence_experiment.json) is a version-2
+experiment with the same task/evaluation and explicit required predictive checks
+and prior comparisons. `scripts/run_evidence.py --experiment FILE` executes those
+workflows only when invoked; the backtest does not start them. Its evidence plan
+sets replication count/seed and comparison probability, with optional named
+per-origin fit requirements. Version-1 experiments load with empty requirements.
+See [the evidence guide](../docs/evidence.md) for a complete command and statuses.
+
 ## Diagnostic example
 
 [local_level_diagnostics.json](local_level_diagnostics.json) contains `reference`
@@ -58,7 +66,7 @@ explicit caller actions.
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
 | Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
-| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` | `model.configuration` and model identity/capabilities |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` / `LocalLevelVariance(...)` | `model.configuration` and model identity/capabilities |
 | Uncertainty request | `interval_levels=(0.8, 0.95)`; all run scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 

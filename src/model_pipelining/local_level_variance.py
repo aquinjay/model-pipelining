@@ -217,6 +217,11 @@ class LocalLevelVariance:
             parameters["quadrature"] = QuadratureSettings(**parameters["quadrature"])
         return cls(**parameters)
 
+    def evidence_provider(self):
+        """Supply model calculations for shared predictive/prior evidence workflows."""
+        from model_pipelining.evidence_local_level import LocalLevelVarianceEvidence
+        return LocalLevelVarianceEvidence(self)
+
     @property
     def configuration(self):
         return asdict(self)

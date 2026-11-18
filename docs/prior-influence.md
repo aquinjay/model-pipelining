@@ -1,5 +1,11 @@
 # Comparing prior influence on learning and prediction
 
+Model evidence providers now own prior/parameter/predictive summaries and validate
+which assumptions may vary. Shared code retains history selection, differences,
+persistence and saved-only reporting. An [experiment evidence plan](evidence.md)
+can require and explicitly execute comparisons alongside predictive checks;
+standalone calls remain available and forecasting does not start them automatically.
+
 The workflow also supports `--model local-level-variance`. Initial-state and
 observation-variance priors may change, with evolution variance and numerical
 settings held fixed. State/variance intervals are equal-tail; predictive regions

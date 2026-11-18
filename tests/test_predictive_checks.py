@@ -202,7 +202,7 @@ class PredictiveWorkflowTests(unittest.TestCase):
         self.assertIn("source_sha256", manifest)
 
     def test_prior_only_persists_without_reading_any_data_or_fitting(self):
-        with patch.object(pc, "retrieve_snapshot", side_effect=AssertionError("No input")), \
+        with patch("model_pipelining.experiments.retrieve_snapshot", side_effect=AssertionError("No input")), \
              patch.object(NormalMeanVariance, "posterior", side_effect=AssertionError("No posterior")):
             output = pc.run_prior_predictive_checks(model=self.model, observation_count=5,
                 replications=10, output_directory=self.root / "prior")
@@ -368,8 +368,8 @@ class PredictiveWorkflowTests(unittest.TestCase):
         output = self.run_checks()
         original = {p: p.read_bytes() for p in output.rglob("*") if p.is_file()}
         with patch.object(NormalMeanVariance, "posterior", side_effect=AssertionError("No fitting")), \
-             patch.object(pc, "retrieve_snapshot", side_effect=AssertionError("No input")), \
-             patch.object(pc, "_simulate", side_effect=AssertionError("No draws")):
+             patch("model_pipelining.experiments.retrieve_snapshot", side_effect=AssertionError("No input")), \
+             patch.object(pc, "simulate_prior_predictive", side_effect=AssertionError("No draws")):
             charts = pc.plot_predictive_checks(output)
         self.assertEqual(len(charts), 2)
         self.assertTrue(all(p.read_bytes().startswith(b"\x89PNG") for p in charts))

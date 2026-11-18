@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **269 tests**. They use temporary fixtures/stores rather than
+There are currently **291 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -33,6 +33,7 @@ before running sampler tests.
 | [test_prior_influence.py](test_prior_influence.py) | 19 | Hand learning/scale decomposition, counterfactual location coefficient, credible/predictive interval mass, variance concentration, persistent influence/undefined moments, common release histories, future/final isolation, reference/update failures, replay, CLI and saved-only charts |
 | [test_local_level_variance.py](test_local_level_variance.py) | 18 | Independent batch Gaussian likelihood, adaptive scalar integration, known-level conjugate limit, initial-state smoothing, Gaussian-mixture quantiles/disconnected HPD, broad-tail root precision, failures, horizons, pipeline replay and both CLI modes |
 | [test_dynamic_evidence.py](test_dynamic_evidence.py) | 11 | Random-walk covariance, joint initial-state/variance posterior replication with fresh innovations, gaps, replay/RNG isolation, numerical failure evidence, dynamic prior comparisons, undefined moments, final isolation and workflow CLIs |
+| [test_evidence_interfaces.py](test_evidence_interfaces.py) | 22 | Provider extension without model dispatch, v1/v2 migration/comparison, caller-required fits/workflows, missing/optional evidence, pinned tags/history/settings, numerical failures, replay/final isolation, saved-only/legacy plots and both new CLI modes |
 
 ## Data behavior checked in detail
 

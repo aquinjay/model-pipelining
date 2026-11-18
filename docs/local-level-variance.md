@@ -1,5 +1,10 @@
 # A changing level with learned observation variance
 
+The model now supplies an evidence provider to the shared predictive/prior
+workflows. Its numerical inference, joint initial-state draws and fresh-process
+replication semantics are unchanged. [Experiment evidence requirements](evidence.md)
+can explicitly request these workflows and name its per-origin precision checks.
+
 `LocalLevelVariance` learns one unknown observation variance while filtering a
 level that changes over time. Evolution variance remains an explicit fixed
 setting. The initial-state prior and evolution variance are independent of the

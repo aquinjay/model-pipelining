@@ -84,6 +84,11 @@ class NormalMeanVariance:
             if not isinstance(self.mcmc, MCMCSettings):
                 raise ValueError("mcmc must be MCMCSettings or None")
 
+    def evidence_provider(self):
+        """Supply model calculations for shared predictive/prior evidence workflows."""
+        from model_pipelining.evidence_normal import NormalMeanVarianceEvidence
+        return NormalMeanVarianceEvidence(self)
+
     @property
     def configuration(self) -> dict:
         return asdict(self)

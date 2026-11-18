@@ -47,6 +47,7 @@ explains which checks support each implementation claim.
 | Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
 | Predictive checks | Data-free prior simulation and full selected-history posterior replication for the mean/variance model, with saved discrepancy summaries and charts |
 | Prior comparisons | Exact learning/prediction paths for explicit mean/variance priors on identical release-aware histories, with saved signed differences |
+| Experiment evidence | Model-supplied simulation/summaries, caller-required workflows/fit checks, explicit execution and saved failures |
 
 The forecast uncertainty describes the **next observed value**, conditional on
 the model's assumptions. It is separate from uncertainty about the hidden level
@@ -118,6 +119,15 @@ state paths. Its prior comparisons separate state/variance credible intervals
 from predictive mixture HPD sets, with saved integration checks. They preserve
 the same development selection and pending human review.
 
+[Experiment evidence requirements](docs/evidence.md) now consolidate these
+workflows behind model-supplied calculations. A version-2 experiment can require
+named fit checks and separate predictive/prior-comparison workflows. Invoke
+`scripts/run_evidence.py` explicitly to execute the required separate workflows;
+the command draws charts automatically. Forecasting enforces required per-origin
+fit checks and records separate workflow requirements as pending. Completion
+does not approve assumptions or an application. Version-1 experiments and older
+saved evidence remain readable.
+
 A completed run means the required computational checks and scoring succeeded.
 It does not decide whether the assumptions are useful. `review.json` starts as
 a pending human review record. The [walkthrough](docs/forecasting.md#read-the-results)
@@ -138,6 +148,7 @@ explains how to read both execution and review status.
 | See current status and review priorities | [Roadmap](docs/roadmap.md) |
 | Read the completed computational workflow review | [Workflow review](docs/workflow-review.md) |
 | Assess the latest modeling work against project direction | [Modeling review](docs/modeling-review.md) |
+| Declare and execute required model evidence | [Experiment evidence](docs/evidence.md) |
 | Inspect assumption influence and sequential model discrepancies | [Local-level diagnostics](docs/diagnostics.md) |
 | Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
 | Learn parameters and inspect exact-reference sampler evidence | [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md) |

@@ -6,6 +6,11 @@ and verification. It assesses that completed work against the project's goal:
 repeatable forecasting infrastructure with interchangeable models and
 inspectable evidence. It does not select an application or approve a model.
 
+The recommended consolidation was subsequently implemented in [the evidence
+interface and experiment requirements](evidence.md). The assessment below records
+the completed modeling checkpoint that motivated it; the recommendation section
+describes its scope at review time.
+
 ## Assessment
 
 The work is on track. The new adapter exercises a computation that the earlier

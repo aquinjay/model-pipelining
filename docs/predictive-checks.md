@@ -1,5 +1,11 @@
 # Prior and posterior predictive checks
 
+The workflow now delegates distribution calculations to model-supplied evidence
+providers. Existing standalone calls keep their options and artifact meanings.
+An [experiment evidence plan](evidence.md) can require this workflow and execute
+it explicitly alongside prior comparisons on one pinned development history;
+forecast execution does not start it automatically.
+
 The workflow also supports `--model local-level-variance`: it learns observation
 variance with checked numerical integration, draws the joint initial state,
 then resimulates a fresh latent trajectory and observations. The rest of this

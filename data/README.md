@@ -1,5 +1,10 @@
 # Local data
 
+The [explicit experiment evidence runner](../docs/evidence.md) uses this same
+verified store and pins a selected tag once across its required workflows.
+It does not acquire or register new input. Generated evidence stays under the
+caller-selected run directory, separately from preserved snapshots.
+
 Keep input snapshots here while developing. Git ignores other contents of this directory by default; this orientation file is tracked.
 
 Reproduction requires the preserved snapshot and its dataset/ID reference, together with the relevant source and availability assumptions. A hash alone cannot recreate data. Small synthetic fixtures may later be committed deliberately in a separate fixture location.

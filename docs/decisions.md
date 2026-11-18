@@ -14,7 +14,8 @@ for current behavior and review priorities.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
 - Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
 - Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection. Unknown-mean parameter integration and optional independent-chain MCMC audits are implemented.
-- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, a configurable check plan, and release automation remain open.
+- Use model-supplied evidence calculations and experiment-owned fit names/separate workflow requirements; execute separate evidence explicitly and retain failed or unavailable requirements.
+- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, arbitrary-stage checks, and release automation remain open.
 
 ## How to read earlier entries
 
@@ -430,6 +431,42 @@ The November 3 proposal considered snapshots of one or more related files, compa
   discrepancies and recommends consolidating existing evidence capabilities and
   experiment-owned requirements before adding another model/backend. This is a
   next-step recommendation, not an implemented check framework or model approval.
+
+## Consolidate existing evidence and experiment requirements — 2026-11-17
+
+- **Order:** preserve the verified learned local-level work first in commit
+  `40b9d2b`, then consolidate its existing evidence workflows. No new model or
+  sampler was needed to complete this infrastructure step.
+- **Provider boundary:** optional `model.evidence_provider()` supplies simulation,
+  prior/parameter/predictive summaries, scenario constraints and source/presentation
+  metadata. Conjugate and learned local-level calculations live in separate
+  provider modules. Shared workflows no longer branch on concrete model classes;
+  they retain selection, discrepancies, differences, persistence and structural
+  validation. Existing records are intentionally bounded to mean/variance/state
+  evidence rather than inventing a universal parameter schema or registry.
+- **Experiment ownership:** `EvidencePlan` declares required existing workflows,
+  named primary-model fit checks and replication/seed/interval settings. Specs
+  emit version 2; version 1 loads with default empty requirements. Reports
+  normalize explicit v1/v2 specs for comparison without inventing missing metadata.
+- **Execution:** the explicit `run_experiment_evidence`/`scripts/run_evidence.py`
+  entry point pins a snapshot/history once, executes requested development
+  workflows, checks child identity/settings and mandatory check names, and saves
+  failed requirements when capability/scenarios/checks are missing. Later
+  workflows continue; I/O propagates. `run_backtest` separately enforces named
+  fit checks, saves independent experiment requirements and records separate
+  workflow requirements as pending. Neither run claims to complete human review.
+- **Compatibility:** standalone workflows keep their explicit options, RNG streams,
+  statistics and numerical records. Saved presentation metadata drives new plots;
+  legacy artifact kinds remain readable without fitting. Artifact hashes are
+  receipts, not a release system or immutable storage guarantee.
+- **Verification:** all 291 tests passed, including 22 new interface/requirement
+  tests covering an adapter unknown to shared workflow code, omitted/duplicated
+  replications, malformed summaries, missing/optional checks, unsupported evidence,
+  pinned tags/history/settings, replay/final isolation, numerical/I/O failures,
+  v1/v2 comparison and both CLI modes. On each original synthetic history, 18
+  evidence files replayed byte for byte, 324 prior-learning rows matched, and
+  both selected prior-summary records matched. Artifacts remain local under
+  `runs/evidence-interface-20261117-fewaws1h/`. See [the contract](evidence.md).
 
 ## Working proposals
 

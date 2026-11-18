@@ -1,0 +1,38 @@
+{
+  "format_version": 2,
+  "task": {
+    "name": "daily-infrastructure-example",
+    "target_description": "Next daily value in the synthetic development fixture",
+    "source_description": "Explicitly generated and preserved synthetic CSV",
+    "timestamp_column": "timestamp",
+    "target_column": "value",
+    "units": "Arbitrary synthetic units",
+    "calendar": "daily_utc",
+    "missing_policy": "reject",
+    "horizon_days": 1,
+    "minimum_history": 30,
+    "issuance_delay_seconds": 0,
+    "availability_column": null,
+    "revision_policy": "reject",
+    "actual_policy": "first_release"
+  },
+  "evaluation": {
+    "role": "development",
+    "final_start": "2020-06-09T00:00:00Z",
+    "final_end": "2020-07-19T00:00:00Z",
+    "benchmarks": [
+      "training-mean",
+      "last-value"
+    ]
+  },
+  "evidence": {
+    "required_workflows": [
+      "predictive_checks",
+      "prior_influence"
+    ],
+    "required_fit_checks": [],
+    "replications": 1000,
+    "seed": 0,
+    "interval_level": 0.95
+  }
+}

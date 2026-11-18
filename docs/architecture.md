@@ -24,10 +24,10 @@ not a sandbox preventing an adapter from independently reading files.
 
 | Responsibility | Implemented now | Remaining design |
 |---|---|---|
-| Application/task | Versioned daily task/evaluation specs, named targets/units, issuance/release/revision rules, required benchmarks, and development/final target periods | Richer calendars/features, source-specific availability verification, application selection |
+| Application/task | Versioned task/evaluation/evidence requirements, targets/units, release/revision rules, benchmarks, and development/final periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
 | Model adapter | Point benchmarks, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, conjugate unknown-mean/variance models, optional sampler audits | Unknown evolution variance, intractable sampled prediction, incremental updates, broader checks |
-| Runner | Historical origins, eligible histories, output validation, optional per-request fit-evidence persistence/checks, visible failures | Configurable stage/check dispatch and explicit experimental overrides |
+| Runner | Historical origins, eligible histories, output validation, fit evidence with caller-required names, explicit required evidence workflows and visible failures | Arbitrary-stage dispatch and explicit exploratory overrides |
 | Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
 | Reporting | Charts and matched-case comparisons from saved artifacts; saved-only diagnostic charts | Wider reports and application delivery |
@@ -59,7 +59,7 @@ responsibility. Reports prefer supplied highest-density regions. The
 
 ## Implemented artifacts and information boundaries
 
-New run manifests use format version 3, including version-1 experiment specs,
+New run manifests use format version 3, including version-2 experiment specs,
 case schedules, history hashes, and actual-vintage metadata. Existing point
 columns remain, with additional selection/provenance columns.
 Snapshots, acquisition events, and tags retain their separate format version 1.
@@ -84,7 +84,8 @@ this does not make the entire development series an untouched final evaluation.
 ## Implemented experiment ownership
 
 [experiments.py](../src/model_pipelining/experiments.py) owns immutable task and
-evaluation specs plus release-aware scheduling. The runner saves the expanded
+evaluation/evidence specs plus release-aware scheduling. Version-1 specs load
+with default empty evidence requirements. The runner saves the expanded
 specification/hash and selected/excluded case schedule before model execution.
 Adapters receive only eligible observations and request coordinates. Calendar
 support is daily UTC with explicit gap rejection; adapter timing support can be
@@ -254,12 +255,31 @@ This diagram describes responsibilities to develop, not a current set of runner
 stages. Forecasting, monitoring, and causal effect estimation need different
 study designs; a predictive backtest alone does not establish a causal effect.
 
-## Planned model-specific checks and iteration
+## Implemented evidence boundary and remaining iteration design
 
-The current runner owns a fixed list of validation/completion checks. A future
-experiment-owned check plan should describe requirements, applicability,
-criteria, and failure actions. Adapters could supply specialized evidence without
-being allowed to omit required checks and thereby pass a run.
+Models optionally supply `evidence_provider()` with shared protocol/metadata.
+The existing providers own conjugate or numerical simulation/parameter summaries;
+shared predictive/prior workflows own selection, structural checks, discrepancies,
+persistence and reporting. New artifacts save presentation metadata; legacy
+artifacts retain explicit reading support. Shared workflows no longer branch on
+concrete model classes. This is a bounded interface for the existing records,
+not a universal parameter schema.
+
+`EvidencePlan` declares required separate workflows and fit-check names.
+`run_experiment_evidence` explicitly runs those existing workflows, pins one
+snapshot/history, checks child identity/settings/mandatory evidence, and retains
+failed or unavailable requirements. `run_backtest` separately enforces requested
+fit names; its saved manifest keeps separate workflow requirements pending.
+Neither execution path completes human review or a release decision. See
+[the evidence contract](evidence.md).
+
+## Further model-specific checks and iteration
+
+The runner retains fixed validation/completion checks and now independently
+enforces experiment-owned fit names and the explicit separate-workflow plan.
+An arbitrary-stage check plan with configurable applicability, criteria, failure
+actions and exploratory overrides remains future design. Model-supplied evidence
+cannot satisfy a requested name by omitting it or marking a failing check optional.
 
 | Question | Bayesian example | Other-model example |
 |---|---|---|
