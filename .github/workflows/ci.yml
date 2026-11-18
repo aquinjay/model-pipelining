@@ -1,0 +1,72 @@
+name: Repository checks
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Python tests and documentation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONPATH: src
+      MPLBACKEND: Agg
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use writable temporary caches
+        run: |
+          printf 'MPLCONFIGDIR=%s\nXDG_CACHE_HOME=%s\nUV_CACHE_DIR=%s\n' "$RUNNER_TEMP/matplotlib" "$RUNNER_TEMP/cache" "$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            .python-version
+      - name: Install pinned Python and locked dependencies
+        run: |
+          uv python install
+          uv sync --locked --all-groups
+      - name: Verify runtime, dependencies and pip export
+        run: |
+          uv run --locked --no-sync python - <<'PY'
+          from pathlib import Path
+          import sys
+          pin = tuple(map(int, Path('.python-version').read_text().strip().split('.')))
+          assert sys.version_info[:3] == pin, (sys.version_info, pin)
+          assert sys.prefix != sys.base_prefix, 'An isolated environment is required'
+          print(sys.version, sys.executable)
+          PY
+          uv pip check --python .venv/bin/python
+          uv export --locked --all-groups --no-emit-project --format requirements.txt --no-header > "$RUNNER_TEMP/requirements-export.txt"
+          uv run --locked --no-sync python - <<'PY'
+          from pathlib import Path
+          import os
+          def content(path):
+              return [line for line in path.read_text().splitlines() if not line.startswith('#')]
+          exported = Path(os.environ['RUNNER_TEMP']) / 'requirements-export.txt'
+          assert content(Path('requirements.txt')) == content(exported), 'Regenerate requirements.txt from uv.lock'
+          PY
+      - name: Check documentation and execute forecasting walkthrough
+        run: uv run --locked --no-sync python scripts/check_documentation.py --walkthrough
+      - name: Run behavioral and numerical tests
+        run: uv run --locked --no-sync python -m unittest discover -s tests -v
+      - name: Ensure checks leave tracked files unchanged
+        run: git diff --exit-code

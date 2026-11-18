@@ -112,7 +112,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 382 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 391 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -309,5 +309,18 @@ The second review/comparison slice, [full-law proper losses](distribution-scorin
 is implemented: Student-t and full Gaussian mixtures, frozen laws, visible
 failures and complete matched saved comparisons/charts. All five Bayesian adapters
 supply laws from the same fit. Twenty-one new tests bring the suite to 382.
-CI for the locked environment and documentation is next; no richer model or
-automatic selection rule was introduced.
+No richer model or automatic selection rule was introduced.
+
+The third slice, [repository CI](continuous-integration.md), is implemented with
+pinned actions/uv/Python, lock/export checks, the complete suite, documentation
+links/anchors/example syntax and temporary walkthrough execution. Nine added
+tests bring the suite to 391. The fresh locked environment and local workflow
+linter passed. Hosted execution starts after the workflow is pushed.
+
+All three authorized review/comparison tasks are complete. The next bounded work
+is to interpret one collected experiment review, stating the remaining predictive
+discrepancies and what a proposed model change would need to explain. Further
+model complexity, continuous-W priors or MCMC-only prediction should follow a
+concrete unmet need in that evidence. Current progress supports the broader goal:
+repeatable, model-independent experiments with comparable saved results and
+explicit computational versus human review.

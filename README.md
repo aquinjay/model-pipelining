@@ -12,7 +12,8 @@ an implementation is correct or that a model is suitable for an application.
 ## Start here
 
 1. Follow [the forecasting walkthrough](docs/forecasting.md). It explains the
-   workflow and runs both models against the same preserved input.
+   workflow and runs the point baseline and fixed local-level model against the
+   same preserved input.
 2. Read [the local-level model guide](docs/local-level.md) to understand the
    Bayesian model, its four fixed settings, and its calculations.
 3. Read [the uncertainty guide](docs/uncertainty.md) for highest posterior density
@@ -46,6 +47,7 @@ explains which checks support each implementation claim.
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
 | Reporting | Saved-only forecast/evidence/calibration review and complete matched-case comparisons, with paired full-law losses and charts |
+| Repository verification | Locked-environment tests, pip-export parity, local documentation checks and temporary walkthrough in GitHub Actions |
 | Model diagnostics | Fixed-model influence paths and learned-variance full-CDF sequential criticism; human interpretation stays pending |
 | Predictive checks | Prior/posterior whole-dataset replication for constant-mean and fixed/joint-noise local-level models, with saved discrepancies and charts |
 | Prior comparisons | Matched release-aware prior learning, signed differences and categorical evolution probabilities; explicit numerical evidence |
@@ -73,7 +75,7 @@ Choose a forecasting question and its timing assumptions
 You obtain/register the input and choose model settings explicitly. Starting a
 run does not fetch data, register a file, or move a tag. The runner verifies the
 selected snapshot, selects eligible histories, executes the model, and saves
-results automatically. Library callers invoke reporting separately; the three
+results automatically. Library callers invoke reporting separately; the four
 run scripts also draw their charts automatically. The local-level script adds
 a seeded prior simulation for human review.
 
@@ -148,6 +150,7 @@ explains how to read both execution and review status.
 | Preserve, retrieve, or tag a file | [Snapshots and tags](docs/snapshots.md) |
 | Find saved inputs or run files | [Data directory](data/README.md), [run directory](runs/README.md) |
 | Understand module responsibilities and future design | [Architecture](docs/architecture.md) |
+| Check code and documentation automatically | [Continuous integration](docs/continuous-integration.md) |
 | See current status and review priorities | [Roadmap](docs/roadmap.md) |
 | Read the completed computational workflow review | [Workflow review](docs/workflow-review.md) |
 | Assess the latest modeling work against project direction | [Modeling review](docs/modeling-review.md) |
@@ -264,11 +267,14 @@ Run the behavioral suite from the repository root after setup:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
+PYTHONPATH=src .venv/bin/python scripts/check_documentation.py --walkthrough
 ```
 
 Tests check calculations, future-data isolation, reproducible outputs, visible
 failures, and reporting without model calls. See [the test map](tests/README.md)
-for details. There is no CI workflow yet.
+for details. [Repository CI](docs/continuous-integration.md) defines the same
+suite plus lock/export and documentation checks on branch pushes and pull
+requests once the workflow is pushed. Large calibration studies remain explicit.
 
 Keep changes small enough to review. Follow [AGENTS.md](AGENTS.md), update affected
 documentation in the same task, and record consequential design decisions in

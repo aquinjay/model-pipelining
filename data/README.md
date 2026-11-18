@@ -131,3 +131,7 @@ Full predictive distribution scores use the same selected scoring actual and
 release vintage as point evaluation, after all predictive laws are saved. They
 retain original target units; compare matching transformations only. See
 [the scoring contract](../docs/distribution-scoring.md).
+
+The [CI walkthrough](../docs/continuous-integration.md) generates fresh synthetic
+inputs and registers them in temporary storage automatically. It cleans up after
+verification and requires no existing local snapshots or external data source.

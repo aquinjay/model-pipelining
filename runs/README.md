@@ -260,3 +260,8 @@ are retained. Explicit matched comparison writes distribution losses/differences
 in `comparison.json` plus `distribution_scores.png` when both runs support them.
 Older/point-only runs have no reconstructed distributions. See
 [methods, units and numerical limits](../docs/distribution-scoring.md).
+
+[CI](../docs/continuous-integration.md) runs tests and the documented walkthrough
+with temporary stores/output, then removes walkthrough artifacts. Existing local
+scientific runs are not required. Retain larger calibration/model-comparison
+evidence through the explicit workflows; a passing CI job is computational status.

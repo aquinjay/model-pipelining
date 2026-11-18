@@ -184,3 +184,8 @@ only with `--require-calibration`. See [review usage](../docs/experiment-review.
 adapters declaring `supports_distribution`. No scoring-specific model setting,
 extra simulation or density floor is configured. Saved comparisons require the
 same task/units/vintages and scoring method; point-only adapters remain supported.
+
+[Repository CI](../docs/continuous-integration.md) installs from `uv.lock`, checks
+the pinned interpreter and compares a regenerated temporary requirements export.
+Configuration/dependency updates must keep the declaration, lock and pip export
+together. Large calibration settings remain explicit scientific workflow choices.

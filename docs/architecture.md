@@ -341,3 +341,11 @@ selection and scores saved laws. `distribution_scoring.py` owns deterministic
 Student-t/mixture proper losses and saved-cohort consistency checks; reporting
 compares complete matching cases without model calls. Point-only and older
 artifacts retain their capabilities. See [details](distribution-scoring.md).
+
+## Repository CI boundary
+
+[Repository checks](continuous-integration.md) install the pinned interpreter and
+locked dependencies, verify the pip export, check documentation and run the full
+suite. The documented walkthrough executes in temporary storage. Automatic checks
+verify repository behavior in the stated Linux environment; larger calibration
+evidence and human interpretation remain explicit workflows.

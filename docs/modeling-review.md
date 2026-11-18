@@ -110,3 +110,33 @@ The current result is a tested development checkpoint for the infrastructure.
 Application choice, model approval and any release decision remain explicit
 future actions. See the [roadmap](roadmap.md), [architecture](architecture.md),
 and [new model guide](local-level-variance.md) for current interfaces and limits.
+
+## Review and comparison workflow follow-up — 2026-11-18
+
+The three subsequent infrastructure tasks are complete: compatible saved
+experiment review, full predictive distribution scoring/comparison and a defined
+locked-environment CI workflow. They address the project's repeatability and
+model-independent evaluation goal. Each model supplies its law from the same fit;
+shared code owns freezing, selected actuals, proper losses and matching cohorts.
+Saved review keeps historical criticism, prior influence and calibration in their
+own scopes, with a separate pending human decision. CI checks repository behavior
+in a stated environment; hosted execution begins after the workflow is pushed.
+
+The mean-shift development exercise completed 130 matching cases each for the
+constant-mean Student-t, fixed-evolution learned-noise and categorical joint models.
+The dynamic models had much lower mean CRPS/log loss than the constant-mean model.
+The joint model's mean CRPS was slightly lower than the fixed-evolution model's,
+while its mean log loss was slightly higher. These known synthetic results
+illustrate why a single score should not replace predictive criticism or the
+stated modeling question. They do not establish an untouched evaluation, justify
+continuous-W inference, or indicate a need for a generic MCMC prediction backend.
+See [saved values and numerical limits](distribution-scoring.md).
+
+The next bounded modeling decision is to interpret one collected development
+review: identify which prior/posterior discrepancies persist, how prior choices
+affect those conclusions, and what a proposed change should reproduce. Preserve
+original/follow-up calibration and failed evidence. Further model complexity
+should answer that documented discrepancy rather than expand the adapter list
+without a use case. No new sampler is required merely to use the completed review
+and comparison workflow. The current numerical/reference tests support computation;
+scientific model adequacy remains an explicit judgment.

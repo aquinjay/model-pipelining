@@ -231,7 +231,7 @@ Read `manifest.json.status` and `checks.json` before interpreting results. Point
 fail independently; a declared benchmark failure also fails the run. The [walkthrough](../../docs/forecasting.md#read-the-results)
 explains status and [run-file reference](../../runs/README.md) lists artifacts.
 The library does not acquire/register/tag data, simulate priors, or draw charts
-inside `run_backtest`. The three run scripts call reporting automatically; the
+inside `run_backtest`. The four run scripts call reporting automatically; the
 local-level script also handles prior simulation/files.
 
 `plot_run` reads saved evidence and returns the chart path. `"auto"` prefers the
@@ -723,3 +723,11 @@ and `log_score` losses from Student-t or Gaussian-mixture records, with explicit
 failures for unsupported moments/precision. `compare_runs` adds complete paired
 loss summaries and a chart when both runs declare distributions; review reports
 also display these losses. See [the full contract](../../docs/distribution-scoring.md).
+
+## Repository verification workflow
+
+[GitHub Actions](../../docs/continuous-integration.md) runs the locked environment,
+complete tests and `scripts/check_documentation.py --walkthrough`. The checker
+parses examples by default; the explicit flag also executes the forecasting guide
+in temporary storage. CI adds no library/runtime configuration or model approval
+rule. Large scientific evidence exercises remain explicit calls.

@@ -542,3 +542,15 @@ case scores and retain paired differences/charts without choosing a winner.
 Twenty-one tests support [the contract](distribution-scoring.md). An older overflow
 test now explicitly opts its intentionally altered region adapter out of the new
 full-law capability so it continues to test region scoring independently.
+
+## Locked-environment repository CI — 2026-11-18
+
+Define a single Ubuntu 24.04 job for branch pushes/pull requests and manual reruns.
+Pin the checkout/setup actions, uv and interpreter; install from the lock, verify
+dependency compatibility and pip-export parity, then run all tests and local
+documentation checks. Execute the forecasting guide's Python examples verbatim
+in temporary storage. Separate parsing of other examples from execution, and
+exclude ignored run/dependency artifacts from discovery. Nine checker tests, a
+fresh 24-dependency installation, the 170-case walkthrough and actionlint support
+[the workflow](continuous-integration.md). Large simulation studies and model
+interpretation remain explicit; branch protection is an administrator decision.
