@@ -292,3 +292,15 @@ The suite has 343 tests. Numerical computation is verified separately from model
 adequacy and finite-simulation interpretation. Further model changes should follow
 the saved discrepancies; continuous-W priors, different transition laws, a real
 application and release automation remain separate decisions.
+
+## Experiment review and comparison sequence — 2026-11-18
+
+The first slice, [saved experiment review](experiment-review.md), is implemented:
+explicit compatible sources, receipts/requirements, omissions, calibration and
+chart links in one report, with human interpretation pending. Eighteen added tests
+bring the suite to 361. A 130-case development exercise assembled all three
+workflows and two small calibration runs without changing source files.
+
+Next in the authorized sequence: full predictive distribution scores, then CI
+for the locked environment, tests and documentation checks. Large calibration
+and scientific model/release decisions remain explicit caller actions.

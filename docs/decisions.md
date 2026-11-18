@@ -518,3 +518,14 @@ CDF checks agreed within 2.3e-12. A separate 1000-trial joint follow-up (seed 81
 completed without failures; its marginal CDF distances were within their saved
 simultaneous reference band. The initial 200-trial band crossing and mixed-state
 results remain retained and documented; no automatic model approval is inferred.
+
+## Saved experiment review — 2026-11-18
+
+Use a version-3 forecast as the explicit identity anchor and assemble existing
+evidence/calibration without refitting, discovery or source mutation. Compare
+expanded configurations, history/task/boundary identities, named checks and
+shared declared versions; verify existing child completion receipts. New inventories
+record current bytes rather than claiming historical authentication. Existing
+sequential/bundle environment omissions stay explicit. Readiness is computational;
+a new human review always starts pending. Eighteen tests and a saved development
+exercise support [this boundary](experiment-review.md).

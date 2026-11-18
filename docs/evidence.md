@@ -164,3 +164,10 @@ sampler registry, exploratory override policy or release framework. Further
 extensions should follow a concrete model/evidence need.
 
 [Sequential checks](sequential-checks.md) also implement a required development workflow; their predictive laws are frozen before scoring and use full predictive CDFs.
+
+## Review completed evidence together
+
+[Saved experiment review](experiment-review.md) links an explicitly supplied
+forecast and bundle, verifies child receipts and required checks, and optionally
+includes separate calibration exercises. Missing/failed work blocks readiness;
+computation never supplies the human decision. Existing sources are unchanged.

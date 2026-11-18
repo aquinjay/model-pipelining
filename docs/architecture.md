@@ -324,3 +324,11 @@ The categorical-W provider now supplies joint W/V/initial-state simulation and s
 ## Discrete/mixed model calibration
 
 Providers now return left/inclusive posterior CDF bounds and actual interval mass for categorical or mixed distributions. Shared [calibration transforms](mixed-calibration.md) randomize within real jumps using independent labelled streams, preserving continuous results and prior-data seeds. Fixed parameters are excluded and failed numerical inference remains visible. This supplements independent numerical and joint-dependence checks, not a release decision.
+
+## Saved experiment review boundary
+
+`experiment_review.py` assembles explicit saved sources, validates compatibility
+and records source inventories without executing model/evidence providers. The
+forecast is the task/input anchor; development evidence and data-free calibration
+retain their separate scopes. Human interpretation starts pending. See [the
+contract](experiment-review.md).

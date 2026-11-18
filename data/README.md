@@ -122,3 +122,7 @@ The [controlled dynamics study](../docs/joint-variance.md) deliberately generate
 [Joint-model predictive evidence](../docs/joint-evidence.md) uses the same preserved development histories; prior simulation draws W/V/initial state without observing data. Simulated latent paths and parameter draws remain local run artifacts.
 
 [Joint calibration](../docs/mixed-calibration.md) saves simulated truth before fitting, including categorical W. Independent atom-randomization streams preserve earlier data draws; no external source or final evaluation is read.
+
+[Saved experiment review](../docs/experiment-review.md) reads existing run files
+without retrieving snapshots or acquiring data. It rechecks recorded history/input
+identities; it cannot independently establish a source's release claims.

@@ -689,3 +689,20 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 ## Discrete and mixed calibration
 
 The joint provider now supports `calibration`. It excludes fixed parameters and returns left/inclusive CDF bounds and actual closed-interval mass. `calibration_transform(item, *, seed, trial, parameter, interval_level)` randomizes only genuine jumps using independent parameter-labelled streams. Shared summaries retain randomized counts/mass and all failure records. Continuous CDF values and dataset seeds are unchanged. See [the contract and limits](../../docs/mixed-calibration.md).
+
+## Saved experiment review
+
+Import `build_experiment_review` from `model_pipelining.experiment_review`:
+
+```python
+build_experiment_review(
+    forecast_directory="runs/forecast", output_directory="runs/review",
+    evidence_directory="runs/evidence",
+    calibration_directories=("runs/calibration",), require_calibration=True,
+)  # returns the absolute output Path
+```
+
+Sources must already exist. A finished version-3 forecast anchors identity. The
+function rechecks saved requirements/receipts and writes Markdown/JSON plus a
+pending review; it performs no fitting or source mutation. See [the report
+contract](../../docs/experiment-review.md) for failure statuses and scope.

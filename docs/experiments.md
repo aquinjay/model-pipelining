@@ -245,3 +245,10 @@ and matching locked environment must be retained explicitly.
 ## Sequential evidence requirement
 
 `EvidencePlan.required_workflows` also accepts `sequential_checks`. It uses historical task issuance/horizon/minimum-history settings and an explicit development cutoff. [Predictions are frozen before cutoff-eligible actual selection](sequential-checks.md); backtests do not start this workflow automatically.
+
+## Assemble saved evidence for review
+
+Invoke [saved experiment review](experiment-review.md) after running required
+evidence explicitly. Forecast task/input/model settings anchor compatibility;
+a final-role forecast can link evidence selected before the same final boundary.
+No historical workflow or calibration exercise is started by report construction.

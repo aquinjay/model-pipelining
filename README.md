@@ -281,3 +281,12 @@ probabilistic extensions, and model-specific checks belong in
 Repository: [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining).
 Licensed under [Apache License 2.0](LICENSE). The Bayesian workflow background
 and mathematical references are collected in [references](docs/references.md).
+
+## Collect an experiment for review
+
+Use [saved experiment review](docs/experiment-review.md) to assemble forecast
+scores, required historical evidence, calibration summaries and existing chart
+links into one Markdown/JSON report. Invoke `scripts/review_experiment.py` with
+explicit source directories. It rechecks identities, requirements and receipts
+without fitting or changing runs. Computational readiness and a new pending human
+review are separate; missing or incompatible evidence remains visible.

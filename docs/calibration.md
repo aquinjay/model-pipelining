@@ -85,3 +85,11 @@ were .0253/.0271/.0318 against the simultaneous reference .0489. This follow-up
 adds evidence; it does not replace the original 200-trial findings.
 
 [Discrete/mixed calibration](mixed-calibration.md) now extends this workflow to joint variance learning. Additional fields preserve CDF jumps, randomization and actual closed-interval mass; continuous results retain their original meaning.
+
+## Link calibration to historical review
+
+[Saved experiment review](experiment-review.md) accepts explicit original and
+follow-up calibration folders with the same expanded model settings. It retains
+separate seeds, summaries and trial records; it does not pool trials, rerun them or
+claim calibration at every historical sample size. Requiring calibration is an
+explicit report option.
