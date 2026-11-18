@@ -685,3 +685,7 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 ## Joint generative evidence
 
 `JointLevelEvidence` now implements `predictive_checks`, `prior_influence` and `sequential_checks`. `ReplicatedDataset.evolution_variance` is optional for compatibility and required by joint provider metadata. `StateMixture` supplies CDF/generalized quantiles for Gaussian states with genuine zero-variance atoms. Prior summaries add categorical W mass/quantiles/covariance; saved presentation metadata enables a third prior chart. See [field meanings and commands](../../docs/joint-evidence.md).
+
+## Discrete and mixed calibration
+
+The joint provider now supports `calibration`. It excludes fixed parameters and returns left/inclusive CDF bounds and actual closed-interval mass. `calibration_transform(item, *, seed, trial, parameter, interval_level)` randomizes only genuine jumps using independent parameter-labelled streams. Shared summaries retain randomized counts/mass and all failure records. Continuous CDF values and dataset seeds are unchanged. See [the contract and limits](../../docs/mixed-calibration.md).

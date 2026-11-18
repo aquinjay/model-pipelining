@@ -170,3 +170,5 @@ Sequential checks reuse the reference settings in existing prior configurations.
 [local_level_joint_priors.json](local_level_joint_priors.json) declares the joint model reference: explicit categorical evolution-variance support/probabilities and a continuous inverse-gamma observation-variance prior. `scripts/run_joint_local_level.py` uses it explicitly. It is a discrete modeling assumption, not an automatically tuned numerical grid. See [the model](../docs/joint-variance.md).
 
 The joint prior config includes explicit `evolution_weights`, V-scale and initial-level alternatives. Evidence/prior CLIs restore list-valued JSON settings through the model configuration loader before applying comparisons. See [joint evidence](../docs/joint-evidence.md).
+
+Joint calibration uses `scripts/calibrate_model.py --model local-level-joint-variance --config configs/local_level_joint_priors.json`. Set `initial_variance: 0` explicitly to investigate known-initial mixed-state atoms. Calibration options remain separate from historical experiment evidence settings. See [the mixed calibration guide](../docs/mixed-calibration.md).

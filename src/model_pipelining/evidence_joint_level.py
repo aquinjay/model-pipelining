@@ -4,6 +4,7 @@ from pathlib import Path
 import math
 import json
 import numpy as np
+from model_pipelining.state_mixtures import StateMixture
 from model_pipelining.evidence import PredictiveReplications,ReplicatedDataset
 from model_pipelining.local_level_variance import initial_posterior_components
 from model_pipelining.evidence_local_level import LocalLevelVarianceEvidence
@@ -14,7 +15,7 @@ class JointLevelEvidence(LocalLevelVarianceEvidence):
     def __init__(self,model):
         super().__init__(model)
         self.metadata=replace(self.metadata,family="local_level_joint_variance",
-            workflows=("sequential_checks","predictive_checks","prior_influence"),
+            workflows=("sequential_checks","predictive_checks","prior_influence","calibration"),
             parameter_fields=("mean","observation_variance","initial_level","evolution_variance"),
             variance_prior_settings=("prior_shape","prior_scale","evolution_weights"),
             predictive_scope={"generation":"One joint W,V,initial-state draw per fresh process path",
@@ -86,3 +87,57 @@ class JointLevelEvidence(LocalLevelVarianceEvidence):
         if any(type(model) is not type(self.model) or model.evolution_variances!=self.model.evolution_variances
                or model.quadrature!=self.model.quadrature for model in models):
             raise ValueError('Joint prior comparisons require identical evolution support and numerical settings')
+
+    @property
+    def calibration_parameters(self):
+        return ("observation_variance", *(("evolution_variance",) if len(self.model.evolution_variances)>1 else ()),
+                *(("initial_level",) if self.model.initial_variance>0 else ()),
+                *(("last_level",) if self.model.initial_variance+max(self.model.evolution_variances)>0 else ()))
+
+    def calibration_draw(self,count,generator):
+        model=self.model
+        j=int(generator.choice(len(model.evolution_variances),p=model.evolution_weights))
+        evolution=model.evolution_variances[j]
+        variance=model.prior_scale/float(generator.gamma(model.prior_shape))
+        initial=float(generator.normal(model.initial_mean,math.sqrt(model.initial_variance)))
+        state=initial;values=[]
+        for _ in range(count):
+            state=float(generator.normal(state,math.sqrt(evolution)))
+            values.append(float(generator.normal(state,math.sqrt(variance))))
+        truth={"observation_variance":variance,"evolution_variance":evolution,"initial_level":initial,"last_level":state}
+        return {key:truth[key] for key in self.calibration_parameters},tuple(values)
+
+    def calibration_fit(self,request,truth,level):
+        posterior=self.model.posterior(request)
+        lower,upper=(1-level)/2,(1+level)/2
+        laws={"observation_variance":posterior}
+        if "initial_level" in truth:
+            conditional=[initial_posterior_components(p) for p in posterior.components]
+            means=tuple(float(m) for pair in conditional for m in pair[0])
+            variances=tuple(float(v) for pair in conditional for v in pair[1])
+            if any(v<=0 and w>0 for v,w in zip(variances,posterior.weights)):
+                raise ValueError('Unrepresentable unknown initial-state conditional variance')
+            laws["initial_level"]=StateMixture(posterior.weights,means,variances)
+        if "last_level" in truth:
+            for w,component in zip(self.model.evolution_variances,posterior.components):
+                if self.model.initial_variance+w>0 and any(v<=0 and p>0 for v,p in zip(component.level_variances,component.weights)):
+                    raise ValueError('Unrepresentable unknown final-state conditional variance')
+            laws["last_level"]=StateMixture(posterior.weights,posterior.level_means,posterior.level_variances)
+        result={}
+        for name,law in laws.items():
+            lo,median,hi=(float(law.ppf(p)) for p in (lower,.5,upper))
+            is_state=isinstance(law,StateMixture)
+            cdf=float(law.cdf(truth[name]))
+            cdf_lower=law.cdf(truth[name],inclusive=False) if is_state else cdf
+            interval_mass=law.cdf(hi)-(law.cdf(lo,inclusive=False) if is_state else law.cdf(lo))
+            result[name]={"cdf":cdf,"cdf_lower":cdf_lower,"cdf_upper":cdf,
+                          "lower":lo,"median":median,"upper":hi,"interval_mass":interval_mass}
+        if "evolution_variance" in truth:
+            value=truth["evolution_variance"]
+            if value not in self.model.evolution_variances:raise ValueError('Calibration truth outside evolution support')
+            lo,median,hi=(posterior.evolution_ppf(p) for p in (lower,.5,upper))
+            cdf=posterior.evolution_cdf(value)
+            result["evolution_variance"]={"cdf":cdf,"cdf_lower":posterior.evolution_cdf(value,inclusive=False),
+                "cdf_upper":cdf,"lower":lo,"median":median,"upper":hi,
+                "interval_mass":posterior.evolution_cdf(hi)-posterior.evolution_cdf(lo,inclusive=False)}
+        return result,posterior.evidence

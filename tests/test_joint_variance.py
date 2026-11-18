@@ -32,7 +32,7 @@ class JointNumericalTests(unittest.TestCase):
     def test_weights_predictive_cdf_and_confounding_match_independent_batch_integration(self):
         model=LocalLevelJointVariance(initial_variance=2,evolution_variances=(0.,.3),evolution_weights=(2.,1.))
         y=np.array([-1.,0.,1.]);times=np.arange(1,4);n=len(y)
-        evidences=[];first_moments=[];cdfs=[]
+        evidences=[];first_moments=[];cdfs=[];variance_cdfs=[]
         for w in model.evolution_variances:
             def density(z,mode):
                 v=math.exp(z);cov=2+w*np.minimum.outer(times,times)+v*np.eye(n)
@@ -48,12 +48,14 @@ class JointNumericalTests(unittest.TestCase):
             evidences.append(quad(lambda z:density(z,'normal'),-25,25,epsabs=1e-12)[0])
             first_moments.append(quad(lambda z:density(z,'v'),-25,25,epsabs=1e-12)[0])
             cdfs.append(quad(lambda z:density(z,'cdf'),-25,25,epsabs=1e-12)[0])
+            variance_cdfs.append(quad(lambda z:density(z,'normal'),-25,math.log(1.5),epsabs=1e-12)[0])
         weights=np.asarray(model.evolution_weights)*evidences;weights/=weights.sum()
         posterior=model.posterior(request(tuple(y)))
         np.testing.assert_allclose(posterior.evolution_weights,weights,atol=1e-7)
         normalizer=np.asarray(model.evolution_weights)@evidences
         expected_cdf=np.asarray(model.evolution_weights)@cdfs/normalizer
         self.assertAlmostEqual(posterior.predictive().cdf(0),expected_cdf,places=7)
+        self.assertAlmostEqual(posterior.cdf(1.5),np.asarray(model.evolution_weights)@variance_cdfs/normalizer,places=7)
         expected_v=np.asarray(model.evolution_weights)@first_moments/normalizer
         expected_vw=np.asarray(model.evolution_weights)*model.evolution_variances@np.asarray(first_moments)/normalizer
         expected_w=weights@model.evolution_variances

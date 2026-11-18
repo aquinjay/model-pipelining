@@ -120,3 +120,5 @@ Each saved receipt retains the original source, copy destination, UTC copy compl
 The [controlled dynamics study](../docs/joint-variance.md) deliberately generates and registers stable/gradual/abrupt fixtures with shared noise under its selected run directory. Final targets remain excluded from its development comparisons; these known fixtures do not establish an untouched application evaluation.
 
 [Joint-model predictive evidence](../docs/joint-evidence.md) uses the same preserved development histories; prior simulation draws W/V/initial state without observing data. Simulated latent paths and parameter draws remain local run artifacts.
+
+[Joint calibration](../docs/mixed-calibration.md) saves simulated truth before fitting, including categorical W. Independent atom-randomization streams preserve earlier data draws; no external source or final evaluation is read.

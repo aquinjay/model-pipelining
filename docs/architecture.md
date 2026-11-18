@@ -320,3 +320,7 @@ Provider-owned generators and marginal posterior summaries support [data-free co
 ## Joint generative evidence
 
 The categorical-W provider now supplies joint W/V/initial-state simulation and summaries to the existing workflows. Shared records carry an optional W parameter and categorical prior fields. Gaussian/point state quantiles preserve known-state atoms, while observation distributions stay continuous. Saved metadata enables evolution-prior charts. See [the contract](joint-evidence.md).
+
+## Discrete/mixed model calibration
+
+Providers now return left/inclusive posterior CDF bounds and actual interval mass for categorical or mixed distributions. Shared [calibration transforms](mixed-calibration.md) randomize within real jumps using independent labelled streams, preserving continuous results and prior-data seeds. Fixed parameters are excluded and failed numerical inference remains visible. This supplements independent numerical and joint-dependence checks, not a release decision.

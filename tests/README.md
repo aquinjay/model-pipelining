@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **333 tests**. They use temporary fixtures/stores rather than
+There are currently **343 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -34,6 +34,11 @@ before running sampler tests.
 | [test_local_level_variance.py](test_local_level_variance.py) | 18 | Independent batch Gaussian likelihood, adaptive scalar integration, known-level conjugate limit, initial-state smoothing, Gaussian-mixture quantiles/disconnected HPD, broad-tail root precision, failures, horizons, pipeline replay and both CLI modes |
 | [test_dynamic_evidence.py](test_dynamic_evidence.py) | 11 | Random-walk covariance, joint initial-state/variance posterior replication with fresh innovations, gaps, replay/RNG isolation, numerical failure evidence, dynamic prior comparisons, undefined moments, final isolation and workflow CLIs |
 | [test_evidence_interfaces.py](test_evidence_interfaces.py) | 22 | Provider extension without model dispatch, v1/v2 migration/comparison, caller-required fits/workflows, missing/optional evidence, pinned tags/history/settings, numerical failures, replay/final isolation, saved-only/legacy plots and both new CLI modes |
+| [test_sequential.py](test_sequential.py) | 9 | Full predictive CDFs, freezing, release-aware histories, own-target/final isolation, replay, failures and CLI |
+| [test_calibration.py](test_calibration.py) | 10 | Independent CDF references, simulation covariance, recovery, failed trials, seed/prefix isolation and CLI |
+| [test_joint_variance.py](test_joint_variance.py) | 13 | Independent batch/adaptive joint posterior references, limits, uncertainty, confounding, controlled studies and CLI |
+| [test_joint_evidence.py](test_joint_evidence.py) | 10 | Joint parameter dependence, fresh paths, atoms, prior mass, support restrictions and historical evidence |
+| [test_mixed_calibration.py](test_mixed_calibration.py) | 10 | Randomized transforms, discrete/mixed CDF bounds, interval mass, replay and calibration failure/CLI behavior |
 
 ## Data behavior checked in detail
 
@@ -188,16 +193,20 @@ calibration exercise; it is not a difficult-posterior benchmark.
 
 ## Sequential evidence verification
 
-`test_sequential.py` adds 9 tests for independent mixture/Student-t PIT, frozen distributions, own-target exclusion, replay, final isolation, numerical failures, saved-only plotting, both CLI models and experiment requirements. The suite now has 300 tests.
+`test_sequential.py` adds 9 tests for independent mixture/Student-t PIT, frozen distributions, own-target exclusion, replay, final isolation, numerical failures, saved-only plotting, both CLI models and experiment requirements.
 
 ## Calibration verification
 
-`test_calibration.py` adds 10 tests for conjugate and known-state references, independent generator covariance, finite-trial CDF/coverage behavior, biased controls, missing parameters, numerical failures, replay/prefix/RNG behavior, CLI and saved-only plotting. The suite now has 310 tests.
+`test_calibration.py` adds 10 tests for conjugate and known-state references, independent generator covariance, finite-trial CDF/coverage behavior, biased controls, missing parameters, numerical failures, replay/prefix/RNG behavior, CLI and saved-only plotting.
 
 ## Joint variance and dynamics verification
 
-`test_joint_variance.py` adds 13 tests: independent batch-likelihood/adaptive quadrature references, W posterior weights, predictive CDF and confounding, scalar limit/HPD, known-state degeneracy, mixture root roundoff, numerical failures, configuration, replay/isolation, shared-noise matched studies, CLI and saved-only plots. The suite now has 323 tests.
+`test_joint_variance.py` adds 13 tests: independent batch-likelihood/adaptive quadrature references, W posterior weights, predictive CDF and confounding, scalar limit/HPD, known-state degeneracy, mixture root roundoff, numerical failures, configuration, replay/isolation, shared-noise matched studies, CLI and saved-only plots.
 
 ## Joint generative verification
 
-`test_joint_evidence.py` adds 10 tests for joint dependence, conditional fresh innovations, prior frequencies/covariance, atomic states, unsupported parameter omissions, matched prior support, future/final isolation, numerical failures, saved-only plots and CLI experiment execution. The suite now has 333 tests.
+`test_joint_evidence.py` adds 10 tests for joint dependence, conditional fresh innovations, prior frequencies/covariance, atomic states, unsupported parameter omissions, matched prior support, future/final isolation, numerical failures, saved-only plots and CLI experiment execution.
+
+## Discrete/mixed calibration verification
+
+`test_mixed_calibration.py` adds 10 tests for atomic-transform uniformity, continuous identity, labelled streams, invalid bounds, discrete/mixed posterior jumps, closed interval mass, known-parameter exclusion, replay, failures, joint calibration smoke checks and CLI behavior.

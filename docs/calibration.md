@@ -4,7 +4,7 @@ This data-free workflow checks posterior inference over independently simulated
 prior/data draws. It complements fixed numerical examples and predictive model
 criticism. The generative model, rather than an external dataset, supplies truth.
 
-The current implementation uses the continuous posterior-CDF form: draw a
+The original continuous-model implementation uses the posterior-CDF form: draw a
 parameter and dataset from the prior/model, fit the dataset, then evaluate each
 unknown parameter's marginal posterior CDF at its simulated truth. Correct
 continuous inference produces uniform CDF values over repeated prior/data trials.
@@ -67,7 +67,7 @@ records without fitting or simulation.
 Ten tests cover independent conjugate CDF/interval references, the known-state
 inverse-gamma limit, simulation covariance, replay/prefix/RNG behavior, biased-CDF
 controls, omitted parameters, precision failures, both CLI modes and saved-only
-plotting. The complete suite has 310 tests.
+plotting. This slice brought the suite to 310 tests; see [the test guide](../tests/README.md) for the current total.
 
 The initial exercise used 200 trials of 20 observations for each model, seed 711,
 with no failed trials. Artifacts are local in
@@ -83,3 +83,5 @@ A separately seeded follow-up used 1000 dynamic trials (seed 712), retained unde
 coverage was .939/.958/.954, with Wilson intervals containing .95. CDF distances
 were .0253/.0271/.0318 against the simultaneous reference .0489. This follow-up
 adds evidence; it does not replace the original 200-trial findings.
+
+[Discrete/mixed calibration](mixed-calibration.md) now extends this workflow to joint variance learning. Additional fields preserve CDF jumps, randomization and actual closed-interval mass; continuous results retain their original meaning.

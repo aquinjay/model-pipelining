@@ -508,3 +508,13 @@ Task 3 first compared W=0/.01/.1/1 on matched stable/gradual/abrupt fixtures wit
 ## Joint predictive and prior evidence — 2026-11-18
 
 After completing the first three tasks, selected two follow-ups: joint-model generative criticism/prior influence, then discrete-aware calibration. Task 4 draws W/V/initial state jointly and resimulates innovations. Prior comparisons vary probabilities on fixed support and save W mass/bounds/covariance; optional columns remain null for earlier models. Gaussian/point state mixtures retain true atoms rather than inventing positive variance. Metadata controls additional plots; old saved evidence remains readable. Ten new tests cover probability, information and failure boundaries. See [joint evidence](joint-evidence.md).
+
+## Discrete and mixed posterior calibration — 2026-11-18
+
+Task 5 extends data-free calibration to the categorical-W model. Providers supply strict/inclusive CDF bounds and closed-interval posterior mass; shared execution randomizes only actual jumps using parameter-labelled streams independent of dataset generation. Fixed parameters are excluded; unrepresentable variances that should be positive fail rather than becoming invented atoms. Discrete interval coverage is interpreted alongside its actual mass. Marginal calibration does not replace independent likelihood/recovery/dependence checks. Ten new tests and retained simulation/reference exercises support the change; an initial finite-simulation band crossing remains documented with its independent follow-up. See [the guide](mixed-calibration.md).
+
+Task 5 verification completed with all 343 tests passing. The independent batch
+CDF checks agreed within 2.3e-12. A separate 1000-trial joint follow-up (seed 814)
+completed without failures; its marginal CDF distances were within their saved
+simultaneous reference band. The initial 200-trial band crossing and mixed-state
+results remain retained and documented; no automatic model approval is inferred.

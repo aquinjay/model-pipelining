@@ -64,14 +64,14 @@ callers invoke plotting separately. `compare_priors.py` and
 
 No shared workflow dispatches on the model's concrete type. Saved presentation
 metadata controls optional evolution-prior charts, and older artifact readers
-retain their existing behavior. Unsupported calibration is still rejected for
-this joint model until a workflow handles its discrete/mixed probability masses.
+retain their existing behavior. [Discrete-aware calibration](mixed-calibration.md) now handles this joint model
+separately, preserving categorical and mixed probability masses.
 
 Ten new tests check joint prior frequencies/covariance, posterior W/V dependence,
 fresh innovations, omission failures, support restrictions, known-state atoms,
 prior probabilities, future/final isolation, saved-only charts, precision
 failures and an end-to-end CLI requiring all three historical workflows. The
-suite contains 333 tests.
+slice brought the suite to 333 tests; see [the test guide](../tests/README.md) for the current total.
 
 The initial joint exercise completed 1000 prior and 1000 posterior replications
 on 60 selected development observations and three priors over 62 learning points.

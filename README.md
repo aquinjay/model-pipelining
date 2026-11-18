@@ -41,12 +41,14 @@ explains which checks support each implementation claim.
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
 | Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
 | Bayesian mean and variance | Learn both with a normal/inverse-gamma prior, return exact Student-t forecasts, and optionally audit the joint posterior |
+| Joint variance learning | Explicit categorical evolution-variance prior, continuous observation-variance learning, full marginal forecasts and saved confounding |
+| Simulation calibration | Data-free continuous/discrete/mixed posterior-CDF calibration, recovery, finite-trial uncertainty and saved failures |
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
-| Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
-| Predictive checks | Data-free prior simulation and full selected-history posterior replication for the mean/variance model, with saved discrepancy summaries and charts |
-| Prior comparisons | Exact learning/prediction paths for explicit mean/variance priors on identical release-aware histories, with saved signed differences |
+| Model diagnostics | Fixed-model influence paths and learned-variance full-CDF sequential criticism; human interpretation stays pending |
+| Predictive checks | Prior/posterior whole-dataset replication for constant-mean and fixed/joint-noise local-level models, with saved discrepancies and charts |
+| Prior comparisons | Matched release-aware prior learning, signed differences and categorical evolution probabilities; explicit numerical evidence |
 | Experiment evidence | Model-supplied simulation/summaries, caller-required workflows/fit checks, explicit execution and saved failures |
 
 The forecast uncertainty describes the **next observed value**, conditional on
@@ -88,8 +90,9 @@ Audited forecasts still use exact integration; failed required diagnostics fail
 the case and run while retaining evidence. [Learned local-level observation
 variance](docs/local-level-variance.md) now uses checked one-dimensional
 integration; select `scripts/run_local_level.py --learn-observation-variance`.
-Evolution variance remains fixed. Forecasts from intractable sampled
-distributions remain future work.
+This scalar model keeps evolution variance fixed. [The joint model](docs/joint-variance.md)
+also learns an explicit categorical evolution variance. Forecasts from intractable
+sampled distributions remain future work.
 
 The separate [diagnostic workflow](docs/diagnostics.md) compares caller-chosen
 settings from the first observation and shows their influence on updating and
@@ -156,6 +159,10 @@ explains how to read both execution and review status.
 | Inspect datasets implied by the prior and fitted model | [Prior and posterior predictive checks](docs/predictive-checks.md) |
 | Compare effects of mean and variance prior assumptions | [Prior influence comparisons](docs/prior-influence.md) |
 | Learn observation noise while the hidden level changes | [Local level with learned variance](docs/local-level-variance.md) |
+| Inspect learned-variance forecast errors, PIT and residual dependence | [Sequential checks](docs/sequential-checks.md) |
+| Check inference on simulated parameters and data | [Calibration](docs/calibration.md), [discrete/mixed calibration](docs/mixed-calibration.md) |
+| Investigate dynamics and learn both variances | [Joint model and study](docs/joint-variance.md) |
+| Criticize joint-model generated data and prior effects | [Joint evidence](docs/joint-evidence.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 
@@ -274,11 +281,3 @@ probabilistic extensions, and model-specific checks belong in
 Repository: [aquinjay/model-pipelining](https://github.com/aquinjay/model-pipelining).
 Licensed under [Apache License 2.0](LICENSE). The Bayesian workflow background
 and mathematical references are collected in [references](docs/references.md).
-
-Sequential predictive diagnostics now cover learned-variance models: full-CDF PIT, forecast errors and residual dependence on historical as-of histories. See [the guide](docs/sequential-checks.md). Invoke the separate workflow explicitly; its CLI draws saved charts automatically.
-
-Data-free [simulation calibration and parameter recovery](docs/calibration.md) now exercise exact and learned-variance inference over repeated prior/data draws. Invoke `scripts/calibrate_model.py` explicitly; it saves CDF/coverage/recovery evidence and draws its chart automatically.
-
-[Joint variance learning and dynamics investigation](docs/joint-variance.md) now compare explicit fixed dynamics and learn a categorical evolution variance jointly with observation variance. The support/prior are caller choices; forecasts average across their posterior probabilities. The new CLI draws forecast and variance-learning charts automatically.
-
-The joint model now supports [generative predictive checks and prior comparisons](docs/joint-evidence.md), preserving evolution/noise/state dependence and discrete state masses. Existing evidence commands execute these capabilities explicitly; prior charts now include evolution probabilities.

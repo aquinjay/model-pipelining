@@ -238,3 +238,5 @@ Calibration folders save `calibration.json`, frozen `trials/NNNNNN.json`, `calib
 Joint-variance fits save categorical prior/posterior W probabilities, every conditional quadrature/refinement record, W-labelled V/state nodes and V/W covariance in ordinary fit artifacts. The CLI adds `joint_variances.png` from saved fits. Controlled study folders preserve generated source/store, matched sequential evidence and `dynamics.png`. See [semantics](../docs/joint-variance.md).
 
 Joint predictive folders add `evolution_variance` to parameter draws. Prior paths add W probabilities/bounds/means and V/W covariance; plotting adds `evolution_priors.png`. Older model paths use null optional W columns and retain their original quantities. Known-state probability masses are preserved; see [joint evidence](../docs/joint-evidence.md).
+
+Calibration rows now optionally preserve left/inclusive CDF bounds, atom randomization and actual closed-interval posterior mass. Joint models save all conditional quadrature evidence; plotting remains saved-only and older continuous rows remain readable. See [discrete/mixed semantics](../docs/mixed-calibration.md).

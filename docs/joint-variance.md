@@ -91,7 +91,7 @@ atoms; `evolution_ppf` returns an actual support point. No interpolation creates
 an unsupported W value. `fit` saves full component evidence and labels every
 quadrature node with its W. Failed precision remains required evidence.
 
-The joint model supplies sequential, [generative predictive and prior-comparison](joint-evidence.md) capabilities. Calibration still requires discrete-aware treatment; unsupported evidence fails visibly. Existing models retain their established capabilities.
+The joint model supplies sequential, [generative predictive and prior-comparison](joint-evidence.md) capabilities. [Discrete-aware calibration](mixed-calibration.md) also handles its probability atoms; unsupported evidence still fails visibly. Existing models retain their established capabilities.
 
 ## Verification and limits
 
@@ -99,7 +99,7 @@ Thirteen new tests include independent adaptive integration of a batch Gaussian
 likelihood for W probabilities, predictive CDF and V/W covariance; the single-W
 limit; observation/state degeneracy; V CDF/quantile inversion; precision failure
 persistence; replay; own-target isolation; matched/shared-noise studies; saved-
-only plotting and CLI behavior. The suite now contains 323 tests. The independent
+only plotting and CLI behavior. This slice brought the suite to 323 tests; see [the test guide](../tests/README.md) for the current total. The independent
 reference exposed a near-zero symmetric-mixture median bracket affected by CDF
 roundoff; verified endpoint probabilities now handle that case without loosening
 bulk or tail root tolerances.

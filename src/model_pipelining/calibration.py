@@ -3,8 +3,10 @@
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
 import json
+import hashlib
 import math
 import platform
+from numbers import Real
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +15,33 @@ from model_pipelining.evidence import get_evidence_provider, source_hashes, _wri
 from model_pipelining.models import ForecastRequest, Observation
 from model_pipelining.predictive_checks import _tail_summary
 from model_pipelining.uncertainty import interval_probabilities
+
+
+def calibration_transform(item, *, seed, trial, parameter, interval_level):
+    """Randomized distributional transform within genuine posterior atoms.
+
+    The provider supplies inclusive F(truth) and optional left limit F(truth-).
+    Independent parameter-labelled streams preserve dataset and prefix seeds.
+    Continuous providers need only supply their original CDF/interval fields.
+    """
+    if not isinstance(item,dict) or "cdf" not in item:
+        raise ValueError("Calibration transform requires a CDF record")
+    left=item.get("cdf_lower",item["cdf"])
+    right=item.get("cdf_upper",item["cdf"])
+    mass=item.get("interval_mass",interval_level)
+    if (not all(isinstance(value,Real) and not isinstance(value,bool) and math.isfinite(value)
+                for value in (left,right,mass,item["cdf"]))
+            or not 0<=left<=right<=1 or not 0<mass<=1+1e-12
+            or abs(item["cdf"]-right)>1e-12):
+        raise ValueError("Invalid posterior atom bounds or interval mass")
+    randomized=right>left
+    value=right
+    if randomized:
+        label=int.from_bytes(hashlib.sha256(parameter.encode()).digest()[:8],"little")
+        rng=np.random.Generator(np.random.PCG64(np.random.SeedSequence([seed,3,trial,label])))
+        value=left+(right-left)*float(rng.random())
+    return {**item,"cdf":value,"cdf_lower":left,"cdf_upper":right,"randomized":randomized,
+            "interval_mass":min(1.,mass)}
 
 
 def summarize_calibration(rows, *, trials, parameters, level):
@@ -27,6 +56,8 @@ def summarize_calibration(rows, *, trials, parameters, level):
             "cdf_simultaneous_95_band": min(1., math.sqrt(math.log(2*len(parameters)/.05)/(2*count))) if count else None,
             "band_applies_to_all_trials": count == trials,
             "central_interval_level": level,
+            "randomized_trials":sum(row["randomized"] for row in selected),
+            "mean_interval_posterior_mass":math.fsum(row["interval_mass"] for row in selected)/count if count else None,
             "coverage": _tail_summary(sum(row["lower"] <= row["truth"] <= row["upper"] for row in selected), count),
             "mean_absolute_median_error": math.fsum(abs(row["median"]-row["truth"]) for row in selected)/count if count else None,
             "mean_credible_width": math.fsum(row["upper"]-row["lower"] for row in selected)/count if count else None}
@@ -36,7 +67,7 @@ def summarize_calibration(rows, *, trials, parameters, level):
 def run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95):
     """Simulate prior parameters/data, refit and evaluate posterior CDF at truth.
 
-    This continuous-CDF form of simulation calibration tests marginal numerical
+    This CDF-based form of simulation calibration tests marginal numerical
     inference. It does not audit an MCMC sampler, prove all joint dependencies,
     or establish model adequacy for external data. Failures are never discarded.
     """
@@ -58,8 +89,9 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
         "observation_count": observation_count, "seed": seed, "parameters": parameters,
         "interval_level": interval_level, "started_at": datetime.now(UTC).isoformat(),
         "environment": {"python": platform.python_version(), "numpy": version("numpy"), "scipy": version("scipy")},
-        "method": "Continuous posterior CDF at simulated truth; independent prior-data trials, not sampled ranks",
+        "method": "Posterior CDF at truth, randomized within genuine probability atoms; not sampled ranks",
         "seed_derivation": "PCG64(SeedSequence([seed,2,trial_index]))",
+        "atom_seed_derivation":"PCG64(SeedSequence([seed,3,trial_index,first_64_bits_SHA256(parameter)])); little-endian label",
         "source_sha256": source_hashes(Path(__file__), Path(__file__).with_name("evidence.py"),
                                         *provider.metadata.implementation_files)}
     _write_json(output/"calibration.json", manifest)
@@ -79,10 +111,14 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
             results, evidence = provider.calibration_fit(request, truth, interval_level)
             if set(results) != set(parameters):
                 raise ValueError("Calibration provider omitted a requested parameter")
-            for item in results.values():
-                if (any(not math.isfinite(item[key]) for key in ("cdf", "lower", "median", "upper"))
+            for name,item in results.items():
+                required={"cdf","lower","median","upper"}
+                if (not isinstance(item,dict) or not required.issubset(item)
+                        or set(item)-required-{"cdf_lower","cdf_upper","interval_mass"}
+                        or any(not isinstance(item[key],Real) or isinstance(item[key],bool) or not math.isfinite(item[key]) for key in required)
                         or not 0 <= item["cdf"] <= 1 or not item["lower"] <= item["median"] <= item["upper"]):
                     raise ValueError("Invalid posterior calibration summary")
+                results[name]=calibration_transform(item,seed=seed,trial=index,parameter=name,interval_level=interval_level)
         except (ValueError, OverflowError, FloatingPointError, ZeroDivisionError) as failure:
             error = f"{type(failure).__name__}: {failure}"
             evidence = getattr(failure, "evidence", evidence)
@@ -90,7 +126,8 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
         for name in parameters:
             row = {"trial": index, "parameter": name, "truth": truth.get(name),
                    "status": "failed" if error else "passed", "error": error,
-                   "cdf": None, "lower": None, "median": None, "upper": None}
+                   "cdf": None, "lower": None, "median": None, "upper": None,
+                   "cdf_lower":None,"cdf_upper":None,"randomized":None,"interval_mass":None}
             if error is None:
                 row.update(results[name])
             rows.append(row)
@@ -104,6 +141,8 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
         "limitations": ["Marginal CDF calibration does not prove joint correctness or posterior concentration",
             "Simulation coverage averages over the prior, not every fixed parameter value",
             "Uniform-CDF bands use DKW with a union bound across parameters; numerical approximation remains",
+            "CDF jumps are randomized; discrete/mixed closed credible intervals may have more than nominal mass",
+            "Marginal calibration can pass for prior-only inference; independent likelihood/recovery checks remain necessary",
             "Failed fits can induce selection bias; conditional summaries do not certify calibration",
             "No automatic uniformity or model-approval threshold; no external dataset or MCMC sampler is tested"]})
     manifest.update(status="completed" if passed else "failed", finished_at=datetime.now(UTC).isoformat())
@@ -144,7 +183,7 @@ def plot_calibration(directory):
             pair[1].scatter(truth,median,s=8,alpha=.6)
             limits=(min(*truth,*median),max(*truth,*median))
             pair[1].plot(limits,limits,color="grey")
-        pair[0].set(title=name,xlabel="Posterior CDF at truth",ylabel="Empirical CDF",xlim=(0,1),ylim=(0,1))
+        pair[0].set(title=name,xlabel="Posterior CDF transform at truth",ylabel="Empirical CDF",xlim=(0,1),ylim=(0,1))
         pair[1].set(title=f"{name}: recovery",xlabel="Simulated truth",ylabel="Posterior median")
     figure.suptitle(f"Simulation calibration — {manifest['status']}; human review pending")
     with destination.open("xb") as stream:
