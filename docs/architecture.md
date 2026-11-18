@@ -26,7 +26,7 @@ not a sandbox preventing an adapter from independently reading files.
 |---|---|---|
 | Application/task | Versioned daily task/evaluation specs, named targets/units, issuance/release/revision rules, required benchmarks, and development/final target periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
-| Model adapter | Point benchmarks, fixed-variance Gaussian local level, unknown-mean parameter integration, optional independent-chain audit, local-level influence/innovation diagnostics | Unknown variances, intractable sampled prediction, incremental updates, broader checks |
+| Model adapter | Point benchmarks, fixed-variance Gaussian local level, exact unknown-mean/variance integration, optional independent-chain audits, local-level influence/innovation diagnostics | Unknown local-level variances, intractable sampled prediction, incremental updates, broader checks |
 | Runner | Historical origins, eligible histories, output validation, optional per-request fit-evidence persistence/checks, visible failures | Configurable stage/check dispatch and explicit experimental overrides |
 | Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
@@ -42,7 +42,7 @@ or monitoring/deployment system is implemented.
 A model receives eligible observations, issuance, target time, and requested
 quantile probabilities/highest-density masses. It returns a predictive mean and
 its declared uncertainty kinds. `TrainingMean` and `LastValue` are point-only; `LocalLevel`
-and `NormalMean` supply quantiles and highest-density regions.
+and both `NormalMean` and `NormalMeanVariance` supply quantiles and highest-density regions.
 
 Both uncertainty kinds target the future observed value in original units.
 State or parameter distributions belong in separate diagnostic outputs.
@@ -115,7 +115,12 @@ Legacy adapters continue using `forecast(request)` without a new fit method.
 
 `normal_mean.py` owns exact posterior and marginalized predictive calculations.
 `sampling.py` owns its optional independent emcee Gaussian-Metropolis audit and
-ArviZ diagnostics, with per-fit/chain seeds and warmup separation. Exact/audited
+ArviZ diagnostics, with per-fit/chain seeds and warmup separation.
+`normal_mean_variance.py` supplies exact normal/inverse-gamma updating and
+Student-t prediction. `sampling_variance.py` owns its two-coordinate audit,
+including the nonconstant transform Jacobian and explicit moment-existence
+rules; it reuses the shared settings, seed derivation and diagnostic summaries.
+Exact/audited
 modes both return exact forecast summaries. Conditional predictive probabilities
 and paired future draws audit integration without pretending sampled endpoint
 averages are predictive HPD regions. Parameter uncertainty, observation spread,
@@ -125,6 +130,10 @@ Fit format version 1 is separate from run format 3. `fit_index.csv` lists all
 cases, including missing-evidence errors; `fits/NNNNNN/` retains per-case files.
 All fits and forecast files are frozen before scoring. Saved-only `plot_fit`
 draws trace/density comparisons against exact references with explicit warmup.
+The joint adapter saves reference-distribution metadata for mean, variance and
+future observation; plotting reads these Student-t/inverse-gamma references
+without model calls. Undefined moments are null with explicit reasons, while
+applicable diagnostic failures still reject a fit.
 This is a small optional dispatch boundary, not the general configurable
 check-plan engine below. See [the API](../src/model_pipelining/README.md#unknown-mean-model-and-optional-fit-evidence)
 and [model/criteria guide](parameter-uncertainty.md).

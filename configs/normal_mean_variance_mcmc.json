@@ -1,0 +1,13 @@
+{
+  "chains": 4,
+  "warmup": 1500,
+  "draws": 6000,
+  "seed": 0,
+  "proposal_scale": 1.7,
+  "initial_spread": 4.0,
+  "max_rhat": 1.01,
+  "min_bulk_ess": 400.0,
+  "min_tail_ess": 400.0,
+  "max_mcse_sd_ratio": 0.1,
+  "reference_mcse_multiplier": 6.0
+}

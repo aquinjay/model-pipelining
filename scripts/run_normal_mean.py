@@ -1,4 +1,4 @@
-"""Run exact unknown-mean forecasts, optionally auditing every fit with MCMC."""
+"""Run exact constant-mean forecasts with known or learned observation variance."""
 
 import argparse
 from dataclasses import replace
@@ -7,6 +7,7 @@ import json
 from model_pipelining.backtest import run_backtest
 from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.normal_mean import NormalMean
+from model_pipelining.normal_mean_variance import NormalMeanVariance
 from model_pipelining.reporting import plot_fit, plot_run
 from model_pipelining.sampling import MCMCSettings
 
@@ -24,8 +25,12 @@ def main() -> int:
     parser.add_argument("--evaluation-role", choices=("development", "final"))
     parser.add_argument("--interval-levels", type=float, nargs="+", default=(0.8, 0.95))
     parser.add_argument("--prior-mean", type=float, default=0.0)
-    parser.add_argument("--prior-variance", type=float, default=100.0)
-    parser.add_argument("--observation-variance", type=float, default=1.0)
+    parser.add_argument("--prior-variance", type=float, help="Known-variance model only; default 100")
+    parser.add_argument("--observation-variance", type=float, help="Known-variance model only; default 1")
+    parser.add_argument("--learn-variance", action="store_true", help="Learn mean and variance with a normal/inverse-gamma prior")
+    parser.add_argument("--prior-mean-precision", type=float, help="Learned-variance model only; default 0.01")
+    parser.add_argument("--prior-shape", type=float, help="Learned-variance model only; default 3")
+    parser.add_argument("--prior-scale", type=float, help="Learned-variance model only; default 2")
     inference = parser.add_mutually_exclusive_group()
     inference.add_argument("--mcmc", action="store_true", help="Audit every fit with default MCMC settings")
     inference.add_argument("--mcmc-config", help="JSON MCMCSettings; omitted fields use defaults")
@@ -49,8 +54,17 @@ def main() -> int:
     origin = options.pop("plot_fit_origin")
     if origin is not None and (settings is None or origin < 0):
         parser.error("--plot-fit-origin requires MCMC and a nonnegative index")
-    model = NormalMean(**{name: options.pop(name) for name in ("prior_mean", "prior_variance", "observation_variance")},
-                       mcmc=settings)
+    learn_variance = options.pop("learn_variance")
+    known = {name: options.pop(name) for name in ("prior_variance", "observation_variance")}
+    learned = {name: options.pop(name) for name in ("prior_mean_precision", "prior_shape", "prior_scale")}
+    if learn_variance and any(value is not None for value in known.values()):
+        parser.error("--learn-variance cannot use --prior-variance or --observation-variance")
+    if not learn_variance and any(value is not None for value in learned.values()):
+        parser.error("--prior-mean-precision, --prior-shape and --prior-scale require --learn-variance")
+    model_type = NormalMeanVariance if learn_variance else NormalMean
+    parameters = learned if learn_variance else known
+    model = model_type(prior_mean=options.pop("prior_mean"), mcmc=settings,
+                       **{name: value for name, value in parameters.items() if value is not None})
     run = run_backtest(**options, model=model)
     print(f"Saved run: {run}")
     print(f"Chart: {plot_run(run)}")

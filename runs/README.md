@@ -103,6 +103,15 @@ exact integration. A malformed/missing fit leaves an error in the index rather
 than a fabricated fit directory. Persistence errors propagate and can leave a
 `running` manifest. See [fit fields, interpretation and replay](../docs/parameter-uncertainty.md).
 
+`NormalMeanVariance` uses the same files and failure rules. Joint-fit metadata
+adds normal/inverse-gamma posterior parameters, the exact Student-t law,
+nullable undefined variances with explicit reasons, and saved reference
+distributions. Draws add observation variance, log variance, its standardized
+coordinate and the nonconstant transform Jacobian. Its explicit trace chart
+has three rows: mean, observation variance, and future observation. Moment
+audits whose variances do not exist are listed with reasons; applicable
+diagnostics remain required. See [the joint-model guide](../docs/normal-mean-variance.md).
+
 The [experiment guide](../docs/experiments.md) explains available release
 selection, actual-vintage choices, required benchmarks, and separate development/
 final invocations. Declaring a final period does not certify that data remained

@@ -6,6 +6,11 @@ with independent Metropolis chains. **Forecasts use exact integration in both
 modes**; they are not estimates obtained from those chains. The separate
 `LocalLevel` model continues to condition on fixed variance settings.
 
+The separate [NormalMeanVariance model](normal-mean-variance.md) now learns both
+the constant mean and observation variance with a normal/inverse-gamma prior.
+It supplies exact Student-t forecasts and an optional joint sampler audit.
+This page documents the original known-observation-variance model.
+
 ## Model and exact calculation
 
 ```text
@@ -225,8 +230,9 @@ sampler target ratios/agreement, bad mixing, biased samples, missing diagnostics
 partial backend failures, future isolation, seeds, freezing, replay, final/release
 selection, saved-only charts, and persistence failures.
 
-This supplies one concrete model and optional fit dispatch. Unknown observation/
-evolution variances, MCMC-only forecasts/HPD estimation for intractable laws,
+This supplies the known-variance model and optional fit dispatch. Unknown
+observation variance is implemented by [the joint model](normal-mean-variance.md).
+Unknown local-level observation/evolution variances, MCMC-only forecasts/HPD estimation for intractable laws,
 a general sampler/check-plan registry, adaptation/caching, full-data criticism,
 and formal simulation-based calibration remain future work. Computation does
 not approve priors, the constant-mean assumption, or an application.

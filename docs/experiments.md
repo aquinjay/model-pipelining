@@ -2,7 +2,8 @@
 
 An experiment declares what a forecast means independently of the model and
 any particular application. The same specification can run a point baseline,
-the fixed-variance local-level model, or the parameter-learning `NormalMean` adapter.
+the fixed-variance local-level model, or the parameter-learning `NormalMean` and
+`NormalMeanVariance` adapters.
 The preserved dataset/ID and model/settings are selected separately for each run.
 
 The version-1 specification has two immutable records:
@@ -41,7 +42,7 @@ The shared runner supports these coordinates independently of adapter support.
 at its last observation, and a target one day later. Delayed/gapped histories,
 issuance offsets, or longer horizons can fail its requests visibly; the runner
 does not silently substitute a different timing convention.
-`NormalMean` accepts any strictly ordered eligible past history and future target:
+`NormalMean` and `NormalMeanVariance` accept any strictly ordered eligible past history and future target:
 its exchangeable constant-mean assumption permits delayed/gapped histories and
 longer horizons. Its optional sampler audit follows each immutable request;
 see [parameter uncertainty](parameter-uncertainty.md).

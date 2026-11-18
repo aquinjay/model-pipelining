@@ -1,6 +1,6 @@
 # Roadmap
 
-Updated: 2026-11-14. This page records implemented scope and review priorities.
+Updated: 2026-11-17. This page records implemented scope and review priorities.
 For usage, start with [the walkthrough](forecasting.md). For past choices, use
 [the decision history](decisions.md); historical proposals are not build checklists.
 
@@ -34,9 +34,13 @@ chains and ArviZ diagnostics. Optional fit-evidence dispatch saves posterior,
 chain/draw, warmup, seed, transform, precision/reference checks, and partial
 failures before scoring. Required audit failures fail cases/runs. Both modes
 use exact forecast integration; MCMC-only forecast/HPD estimation remains open.
-Prior influence remains descriptive, not a quantity to minimize. Next model
-work can extend parameter learning to unknown variances around another verified
-reference. Application selection and a broader release/check framework can wait.
+Prior influence remains descriptive, not a quantity to minimize. Parameter
+learning now also includes an unknown observation variance:
+[NormalMeanVariance](normal-mean-variance.md) uses normal/inverse-gamma updates,
+exact Student-t forecasts and an optional joint sampler audit. Heavy-tail moment
+existence and the transform Jacobian are explicit. Local-level observation and
+evolution variances remain fixed. Application selection and a broader
+release/check framework can wait.
 
 To understand or repeat the reviewed workflow:
 
@@ -54,8 +58,9 @@ requests, explicit failures, and reproducible saved results. Better scores,
 faster reactions, or a particular empirical interval coverage are not acceptance
 thresholds. Human interpretation of assumptions and evidence remains open.
 
-The baseline workflow was introduced in `eabd66e`. The current checkout extends
-it with the local-level adapter and shared uncertainty. Use Git status/history
+The baseline workflow was introduced in `eabd66e`. PR #1 merged unknown-mean
+parameter learning and its sampler audit; the current checkout extends that
+with joint mean/variance learning. Use Git status/history
 to distinguish local edits from committed/published code.
 
 ## Implemented scope
@@ -69,7 +74,7 @@ to distinguish local edits from committed/published code.
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
 | Execution | Daily model-independent experiments, release-aware expanding histories, one fixed positive-day horizon per run; defaults preserve the original next-day task | [Experiments](experiments.md) |
 | Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering | [Model guide](local-level.md) |
-| Parameter learning | Unknown constant Gaussian mean with exact marginalized predictions; optional independent-chain MCMC audit and saved per-request fit evidence | [Parameter uncertainty](parameter-uncertainty.md) |
+| Parameter learning | Unknown constant Gaussian mean with known or learned observation variance; exact normal/Student-t predictions, optional independent-chain audits and saved fit evidence | [Parameter uncertainty](parameter-uncertainty.md), [joint model](normal-mean-variance.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
 | Reporting | Saved-result charts/comparisons; HPD preferred; version-1 point artifacts still readable | [Run files](../runs/README.md) |
@@ -78,7 +83,7 @@ to distinguish local edits from committed/published code.
 
 ## Verification at this checkpoint
 
-The suite currently has 174 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 194 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -123,14 +128,26 @@ exercised diagnostics. Saved-only charts and comparisons succeeded. These known
 fixtures demonstrate mechanics, not untouched final evaluation or scientific
 model approval. Generated artifacts are local and ignored by Git.
 
+The joint model adds 20 tests; all 194 tests passed. Both seeded synthetic
+series completed 170 exact forecast cases, plus three explicitly selected
+final-role audit cases at target indices 100–102 with both point benchmarks.
+Exact/audit predictions and scores matched, and all numerical fit/draw and run
+files replayed byte for byte (excluding manifest timestamps). Saved-only charts
+and comparisons succeeded. Evidence is local under
+`runs/variance-learning-20261117-t2f9oedw/`. Across those joint audits, maximum
+R-hat was 1.005306 and minimum bulk/tail ESS were 2638.73/3362.73. These known
+fixtures demonstrate mechanics, not untouched final evaluation or approval of
+the constant-mean assumption. No new dependency was added.
+
 ## Next decisions, not automatic implementation
 
 - **Further model evidence:** decide whether the application needs full-data
   posterior predictive replications or other criticism beyond the implemented
   influence/innovation evidence. A configurable shared check plan, experimental
   overrides, and application-specific human/release criteria remain open.
-- **Further parameter learning:** choose unknown observation variance or a richer
-  unknown-variance local-level model, with an independently validated reference
+- **Further parameter learning:** unknown observation variance is now learned
+  in the exact-reference constant-mean model. Next choose whether a richer
+  unknown-variance local-level model is needed, with an independently validated reference
   and explicit inference evidence. Intractable sampled prediction needs its own
   quantile/HPD approximation and precision design; current audit forecasts remain
   exact. Local-level variances are still fixed. See [current scope](parameter-uncertainty.md).

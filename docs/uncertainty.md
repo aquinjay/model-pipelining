@@ -34,6 +34,12 @@ includes parameter uncertainty; its saved parameter distribution remains
 separate fit evidence. Optional MCMC audits retain finite-computation MCSEs,
 which do not widen forecast intervals or substitute for predictive spread.
 
+The [joint mean/variance model](normal-mean-variance.md) integrates an unknown
+observation variance as well. Its exact Student-t scale is not its standard
+deviation. Finite observation quantiles and HPD intervals can exist even when
+the predictive variance is undefined; that moment is explicitly null in fit
+metadata. Audit MCSEs remain separate from predictive uncertainty.
+
 ## Read a quantile or region
 
 A **quantile** is a value associated with a probability. A model's 0.9 quantile
@@ -70,7 +76,8 @@ See [Hyndman's highest-density-region paper](https://robjhyndman.com/papers/hdrg
 
 For a symmetric unimodal normal distribution, highest-density and central
 equal-tail bounds coincide. `LocalLevel` and `NormalMean` compute regions from their known
-normal law. Shared code still records the methods separately: other adapters
+normal law. `NormalMeanVariance` uses the same symmetry/unimodality argument for
+its Student-t law. Shared code still records the methods separately: other adapters
 must compute their own highest-density regions, not relabel central quantiles.
 Highest-density regions cannot generally be recovered from a few quantiles.
 They are defined on the saved original target scale.
