@@ -126,3 +126,8 @@ The [controlled dynamics study](../docs/joint-variance.md) deliberately generate
 [Saved experiment review](../docs/experiment-review.md) reads existing run files
 without retrieving snapshots or acquiring data. It rechecks recorded history/input
 identities; it cannot independently establish a source's release claims.
+
+Full predictive distribution scores use the same selected scoring actual and
+release vintage as point evaluation, after all predictive laws are saved. They
+retain original target units; compare matching transformations only. See
+[the scoring contract](../docs/distribution-scoring.md).

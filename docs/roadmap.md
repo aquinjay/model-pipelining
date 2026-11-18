@@ -1,6 +1,6 @@
 # Roadmap
 
-Updated: 2026-11-17. This page records implemented scope and review priorities.
+Updated: 2026-11-18. This page records implemented scope and review priorities.
 For usage, start with [the walkthrough](forecasting.md). For past choices, use
 [the decision history](decisions.md); historical proposals are not build checklists.
 
@@ -112,7 +112,7 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite currently has 343 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 382 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -288,7 +288,7 @@ All five authorized slices are implemented and independently committed:
 4. [Joint generative criticism and prior influence](joint-evidence.md): dependent W/V/state draws, fresh paths and fixed-support prior comparisons.
 5. [Mixed calibration](mixed-calibration.md): genuine atom randomization, interval mass and known-parameter exclusion.
 
-The suite has 343 tests. Numerical computation is verified separately from model
+That sequence finished with 343 tests. Numerical computation is verified separately from model
 adequacy and finite-simulation interpretation. Further model changes should follow
 the saved discrepancies; continuous-W priors, different transition laws, a real
 application and release automation remain separate decisions.
@@ -301,6 +301,13 @@ chart links in one report, with human interpretation pending. Eighteen added tes
 bring the suite to 361. A 130-case development exercise assembled all three
 workflows and two small calibration runs without changing source files.
 
-Next in the authorized sequence: full predictive distribution scores, then CI
+The authorized sequence adds full predictive distribution scores and then CI
 for the locked environment, tests and documentation checks. Large calibration
 and scientific model/release decisions remain explicit caller actions.
+
+The second review/comparison slice, [full-law proper losses](distribution-scoring.md),
+is implemented: Student-t and full Gaussian mixtures, frozen laws, visible
+failures and complete matched saved comparisons/charts. All five Bayesian adapters
+supply laws from the same fit. Twenty-one new tests bring the suite to 382.
+CI for the locked environment and documentation is next; no richer model or
+automatic selection rule was introduced.

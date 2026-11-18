@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **361 tests**. They use temporary fixtures/stores rather than
+There are currently **382 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -41,6 +41,8 @@ before running sampler tests.
 | [test_mixed_calibration.py](test_mixed_calibration.py) | 10 | Randomized transforms, discrete/mixed CDF bounds, interval mass, replay and calibration failure/CLI behavior |
 
 | [test_experiment_review.py](test_experiment_review.py) | 18 | Saved-only review, identities/receipts, scope, missing/failed evidence, version conflicts, fit requirements, complete trial records, paths/concurrency and CLI |
+
+| [test_distribution_scoring.py](test_distribution_scoring.py) | 21 | Independent CDF-integral/density losses, full mixtures/tails/units, precision, all Bayesian adapters, freezing, release/final isolation, replay, partial failures and matched saved comparisons/review |
 
 ## Data behavior checked in detail
 

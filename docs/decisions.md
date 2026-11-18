@@ -529,3 +529,16 @@ record current bytes rather than claiming historical authentication. Existing
 sequential/bundle environment omissions stay explicit. Readiness is computational;
 a new human review always starts pending. Eighteen tests and a saved development
 exercise support [this boundary](experiment-review.md).
+
+## Full predictive distribution losses — 2026-11-18
+
+Require an explicit model capability and serialized law from the same forecast
+fit. Freeze all laws before actual selection; score deterministic Student-t and
+full Gaussian mixtures with lower-is-better CRPS/negative natural log density.
+Do not infer laws from intervals, prune modes or floor tail density. Undefined
+first moments and unresolved numerical precision fail visibly. Saved comparisons
+require complete matching cohorts/methods/units, recompute aggregates from saved
+case scores and retain paired differences/charts without choosing a winner.
+Twenty-one tests support [the contract](distribution-scoring.md). An older overflow
+test now explicitly opts its intentionally altered region adapter out of the new
+full-law capability so it continues to test region scoring independently.

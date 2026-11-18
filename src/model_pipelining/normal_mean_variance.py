@@ -70,6 +70,7 @@ class NormalMeanVariance:
     supports_quantiles: ClassVar[bool] = True
     supports_highest_density: ClassVar[bool] = True
     supports_fit_evidence: ClassVar[bool] = True
+    supports_distribution: ClassVar[bool] = True
 
     def __post_init__(self) -> None:
         for name in ("prior_mean", "prior_mean_precision", "prior_shape", "prior_scale"):
@@ -152,7 +153,9 @@ class NormalMeanVariance:
             regions.append(HighestDensityRegion(level, (Interval(float(distribution.ppf(lower)),
                                                                  float(distribution.ppf(upper))),)))
         forecast = validate_forecast(Forecast(posterior.mean,
-            tuple(Quantile(p, float(distribution.ppf(p))) for p in request.quantile_levels), tuple(regions)),
+            tuple(Quantile(p, float(distribution.ppf(p))) for p in request.quantile_levels), tuple(regions),
+            {"family": "student_t", "location": posterior.mean, "scale": predictive_scale,
+             "df": posterior.degrees_of_freedom}),
             request.quantile_levels, request.highest_density_levels)
         references = [
             {"column": "mu", "family": "student_t", "label": "mu (parameter)",

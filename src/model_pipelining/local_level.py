@@ -66,6 +66,7 @@ class LocalLevel:
     name: ClassVar[str] = "local-level"
     supports_quantiles: ClassVar[bool] = True
     supports_highest_density: ClassVar[bool] = True
+    supports_distribution: ClassVar[bool] = True
 
     def __post_init__(self) -> None:
         for name, value in asdict(self).items():
@@ -160,6 +161,8 @@ class LocalLevel:
             distribution.mean,
             tuple(Quantile(probability, distribution.inv_cdf(probability)) for probability in request.quantile_levels),
             tuple(regions),
+            {"family": "gaussian_mixture", "weights": [1.], "means": [distribution.mean],
+             "variances": [distribution.variance]},
         )
 
     def simulate_prior(self, *, count: int, seed: int = 0) -> tuple[PriorDraw, ...]:

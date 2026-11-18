@@ -252,3 +252,11 @@ Invoke [saved experiment review](experiment-review.md) after running required
 evidence explicitly. Forecast task/input/model settings anchor compatibility;
 a final-role forecast can link evidence selected before the same final boundary.
 No historical workflow or calibration exercise is started by report construction.
+
+## Full-law score cohorts
+
+Declared distribution models automatically save pre-actual laws and CRPS/log-loss
+evaluations on the experiment's selected cases and actual vintages. Required
+scoring failures fail computation; separate evidence stays explicit. Saved
+comparison checks the same histories/role/units and method, with no automatic
+model choice. See [distribution scoring](distribution-scoring.md).

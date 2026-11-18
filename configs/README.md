@@ -179,3 +179,8 @@ Joint calibration uses `scripts/calibrate_model.py --model local-level-joint-var
 it accepts explicit forecast/evidence/calibration folders and a new output folder,
 without discovering configurations or running missing work. Calibration is required
 only with `--require-calibration`. See [review usage](../docs/experiment-review.md).
+
+[Full distribution scores](../docs/distribution-scoring.md) run automatically for
+adapters declaring `supports_distribution`. No scoring-specific model setting,
+extra simulation or density floor is configured. Saved comparisons require the
+same task/units/vintages and scoring method; point-only adapters remain supported.

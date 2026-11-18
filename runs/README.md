@@ -249,3 +249,14 @@ Source folders are unchanged. Reports link existing charts and retain all suppli
 calibration exercises, failures, omissions and source inventories. Current hashes
 record observed bytes; only earlier child receipts verify completion bytes.
 Read [statuses, compatibility and scope](../docs/experiment-review.md).
+
+## Full distribution forecasts and losses
+
+For declared distribution models, backtesting automatically freezes every origin
+in `predictive_distributions.json` before selecting scoring actuals, then writes
+`distribution_evaluation.csv` and `scores.json.distribution`. Failed cases stay
+visible and required scoring failures fail the run. Existing point/interval files
+are retained. Explicit matched comparison writes distribution losses/differences
+in `comparison.json` plus `distribution_scores.png` when both runs support them.
+Older/point-only runs have no reconstructed distributions. See
+[methods, units and numerical limits](../docs/distribution-scoring.md).

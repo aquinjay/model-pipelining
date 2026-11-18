@@ -13,6 +13,7 @@ from model_pipelining.evidence import _write_json
 from model_pipelining.evidence_workflows import _MANIFESTS, _REQUIRED_CHECKS
 from model_pipelining.experiments import ExperimentSpec, ForecastCase, ObservationVersion
 from model_pipelining.inference import assess_checks
+from model_pipelining.distribution_scoring import read_saved_distribution_scores
 
 
 _FORECAST_CHECKS = ("input_schema_and_daily_calendar", "eligible_history_and_target_alignment",
@@ -124,8 +125,12 @@ def _forecast(directory, manifest, specification):
         names.append("requested_highest_density_regions_valid")
         if "all_uncertainty_cases_scored" not in names:
             names.append("all_uncertainty_cases_scored")
+    if manifest["model"].get("supports_distribution"):
+        names.extend(("full_predictive_distributions_valid", "all_distribution_cases_scored"))
     passed, requirements = _checks(directory, names)
     passed = passed and all(row["status"] == "passed" for row in predictions)
+    if manifest["model"].get("supports_distribution") and passed:
+        read_saved_distribution_scores(directory, manifest, predictions, _csv(directory/"evaluation.csv"))
     if fit_required:
         fits = _csv(directory / "fit_index.csv")
         if (len(fits) != len(predictions) or len({row["origin_index"] for row in fits}) != len(fits)
@@ -379,6 +384,9 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
             if row["kind"] == "forecast":
                 scores = detail["scores"]
                 lines.append(f"  - {detail['case_count']} forecast cases from {detail['target_start']} through {detail['target_end']}; MAE: {scores.get('mae')}; RMSE: {scores.get('rmse')}.")
+                if scores.get("distribution", {}).get("status") == "completed":
+                    loss = scores["distribution"]
+                    lines.append(f"  - Mean CRPS: {loss['mean_crps']}; mean negative log density: {loss['mean_log_score']} (lower losses are better).")
             elif row["kind"] == "evidence":
                 lines.append(f"  - Selected development cutoff: {detail['cutoff']}. This does not assert coverage of every forecast origin.")
                 lines.extend(f"  - {name}: {outcome['status']}" for name, outcome in detail["workflows"].items())

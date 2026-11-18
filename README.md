@@ -44,8 +44,8 @@ explains which checks support each implementation claim.
 | Joint variance learning | Explicit categorical evolution-variance prior, continuous observation-variance learning, full marginal forecasts and saved confounding |
 | Simulation calibration | Data-free continuous/discrete/mixed posterior-CDF calibration, recovery, finite-trial uncertainty and saved failures |
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
-| Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
-| Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
+| Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
+| Reporting | Saved-only forecast/evidence/calibration review and complete matched-case comparisons, with paired full-law losses and charts |
 | Model diagnostics | Fixed-model influence paths and learned-variance full-CDF sequential criticism; human interpretation stays pending |
 | Predictive checks | Prior/posterior whole-dataset replication for constant-mean and fixed/joint-noise local-level models, with saved discrepancies and charts |
 | Prior comparisons | Matched release-aware prior learning, signed differences and categorical evolution probabilities; explicit numerical evidence |
@@ -290,3 +290,11 @@ links into one Markdown/JSON report. Invoke `scripts/review_experiment.py` with
 explicit source directories. It rechecks identities, requirements and receipts
 without fitting or changing runs. Computational readiness and a new pending human
 review are separate; missing or incompatible evidence remains visible.
+
+## Score full predictive distributions
+
+Bayesian backtests now freeze their observation laws and automatically calculate
+[CRPS and negative log density](docs/distribution-scoring.md). Matched saved-run
+comparisons add paired losses and `distribution_scores.png`; point-only models
+retain their point scores. Lower losses are descriptive evidence, with model
+criticism and human review still required.

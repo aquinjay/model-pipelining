@@ -67,6 +67,7 @@ class Forecast:
     mean: float
     quantiles: tuple[Quantile, ...] = ()
     highest_density_regions: tuple[HighestDensityRegion, ...] = ()
+    distribution: dict | None = None
 
 
 class Forecaster(Protocol):
@@ -82,6 +83,8 @@ class Forecaster(Protocol):
     requires its checks before accepting the forecast. Legacy models need no
     fit method. Additional implementation_files may identify helper sources.
     This is a trusted Python interface, not a security sandbox.
+    supports_distribution=True requires Forecast.distribution on every successful
+    origin: a serialized observation law for pre-scoring freezing and proper losses.
     """
 
     name: str

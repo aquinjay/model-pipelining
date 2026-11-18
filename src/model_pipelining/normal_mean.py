@@ -49,6 +49,7 @@ the exact forecasts. fit() exposes evidence; forecast() rejects failed audits.
     supports_quantiles: ClassVar[bool] = True
     supports_highest_density: ClassVar[bool] = True
     supports_fit_evidence: ClassVar[bool] = True
+    supports_distribution: ClassVar[bool] = True
 
     def __post_init__(self) -> None:
         for name in ("prior_mean", "prior_variance", "observation_variance"):
@@ -115,7 +116,8 @@ the exact forecasts. fit() exposes evidence; forecast() rejects failed audits.
                                                                   distribution.inv_cdf(upper)),)))
         forecast = Forecast(distribution.mean,
                             tuple(Quantile(p, distribution.inv_cdf(p)) for p in request.quantile_levels),
-                            tuple(regions))
+                            tuple(regions), {"family": "gaussian_mixture", "weights": [1.],
+                                             "means": [distribution.mean], "variances": [posterior.predictive_variance]})
         metadata = {
             "inference": "analytic" if self.mcmc is None else "analytic_with_mcmc_audit",
             "forecast_method": "exact_parameter_marginalized_normal",

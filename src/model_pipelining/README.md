@@ -41,6 +41,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
+| [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
+| [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
 
 ## Terms and record boundaries
@@ -307,7 +309,7 @@ Models refit from each request, retaining no prior request's training data.
 |---|---|
 | `Observation` | `timestamp`, `value` |
 | `ForecastRequest` | `history` (tuple of observations), `issued_at`, `target_time`, `quantile_levels=()`, `highest_density_levels=()` |
-| `Forecast` | `mean`, `quantiles=()`, `highest_density_regions=()` |
+| `Forecast` | `mean`, `quantiles=()`, `highest_density_regions=()`, `distribution=None` |
 | `Quantile` | `probability`, `value` |
 | `HighestDensityRegion` | `level`, `segments` (tuple of `Interval` records) |
 | `Interval` | `lower`, `upper` |
@@ -706,3 +708,18 @@ Sources must already exist. A finished version-3 forecast anchors identity. The
 function rechecks saved requirements/receipts and writes Markdown/JSON plus a
 pending review; it performs no fitting or source mutation. See [the report
 contract](../../docs/experiment-review.md) for failure statuses and scope.
+
+## Full distribution losses
+
+`Forecast(mean, quantiles=(), highest_density_regions=(), distribution=None)` now
+accepts a serialized observation law. A model declaring
+`supports_distribution=True` must supply it at every successful origin. The runner
+validates agreement with mean/quantiles/region mass, freezes it before scoring and
+requires complete CRPS/log-loss evaluation. Legacy capability omission means
+unsupported. Current Bayesian fits supply their own law without a second fit.
+
+`distribution_scoring.score_distribution(record, actual)` returns finite `crps`
+and `log_score` losses from Student-t or Gaussian-mixture records, with explicit
+failures for unsupported moments/precision. `compare_runs` adds complete paired
+loss summaries and a chart when both runs declare distributions; review reports
+also display these losses. See [the full contract](../../docs/distribution-scoring.md).

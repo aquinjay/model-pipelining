@@ -79,3 +79,11 @@ nonfinite data, unsafe paths, concurrent changes and CLI statuses. A local exerc
 combined 130 development forecasts, all three historical workflows, 200 predictive
 replications per phase and two 50-trial calibration runs with saved charts. These
 small calibration exercises validate assembly mechanics, not calibration claims.
+
+## Full-law scores
+
+For forecasts declaring full distributions, review also checks required scoring
+checks, frozen-law and score case identities, actual vintages, finite losses and
+mean aggregates. Markdown displays mean CRPS/log loss when complete. This reads
+saved artifacts and does not recalculate the model or authenticate files. See
+[distribution scoring](distribution-scoring.md).

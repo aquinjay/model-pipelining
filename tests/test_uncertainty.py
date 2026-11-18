@@ -254,6 +254,9 @@ class UncertaintyWorkflowTests(unittest.TestCase):
                                          for p in request.quantile_levels))
 
         class WideRegion(LocalLevel):
+            # Exercise region-score overflow independently of full-law validation.
+            supports_distribution = False
+
             def forecast(self, request):
                 forecast = super().forecast(request)
                 return Forecast(forecast.mean, forecast.quantiles, tuple(
