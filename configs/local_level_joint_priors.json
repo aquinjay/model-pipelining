@@ -1,0 +1,36 @@
+{
+  "reference": {
+    "initial_mean": 0,
+    "initial_variance": 100,
+    "prior_shape": 3,
+    "prior_scale": 2,
+    "evolution_variances": [
+      0,
+      0.01,
+      0.1,
+      1
+    ],
+    "evolution_weights": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "scenarios": {
+    "stable-evolution-prior": {
+      "evolution_weights": [
+        8,
+        1,
+        1,
+        1
+      ]
+    },
+    "larger-observation-variance": {
+      "prior_scale": 18
+    },
+    "initial-level-ten": {
+      "initial_mean": 10
+    }
+  }
+}

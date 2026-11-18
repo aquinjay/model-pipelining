@@ -492,3 +492,29 @@ These are starting choices to revisit deliberately, rather than implemented inte
 ## Record a consequential change
 
 Use a dated entry with the question, decision, rationale, alternatives considered, consequences, and evidence or issue/PR links. Preserve superseded choices so later changes remain understandable.
+
+## Sequential learned-variance diagnostics — 2026-11-18
+
+Task 1 extends criticism through provider-supplied serialized predictive laws. Predictions are written before scoring; historical issuance controls training releases and the development cutoff controls eligible scoring releases. Full mixture/Student-t CDFs supply PIT. Undefined variance is explicit; residual patterns have no approval threshold. Existing fixed-variance diagnostics remain readable. The workflow is explicitly invoked and can be experiment-required; its CLI plots automatically. Nine new tests exercise calculation and information boundaries. See [the contract](sequential-checks.md).
+
+## Continuous-CDF simulation calibration — 2026-11-18
+
+Task 2 uses repeated independent prior/data draws and marginal posterior CDFs, medians and equal-tail intervals. Known states are excluded. This evaluates current exact/numerical inference without pretending to audit sampled ranks or an MCMC backend. Truth/data are saved before fits; failed fits remain visible and invalidate unconditional interpretation of success-only bands. Uniform-reference bands account for multiple marginal parameters. Computation and human interpretation remain separate. Ten new tests and two 200-trial exercises support the slice; see [the calibration guide](calibration.md).
+
+## Categorical evolution-variance prior — 2026-11-18
+
+Task 3 first compared W=0/.01/.1/1 on matched stable/gradual/abrupt fixtures with identical noise. Different dynamics helped different processes. The initial joint model therefore uses an explicit categorical W prior and independent inverse-gamma V prior, enumerating all W and using checked scalar conditional evidence. This is an exact discrete model for W, not a claim of continuous W integration. Posterior weights, full predictive mixtures and V/W covariance are saved. Independent batch Gaussian/adaptive integration verifies weights/CDF/confounding; one support point recovers the scalar model. A mixture-median roundoff issue exposed by that reference was fixed with ulp-scaled endpoint verification. Thirteen new tests support the slice; see [details](joint-variance.md).
+
+## Joint predictive and prior evidence — 2026-11-18
+
+After completing the first three tasks, selected two follow-ups: joint-model generative criticism/prior influence, then discrete-aware calibration. Task 4 draws W/V/initial state jointly and resimulates innovations. Prior comparisons vary probabilities on fixed support and save W mass/bounds/covariance; optional columns remain null for earlier models. Gaussian/point state mixtures retain true atoms rather than inventing positive variance. Metadata controls additional plots; old saved evidence remains readable. Ten new tests cover probability, information and failure boundaries. See [joint evidence](joint-evidence.md).
+
+## Discrete and mixed posterior calibration — 2026-11-18
+
+Task 5 extends data-free calibration to the categorical-W model. Providers supply strict/inclusive CDF bounds and closed-interval posterior mass; shared execution randomizes only actual jumps using parameter-labelled streams independent of dataset generation. Fixed parameters are excluded; unrepresentable variances that should be positive fail rather than becoming invented atoms. Discrete interval coverage is interpreted alongside its actual mass. Marginal calibration does not replace independent likelihood/recovery/dependence checks. Ten new tests and retained simulation/reference exercises support the change; an initial finite-simulation band crossing remains documented with its independent follow-up. See [the guide](mixed-calibration.md).
+
+Task 5 verification completed with all 343 tests passing. The independent batch
+CDF checks agreed within 2.3e-12. A separate 1000-trial joint follow-up (seed 814)
+completed without failures; its marginal CDF distances were within their saved
+simultaneous reference band. The initial 200-trial band crossing and mixed-state
+results remain retained and documented; no automatic model approval is inferred.

@@ -26,9 +26,12 @@ _QUANTITIES = (
     "prior_scale_component", "data_scatter_component", "prior_data_disagreement_component",
     "state_interval_method", "predictive_intervals_json", "predictive_segment_count",
     "quadrature_nodes", "quadrature_tail_bound",
+    "evolution_variance_mean", "evolution_variance_median", "evolution_variance_lower", "evolution_variance_upper",
+    "evolution_probabilities_json", "variance_covariance",
 )
 _DIFFERENCES = ("mean_location", "observation_variance_median", "observation_variance_mean",
-                "predictive_variance", "predictive_lower", "predictive_upper", "predictive_width")
+                "predictive_variance", "predictive_lower", "predictive_upper", "predictive_width",
+                "evolution_variance_mean", "evolution_variance_median")
 _FIELDS = ("configuration", "update_index", "stage", "issued_at", "history_count", "history_sha256",
            "status", "error", *_QUANTITIES, "comparison_status",
            *(f"{key}_difference" for key in _DIFFERENCES))
@@ -196,7 +199,7 @@ def run_prior_influence(*, dataset: str, reference: Forecaster,
     return output
 
 
-def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, Path]:
+def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, ...]:
     """Draw saved learning paths/differences without input retrieval or model calls."""
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
@@ -205,6 +208,8 @@ def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, Path]:
     manifest = json.loads((directory / "prior_influence.json").read_text(encoding="utf-8"))
     presentation = saved_presentation(manifest, "prior_influence")
     destinations = (directory / "prior_learning.png", directory / "prior_differences.png")
+    if presentation.get("evolution_variance",False):
+        destinations += (directory/"evolution_priors.png",)
     if any(path.exists() or path.is_symlink() for path in destinations):
         raise FileExistsError("Prior influence charts already exist")
     summaries = json.loads((directory / "configuration_summaries.json").read_text(encoding="utf-8"))
@@ -250,6 +255,9 @@ def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, Path]:
         else:
             axes[2, 0].fill_between(times, values("predictive_lower"), values("predictive_upper"), color=color, alpha=0.07)
         axes[2, 1].plot(times, values("degrees_of_freedom"), color=color)
+        if presentation.get("evolution_variance",False):
+            axes[1,1].plot(times,values("evolution_variance_mean"),color=color)
+            axes[2,1].plot(times,values("variance_covariance"),color=color)
         for axis, key in zip(differences, ("mean_location", "observation_variance_median", "predictive_width")):
             axis.plot(times, values(f"{key}_difference"), color=color, label=item["name"])
     labels = (("Mean location (target units)", "Variance median (squared units)"),
@@ -260,11 +268,14 @@ def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, Path]:
             axis.set_ylabel(label)
     for axis in (axes[0, 1], axes[1, 0]):
         axis.set_yscale("log")
-    if not presentation["prior_location_coefficient"]:
+    if presentation.get("evolution_variance",False):
+        axes[1,1].set_ylabel("Expected evolution variance")
+        axes[2,1].set_ylabel("Posterior covariance of V and W")
+    elif not presentation["prior_location_coefficient"]:
         axes[1, 1].text(0.5, 0.5, "No single prior-location coefficient\nfor this model", ha="center", transform=axes[1, 1].transAxes)
     else:
         axes[1, 1].set_yscale("log")
-    if not presentation["degrees_of_freedom"]:
+    if not presentation["degrees_of_freedom"] and not presentation.get("evolution_variance",False):
         axes[2, 1].text(0.5, 0.5, "No Student-t degrees of freedom\nfor this predictive law", ha="center", transform=axes[2, 1].transAxes)
     axes[0, 0].legend(fontsize="small")
     for axis in axes[-1]:
@@ -276,6 +287,21 @@ def plot_prior_influence(comparison_directory: str | Path) -> tuple[Path, Path]:
         axis.set_ylabel(label)
     differences[0].legend(fontsize="small")
     differences[-1].set_xlabel("Information update (0 = prior)")
+    if presentation.get("evolution_variance",False):
+        extra=Figure(figsize=(11,max(4,3*len(summaries))),layout="constrained")
+        FigureCanvasAgg(extra)
+        extra_axes=extra.subplots(len(summaries),1,squeeze=False).flat
+        for item,axis in zip(summaries,extra_axes):
+            selected=[row for row in rows if row["configuration"]==item["name"]]
+            laws=[json.loads(row["evolution_probabilities_json"]) if row["status"]=="completed" else [] for row in selected]
+            support=next((law for law in laws if law),[])
+            for index,(value,_) in enumerate(support):
+                axis.plot([int(row["update_index"]) for row in selected],
+                    [law[index][1] if law else float('nan') for law in laws],label=f'W={value:g}')
+            axis.set(title=item["name"],xlabel="Information update (0 = prior)",ylabel="Posterior mass",ylim=(0,1))
+            if support:axis.legend()
+        extra.suptitle("Evolution-variance prior influence; fixed support; review pending")
+        figures.append(extra)
     for figure, destination in zip(figures, destinations):
         with destination.open("xb") as stream:
             figure.savefig(stream, format="png", dpi=150)

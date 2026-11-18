@@ -209,7 +209,8 @@ fixture. Passing tests or audits verifies computation, not that assumption,
 prior plausibility, formal simulation-based calibration, or application approval.
 
 [Learned local-level observation variance](local-level-variance.md) is now
-implemented using checked scalar integration. Evolution variance remains fixed;
+implemented using checked scalar integration with fixed evolution variance.
+[The joint model](joint-variance.md) also learns a categorical evolution variance;
 MCMC-only predictive/HPD approximation remains future work. No shared check-plan
 registry or new dependency is added by that extension.
 

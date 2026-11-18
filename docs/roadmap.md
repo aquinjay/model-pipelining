@@ -40,7 +40,8 @@ learning now also includes an unknown observation variance:
 exact Student-t forecasts and an optional joint sampler audit. Heavy-tail moment
 existence and the transform Jacobian are explicit. [Local-level observation
 variance](local-level-variance.md) is now learned with checked scalar integration;
-evolution variance remains fixed. Application selection and a broader
+the scalar model keeps evolution variance fixed. [The joint model](joint-variance.md)
+learns categorical evolution probabilities. Application selection and a broader
 release/check framework can wait.
 
 [Prior and posterior predictive checks](predictive-checks.md) now replicate
@@ -107,11 +108,11 @@ No new model, sampler, application or automatic human decision is introduced.
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
 | Dynamic parameter learning | Fixed evolution variance, unknown observation variance, checked quadrature/mixture forecasts and dynamic evidence workflows | [Learned local-level variance](local-level-variance.md) |
 | Evidence requirements | Provider-based calculations, caller-required fit names/workflows, explicit pinned-history execution and failure receipts | [Experiment evidence](evidence.md) |
-| Task/evaluation contracts | Version-1 specs; manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
+| Task/evaluation contracts | Version-2 task/evaluation/evidence specs (version 1 readable); manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The suite currently has 291 tests. [The test guide](../tests/README.md) maps them
+The suite currently has 343 tests. [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -252,8 +253,9 @@ the synthetic discrepancies as open modeling evidence.
   model only when useful. An arbitrary-stage configurable check plan, exploratory
   overrides, and application-specific human/release criteria remain open.
 - **Further parameter learning:** observation variance is now learned in both
-  constant-mean and evolving-level models. Evolution variance remains fixed.
-  Choosing to learn it requires its own reference and evidence design. Generic
+  constant-mean and evolving-level models. The joint model also learns an explicit
+  categorical evolution variance. Continuous evolution priors or new transition
+  laws require their own reference and evidence design. Generic
   MCMC-only prediction still needs an explicit precision/HPD design; the new
   local-level model uses controlled scalar quadrature rather than sampled forecasts.
 - **Real-data application (deferred):** fill the implemented task/evaluation
@@ -275,3 +277,18 @@ and monitoring remain possible extensions. git-annex is optional; DVC or another
 execution tool is unselected. Neither is a prerequisite to reviewing the current
 working path. See [the historical storage proposal](data-versioning.md) for the
 broader requirements and alternatives that have been retained for reference.
+
+## Completed validation and dynamics sequence
+
+All five authorized slices are implemented and independently committed:
+
+1. [Sequential learned-variance checks](sequential-checks.md): frozen historical laws, full-CDF PIT and residual dependence.
+2. [Simulation calibration/recovery](calibration.md): data-free exact/numerical posterior checks with retained failures.
+3. [Dynamics investigation and joint variance learning](joint-variance.md): controlled stable/gradual/abrupt comparisons and explicit categorical W uncertainty.
+4. [Joint generative criticism and prior influence](joint-evidence.md): dependent W/V/state draws, fresh paths and fixed-support prior comparisons.
+5. [Mixed calibration](mixed-calibration.md): genuine atom randomization, interval mass and known-parameter exclusion.
+
+The suite has 343 tests. Numerical computation is verified separately from model
+adequacy and finite-simulation interpretation. Further model changes should follow
+the saved discrepancies; continuous-W priors, different transition laws, a real
+application and release automation remain separate decisions.

@@ -20,6 +20,12 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [experiments.py](experiments.py) | Versioned task/evaluation/evidence requirements, verified development selection, as-of planning and actual vintages |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
 | [local_level_variance.py](local_level_variance.py) | Fixed evolution variance, learned observation variance, checked log-variance quadrature and conditional state inference |
+| [sequential.py](sequential.py) | Freeze historical predictive laws and score PIT/errors on eligible development releases |
+| [calibration.py](calibration.py) | Data-free posterior-CDF calibration, recovery and explicit failure evidence |
+| [local_level_joint_variance.py](local_level_joint_variance.py) | Categorical W and continuous V joint learning, with full marginal forecasts |
+| [evidence_joint_level.py](evidence_joint_level.py) | Joint W/V/state replication and prior influence |
+| [state_mixtures.py](state_mixtures.py) | Credible-state CDF/generalized quantiles with genuine probability atoms |
+| [dynamics_study.py](dynamics_study.py) | Explicit dynamics comparisons on matched synthetic development cases |
 | [mixtures.py](mixtures.py) | Weighted Gaussian PDF/CDF, marginal quantiles and numerically resolved disconnected HPD sets |
 | [normal_mean.py](normal_mean.py) | Unknown constant mean, exact posterior/predictive integration, optional sampler audit |
 | [normal_mean_variance.py](normal_mean_variance.py) | Joint unknown mean/variance, normal/inverse-gamma posterior, exact Student-t forecasts |
@@ -663,3 +669,23 @@ whole snapshot store, including manifests/events/tags. Git excludes local data
 and run evidence. Remote storage, crash recovery, retention, and backups remain
 caller concerns or future work. The Python model boundary is trusted code, not a
 security sandbox. [Tests](../../tests/README.md) map claims to supporting evidence.
+
+## Sequential predictive checks
+
+`sequential.run_sequential_checks(*, dataset, model, issued_at, output_directory, snapshot_id=None, tag=None, store="data/versioned", experiment=None) -> Path` freezes provider-supplied observation laws before scoring. `plot_sequential_checks(directory) -> tuple[Path, ...]` reads saved results. Providers implement `predictive(request) -> dict`; `EvidencePlan` accepts `sequential_checks`. See [selection, moment and failure rules](../../docs/sequential-checks.md).
+
+## Simulation calibration
+
+`calibration.run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95) -> Path` uses provider `calibration_draw(count, generator)`, `calibration_fit(request, truth, level)` and `calibration_parameters`. `plot_calibration(directory) -> Path` reads saved records. The CDF-based workflow runs explicitly outside historical experiments. See [semantics and failure rules](../../docs/calibration.md).
+
+## Joint local-level variances
+
+`local_level_joint_variance.LocalLevelJointVariance` has Gaussian initial-state and inverse-gamma V settings plus `evolution_variances=(0,.01,.1,1)` and optional positive `evolution_weights` (uniform by default). It supplies `prior`, `posterior`, `fit`, `forecast`, `predictive_distribution`, `from_configuration` and sequential evidence. `JointVariancePosterior` integrates conditional scalar fits and exposes V CDF/PPF, W mass/quantiles, state moments, predictive mixtures and V/W covariance. `plot_joint_variances(run_directory)` reads saved fits. `dynamics_study.run_dynamics_study` compares caller-supplied W settings on controlled matched fixtures; plotting is explicit in Python. See [the full contract](../../docs/joint-variance.md).
+
+## Joint generative evidence
+
+`JointLevelEvidence` now implements `predictive_checks`, `prior_influence` and `sequential_checks`. `ReplicatedDataset.evolution_variance` is optional for compatibility and required by joint provider metadata. `StateMixture` supplies CDF/generalized quantiles for Gaussian states with genuine zero-variance atoms. Prior summaries add categorical W mass/quantiles/covariance; saved presentation metadata enables a third prior chart. See [field meanings and commands](../../docs/joint-evidence.md).
+
+## Discrete and mixed calibration
+
+The joint provider now supports `calibration`. It excludes fixed parameters and returns left/inclusive CDF bounds and actual closed-interval mass. `calibration_transform(item, *, seed, trial, parameter, interval_level)` randomizes only genuine jumps using independent parameter-labelled streams. Shared summaries retain randomized counts/mass and all failure records. Continuous CDF values and dataset seeds are unchanged. See [the contract and limits](../../docs/mixed-calibration.md).

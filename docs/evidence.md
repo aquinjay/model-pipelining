@@ -23,7 +23,7 @@ experiment = ExperimentSpec(evidence=EvidencePlan(
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `required_workflows` | `()` | Explicitly requested separate workflows; supported names are `predictive_checks` and `prior_influence`, with no duplicates |
+| `required_workflows` | `()` | Explicitly requested separate workflows; supported names are `predictive_checks`, `prior_influence` and `sequential_checks`, with no duplicates |
 | `required_fit_checks` | `()` | Named checks that must pass at every primary-model forecast origin, in addition to model-required checks |
 | `replications` | `1000` | Positive number of independent prior and posterior datasets for predictive checks |
 | `seed` | `0` | Integer in `[0, 2**32)` for predictive simulations |
@@ -155,10 +155,12 @@ inference semantics, helper sources, fields and plot interpretation. Plotting
 reads that saved metadata and numerical artifacts without instantiating a model.
 The two earlier artifact kinds retain explicit legacy presentation support.
 
-The existing providers are `NormalMeanVariance` with `mcmc=None` and
-`LocalLevelVariance`. Unsupported models continue to forecast through their
+The existing historical-evidence providers are `NormalMeanVariance` with
+`mcmc=None`, `LocalLevelVariance`, and [the categorical-W joint model](joint-evidence.md). Unsupported models continue to forecast through their
 existing capabilities; requiring unavailable separate evidence fails visibly.
 This bounded interface preserves the existing mean/variance/state records. It
 is not a universal parameter schema, configurable arbitrary-stage dispatcher,
 sampler registry, exploratory override policy or release framework. Further
 extensions should follow a concrete model/evidence need.
+
+[Sequential checks](sequential-checks.md) also implement a required development workflow; their predictive laws are frozen before scoring and use full predictive CDFs.

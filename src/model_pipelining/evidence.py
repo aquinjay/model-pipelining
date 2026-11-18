@@ -23,6 +23,7 @@ class ReplicatedDataset:
     values: tuple[float, ...]
     initial_level: float | None = None
     latent_levels: tuple[float, ...] = ()
+    evolution_variance: float | None = None
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ class EvidenceMetadata:
     predictive_scope: dict
     influence_scope: dict
     presentation: dict
-    workflows: tuple[str, ...] = ("predictive_checks", "prior_influence")
+    workflows: tuple[str, ...] = ("predictive_checks", "prior_influence", "sequential_checks", "calibration")
     parameter_fields: tuple[str, ...] = ("mean", "observation_variance")
     latent_paths: bool = False
     integration_checks: bool = False
@@ -61,6 +62,8 @@ class EvidenceProvider(Protocol):
 
     def validate_scenarios(self, models: tuple) -> None: ...
 
+    def predictive(self, request: ForecastRequest) -> dict: ...
+
 
 def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     factory = getattr(model, "evidence_provider", None)
@@ -75,14 +78,19 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     if workflow not in metadata.workflows:
         raise ValueError(f"Model does not supply {workflow} evidence")
     if (not isinstance(metadata.workflows, tuple)
-            or any(name not in ("predictive_checks", "prior_influence") for name in metadata.workflows)
+            or any(name not in ("predictive_checks", "prior_influence", "sequential_checks", "calibration") for name in metadata.workflows)
             or len(set(metadata.workflows)) != len(metadata.workflows)):
         raise ValueError("Malformed evidence workflow capabilities")
+    if workflow == "sequential_checks" and not callable(getattr(provider, "predictive", None)):
+        raise ValueError("Model does not supply sequential predictive distributions")
+    if workflow == "calibration" and any(not callable(getattr(provider, name, None))
+                                        for name in ("calibration_draw", "calibration_fit")):
+        raise ValueError("Model does not supply calibration calculations")
     if (not isinstance(metadata.implementation_files, tuple)
             or any(not isinstance(path, Path) for path in metadata.implementation_files)
             or not isinstance(metadata.predictive_scope, dict) or not isinstance(metadata.influence_scope, dict)):
         raise ValueError("Malformed evidence source/scope metadata")
-    allowed_parameters = {"mean", "observation_variance", "initial_level"}
+    allowed_parameters = {"mean", "observation_variance", "initial_level", "evolution_variance"}
     if (not isinstance(metadata.parameter_fields, tuple)
             or not {"mean", "observation_variance"}.issubset(metadata.parameter_fields)
             or len(set(metadata.parameter_fields)) != len(metadata.parameter_fields)
@@ -94,7 +102,7 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     return provider
 
 
-def validate_replications(result, *, observation_count, replications, seed, kind, latent_paths):
+def validate_replications(result, *, observation_count, replications, seed, kind, latent_paths, parameters=()):
     """Reject omitted, duplicated, malformed or nonfinite provider output."""
     if (not isinstance(result, PredictiveReplications) or result.kind != kind or result.seed != seed
             or result.requested_replications != replications or result.observation_count != observation_count
@@ -111,6 +119,8 @@ def validate_replications(result, *, observation_count, replications, seed, kind
                 or not finite(item.observation_variance) or item.observation_variance <= 0
                 or any(not finite(value) for value in item.values)
                 or any(value is not None and not finite(value) for value in (item.mean, item.initial_level))
+                or (item.evolution_variance is not None and (not finite(item.evolution_variance) or item.evolution_variance < 0))
+                or ("evolution_variance" in parameters and item.evolution_variance is None)
                 or (latent_paths and (len(item.latent_levels) != observation_count or item.initial_level is None))
                 or any(not finite(value) for value in item.latent_levels)):
             raise ValueError("Malformed replicated dataset from evidence provider")

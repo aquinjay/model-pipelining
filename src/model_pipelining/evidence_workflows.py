@@ -9,10 +9,12 @@ from model_pipelining.experiments import ExperimentSpec, select_development_hist
 from model_pipelining.inference import assess_checks
 from model_pipelining.predictive_checks import run_predictive_checks, plot_predictive_checks
 from model_pipelining.prior_influence import run_prior_influence, plot_prior_influence
+from model_pipelining.sequential import run_sequential_checks, plot_sequential_checks
 
 
-_MANIFESTS = {"predictive_checks": "predictive_checks.json", "prior_influence": "prior_influence.json"}
+_MANIFESTS = {"predictive_checks": "predictive_checks.json", "prior_influence": "prior_influence.json", "sequential_checks": "sequential_checks.json"}
 _REQUIRED_CHECKS = {
+    "sequential_checks": ("all_sequential_predictions_and_scores",),
     "predictive_checks": ("prior_simulation_and_statistics", "posterior_simulation_and_statistics",
                           "observed_statistics_computed"),
     "prior_influence": ("development_history_selection", "all_requested_prior_and_posterior_updates"),
@@ -59,6 +61,8 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
             if workflow == "predictive_checks":
                 run_predictive_checks(**common, model=model, replications=experiment.evidence.replications,
                                       seed=experiment.evidence.seed)
+            elif workflow == "sequential_checks":
+                run_sequential_checks(**common, model=model)
             else:
                 if not scenarios:
                     raise ValueError("Required prior_influence needs explicit named scenarios")
@@ -75,7 +79,7 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
             passed, requirements = assess_checks(checks, required_names=_REQUIRED_CHECKS[workflow])
             row["check_requirements"] = requirements
             identity = child.get("context", {})
-            child_configuration = (child.get("configuration") if workflow == "predictive_checks"
+            child_configuration = (child.get("configuration") if workflow in ("predictive_checks", "sequential_checks")
                                    else child.get("configurations", {}).get("reference"))
             if (identity.get("input", {}).get("dataset") != dataset
                     or identity.get("input", {}).get("snapshot_id") != context["input"]["snapshot_id"]
@@ -124,6 +128,7 @@ def plot_experiment_evidence(evidence_directory: str | Path) -> tuple[Path, ...]
         child = json.loads(child_path.read_text(encoding="utf-8"))
         if child.get("status") not in ("completed", "failed"):
             continue
-        plot = plot_predictive_checks if workflow == "predictive_checks" else plot_prior_influence
+        plot = {"predictive_checks": plot_predictive_checks, "prior_influence": plot_prior_influence,
+                "sequential_checks": plot_sequential_checks}[workflow]
         outputs.extend(plot(directory / workflow))
     return tuple(outputs)

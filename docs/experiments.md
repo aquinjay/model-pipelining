@@ -241,3 +241,7 @@ saved model configuration, interval levels, and matching source/environment.
 Numerical artifacts repeat; timestamps differ. The source/hash records identify
 settings and code, not authenticate or restore them. Input data, run evidence,
 and matching locked environment must be retained explicitly.
+
+## Sequential evidence requirement
+
+`EvidencePlan.required_workflows` also accepts `sequential_checks`. It uses historical task issuance/horizon/minimum-history settings and an explicit development cutoff. [Predictions are frozen before cutoff-eligible actual selection](sequential-checks.md); backtests do not start this workflow automatically.

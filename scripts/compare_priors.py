@@ -8,13 +8,14 @@ from pathlib import Path
 
 from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.normal_mean_variance import NormalMeanVariance
+from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
 from model_pipelining.local_level_variance import LocalLevelVariance
 from model_pipelining.prior_influence import plot_prior_influence, run_prior_influence
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", choices=("normal-mean-variance", "local-level-variance"), default="normal-mean-variance")
+    parser.add_argument("--model", choices=("normal-mean-variance", "local-level-variance", "local-level-joint-variance"), default="normal-mean-variance")
     parser.add_argument("--dataset", required=True)
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--snapshot-id")
@@ -32,9 +33,12 @@ def main() -> int:
             or any(not isinstance(value, dict) for value in config["scenarios"].values())):
         raise ValueError("Config must contain reference settings and named scenario override dictionaries")
     kind = options.pop("model")
-    reference = (LocalLevelVariance.from_configuration(config["reference"]) if kind == "local-level-variance"
-                 else NormalMeanVariance(**config["reference"]))
-    scenarios = {name: replace(reference, **overrides) for name, overrides in config["scenarios"].items()}
+    reference = (LocalLevelJointVariance.from_configuration(config["reference"]) if kind == "local-level-joint-variance" else
+                 LocalLevelVariance.from_configuration(config["reference"]) if kind == "local-level-variance" else
+                 NormalMeanVariance(**config["reference"]))
+    restore=getattr(type(reference),"from_configuration",None)
+    scenarios = {name: restore({**reference.configuration,**overrides}) if restore else replace(reference,**overrides)
+                 for name,overrides in config["scenarios"].items()}
     experiment = options.pop("experiment")
     options["issued_at"] = options.pop("as_of")
     output = run_prior_influence(**options, reference=reference, scenarios=scenarios,

@@ -270,3 +270,8 @@ or approval decisions; human review remains pending.
 target dates, actuals, and complete runs. It compares uncertainty only where
 **both** saved runs supply the same kind and level. A point-only baseline has
 no uncertainty comparison; individual available bands can still be displayed.
+
+Joint state summaries can include known-state probability atoms. Their credible
+intervals use [generalized state quantiles](joint-evidence.md), separately from
+observation HPD regions. Positive observation variance keeps these observation
+forecasts continuous; no density-based HPD claim is made for atomic states.

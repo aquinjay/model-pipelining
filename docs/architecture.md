@@ -304,3 +304,23 @@ suites should run at a documented model/configuration scope, not automatically
 inside every forecast origin. A future iteration record should preserve parent
 runs, the motivating discrepancy, changed assumptions, and review decisions.
 These records and configurable release rules are not implemented today.
+
+## Sequential criticism with learned variance
+
+The optional provider `predictive(request)` supplies a serializable distribution before observing a target. Shared [sequential checks](sequential-checks.md) own release-aware scheduling, freezing, cutoff-eligible actual selection, PIT/errors and saved-only reporting. The explicit experiment evidence runner can require the workflow.
+
+## Model-level simulation calibration
+
+Provider-owned generators and marginal posterior summaries support [data-free continuous-CDF calibration](calibration.md). Shared execution freezes truth/data, retains every failed trial, and reports finite-simulation uncertainty separately from quadrature precision. It runs outside historical forecast origins and does not approve a model or validate an MCMC sampler.
+
+## Categorical evolution-variance learning
+
+[The joint adapter](joint-variance.md) enumerates an explicit discrete W prior and delegates each continuous V/state calculation to the scalar adapter. Posterior support probabilities use marginal likelihoods. Shared forecasting and sequential evidence remain model-independent. Discrete support is a modeling assumption, not continuous-prior quadrature or automatic model selection.
+
+## Joint generative evidence
+
+The categorical-W provider now supplies joint W/V/initial-state simulation and summaries to the existing workflows. Shared records carry an optional W parameter and categorical prior fields. Gaussian/point state quantiles preserve known-state atoms, while observation distributions stay continuous. Saved metadata enables evolution-prior charts. See [the contract](joint-evidence.md).
+
+## Discrete/mixed model calibration
+
+Providers now return left/inclusive posterior CDF bounds and actual interval mass for categorical or mixed distributions. Shared [calibration transforms](mixed-calibration.md) randomize within real jumps using independent labelled streams, preserving continuous results and prior-data seeds. Fixed parameters are excluded and failed numerical inference remains visible. This supplements independent numerical and joint-dependence checks, not a release decision.
