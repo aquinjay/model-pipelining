@@ -27,6 +27,13 @@ uncertainty. All results remain conditional on the fixed initial prior and
 variance settings; uncertainty about the variance parameters is not integrated out. No settings are
 tuned to obtain particular coverage or score values.
 
+The separate [unknown-mean model](parameter-uncertainty.md) instead learns a
+constant parameter: its observation predictive variance is known observation
+variance plus posterior mean-parameter variance. This exact marginalization
+includes parameter uncertainty; its saved parameter distribution remains
+separate fit evidence. Optional MCMC audits retain finite-computation MCSEs,
+which do not widen forecast intervals or substitute for predictive spread.
+
 ## Read a quantile or region
 
 A **quantile** is a value associated with a probability. A model's 0.9 quantile
@@ -62,7 +69,7 @@ For Bayesian forecasts, this is a highest **posterior predictive** density regio
 See [Hyndman's highest-density-region paper](https://robjhyndman.com/papers/hdrgraph.pdf).
 
 For a symmetric unimodal normal distribution, highest-density and central
-equal-tail bounds coincide. `LocalLevel` computes its regions from that known
+equal-tail bounds coincide. `LocalLevel` and `NormalMean` compute regions from their known
 normal law. Shared code still records the methods separately: other adapters
 must compute their own highest-density regions, not relabel central quantiles.
 Highest-density regions cannot generally be recovered from a few quantiles.

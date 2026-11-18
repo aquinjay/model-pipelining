@@ -43,6 +43,13 @@ not interpret or invent release timestamps. Calendar gaps remain rejected.
 Acquisition/registration times do not substitute for release histories. The
 default sample files remain immediate, unrevised daily fixtures.
 
+The [unknown-mean adapter](../docs/parameter-uncertainty.md) uses these same
+preserved inputs while learning a constant mean and integrating its uncertainty.
+Its optional MCMC audit saves paired parameter/future-observation draws under
+the run, not as new acquired data. The mean-shift series violates its constant-
+mean assumption; sampler agreement with exact inference does not approve that
+assumption. Generator settings are never read by the adapter.
+
 ## Copy and preserve an input
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:

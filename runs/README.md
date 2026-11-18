@@ -38,6 +38,9 @@ experiments and history hashes when present; legacy/new metadata may differ.
 |---|---|---|
 | `manifest.json` | Every started run | Configuration/provenance and execution status |
 | `case_schedule.csv` | Before any model calls | Candidate targets, issuance, available-history counts, and selection/exclusion reasons |
+| `fit_index.csv` | Adapters declaring fit evidence | Every case's fit directory/history hash, acceptance or error; written before actual selection |
+| `fits/NNNNNN/fit.json` | Successful evidence construction, including failed computation | Fit format 1; runner-owned identity, posterior, settings, checks, diagnostics, sampler provenance |
+| `fits/NNNNNN/draws.csv` | Fits with sampler draws | Chain/draw dimensions, separate warmup, original/transformed parameter, paired future observation, log target, acceptance |
 | `predictions.csv` | After forecast generation | Issuance, training selection/end/history hash, target time, mean, status/error; no actuals |
 | `benchmark_predictions.csv` | Declared benchmarks | Same cases/histories with benchmark names and frozen point predictions/failures |
 | `quantiles.csv` | Quantile-capable adapter | Target, probability, value, status/error |
@@ -50,7 +53,7 @@ experiments and history hashes when present; legacy/new metadata may differ.
 | `checks.json` | At normal completion, including failed cases | Fixed required/optional check outcomes |
 | `review.json` | At normal completion, including failed cases | Pending decision and limitations |
 
-Point, benchmark, quantile, and highest-density forecast files are written/closed before
+Fit evidence and point, benchmark, quantile, and highest-density forecast files are written/closed before
 actuals are joined for scoring. Failed forecasts retain required placeholder
 rows. One case can create several rows: for example, 170 cases at two region
 levels produce 340 region-evaluation rows. A disconnected region can require
@@ -66,7 +69,8 @@ defines exact region/quantile validation and scoring rules.
 
 | File | Who creates it | Meaning |
 |---|---|---|
-| `forecast.png` | Explicit `plot_run` call; both run scripts call it automatically | Saved means/actuals and the widest available HPD region by default |
+| `forecast.png` | Explicit `plot_run` call; all three run scripts call it automatically | Saved means/actuals and the widest available HPD region by default |
+| `fits/NNNNNN/trace.png` | Explicit `plot_fit` or normal-mean CLI trace flag | Saved audit traces/densities against exact references, with warmup separation |
 | `prior_predictive.csv` | Local-level script only | One 200-step simulated latent-level/observation trajectory before conditioning on data |
 | `prior_predictive.json` | Local-level script only | Seed, count, Python version, fixed settings, and pending prior review |
 | `comparison.json` | Explicit `compare_runs` call, in a new comparison directory | Sources, model settings/scores, common cases, and applicable uncertainty comparisons |
@@ -90,6 +94,14 @@ Uncertainty is compared only at mutually supplied kinds and levels. No winner
 is selected automatically, and source files are not altered. Paths in the
 comparison summary identify local runs; keep those source folders when exporting
 important comparisons.
+
+`NormalMean` saves exact posterior/predictive evidence for every fit. Its optional
+MCMC audit retains completed/partial chains, diagnostics and reference tolerances;
+failed required criteria reject that forecast and fail the run. Exact-only fits
+have inapplicable MCMC checks and no invented chains. Audited forecasts also use
+exact integration. A malformed/missing fit leaves an error in the index rather
+than a fabricated fit directory. Persistence errors propagate and can leave a
+`running` manifest. See [fit fields, interpretation and replay](../docs/parameter-uncertainty.md).
 
 The [experiment guide](../docs/experiments.md) explains available release
 selection, actual-vintage choices, required benchmarks, and separate development/

@@ -36,6 +36,7 @@ explains which checks support each implementation claim.
 | Forecasting task | Versioned target/timing/evaluation specifications; daily UTC, expanding available history, next-day forecasts and 30 observations by default |
 | Point models/benchmarks | Training mean and last available value; optional required benchmarks on identical histories/cases |
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
+| Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
 | Shared execution | Validate inputs/outputs, freeze predictions before scoring, retain failed cases, and save configuration and checks |
 | Reporting | Read saved results to draw forecasts or compare complete runs on matching cases; prefer HPD regions when available |
 | Model diagnostics | Explicit local-level prior/noise influence paths and sequential criticism; human interpretation stays pending |
@@ -62,7 +63,7 @@ Choose a forecasting question and its timing assumptions
 You obtain/register the input and choose model settings explicitly. Starting a
 run does not fetch data, register a file, or move a tag. The runner verifies the
 selected snapshot, selects eligible histories, executes the model, and saves
-results automatically. Library callers invoke reporting separately; the two
+results automatically. Library callers invoke reporting separately; the three
 run scripts also draw their charts automatically. The local-level script adds
 a seeded prior simulation for human review.
 
@@ -71,8 +72,11 @@ descriptions, columns/units, issuance, availability/revisions, calendar behavior
 benchmarks, and evaluation boundaries independently of the adapter. The runner
 saves the expanded plan and case exclusions, selects as-of histories, and runs
 declared benchmarks automatically. Final evaluation requires a separate explicit
-invocation. Application choice is deferred; the next planned modeling work is
-[parameter uncertainty and MCMC](docs/parameter-uncertainty.md).
+invocation. Application choice is deferred. [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md)
+now supplies an exact unknown-mean adapter and an optional per-fit sampler audit.
+Audited forecasts still use exact integration; failed required diagnostics fail
+the case and run while retaining evidence. Unknown local-level noise variances
+and forecasts from intractable sampled distributions remain future work.
 
 The separate [diagnostic workflow](docs/diagnostics.md) compares caller-chosen
 settings from the first observation and shows their influence on updating and
@@ -101,7 +105,7 @@ explains how to read both execution and review status.
 | Read the completed computational workflow review | [Workflow review](docs/workflow-review.md) |
 | Inspect assumption influence and sequential model discrepancies | [Local-level diagnostics](docs/diagnostics.md) |
 | Declare targets, timing/vintages, benchmarks, and evaluation periods | [Reusable experiments](docs/experiments.md) |
-| See the next Bayesian modeling detour | [Parameter uncertainty and MCMC plan](docs/parameter-uncertainty.md) |
+| Learn parameters and inspect exact-reference sampler evidence | [Parameter uncertainty and MCMC](docs/parameter-uncertainty.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 
@@ -118,7 +122,7 @@ Use an isolated environment named `.venv`. The setup supports standard Python to
 | Supported interpreter | Standard CPython 3.14 (`>=3.14,<3.15`) |
 | Recommended development patch | 3.14.10, recorded in `.python-version` |
 | Project version | 0.1.0, recorded in `pyproject.toml`; the API is still being designed |
-| Runtime dependencies | pandas, openpyxl, and matplotlib; exact versions in `uv.lock` and `requirements.txt` |
+| Runtime dependencies | pandas, openpyxl, matplotlib, NumPy, SciPy, emcee, and ArviZ; exact versions in `uv.lock` and `requirements.txt` |
 | Test harness | Standard-library unittest |
 | Local environment | `.venv/`, excluded from Git |
 
@@ -126,7 +130,7 @@ Create an isolated environment using either setup path below. The pinned environ
 
 `pyproject.toml` declares dependencies. `uv.lock` records the resolved versions. `requirements.txt` is a generated, pip-compatible export of that resolution, including development groups when present. Commit all three files and `.python-version`; keep the environment, caches, credentials, local data, and generated run outputs out of Git.
 
-Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. pandas and matplotlib bring their numerical dependencies; additional model-fitting, notebook, and formatting tools remain unselected.
+Python, project, and dependency versions are separate choices. Update the interpreter pin deliberately when adopting a newer patch. Adding a dependency requires updating the declaration, lockfile, and pip export together. NumPy/SciPy, emcee, and ArviZ support the optional sampler audit; the analytic models do not require sampling. Notebook and formatting tools remain unselected. See [cache setup for restricted homes](docs/parameter-uncertainty.md#run-exact-forecasts-or-request-an-audit).
 
 ### Standard Python setup: venv and pip
 

@@ -12,6 +12,7 @@ import platform
 from statistics import mean
 
 from model_pipelining.experiments import ExperimentSpec, ForecastTask, plan_cases, read_task_data, select_actuals
+from model_pipelining.inference import save_fit_evidence
 from model_pipelining.models import ForecastRequest, Forecaster, LastValue, Observation, TrainingMean
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
@@ -118,6 +119,11 @@ def run_backtest(
     selected_model = TrainingMean() if model is None else model
     supports_quantiles = getattr(selected_model, "supports_quantiles", False)
     supports_highest_density = getattr(selected_model, "supports_highest_density", False)
+    supports_fit_evidence = getattr(selected_model, "supports_fit_evidence", False)
+    if type(supports_fit_evidence) is not bool:
+        raise ValueError("model.supports_fit_evidence must be a boolean")
+    if supports_fit_evidence and not callable(getattr(selected_model, "fit", None)):
+        raise ValueError("Fit-evidence models must implement fit(request)")
     if type(supports_quantiles) is not bool:
         raise ValueError("model.supports_quantiles must be a boolean")
     if type(supports_highest_density) is not bool:
@@ -132,7 +138,9 @@ def run_backtest(
     # Round-trip before execution so a model cannot later mutate saved settings.
     configuration = json.loads(json.dumps(configuration, allow_nan=False))
     source_files = [Path(__file__), Path(__file__).with_name("models.py"),
-                    Path(__file__).with_name("uncertainty.py"), Path(__file__).with_name("experiments.py")]
+                    Path(__file__).with_name("uncertainty.py"), Path(__file__).with_name("experiments.py"),
+                    Path(__file__).with_name("inference.py")]
+    source_files.extend(getattr(selected_model, "implementation_files", ()))
     model_source = inspect.getsourcefile(type(selected_model))
     if model_source is not None:
         source_files.append(Path(model_source))
@@ -161,6 +169,7 @@ def run_backtest(
         "model": {"name": selected_model.name, "configuration": configuration,
                   "supports_quantiles": supports_quantiles,
                   "supports_highest_density": supports_highest_density,
+                  "supports_fit_evidence": supports_fit_evidence,
                   "class": f"{type(selected_model).__module__}.{type(selected_model).__qualname__}"},
         "evaluation": {"interval_levels": list(levels), "quantile_levels": list(probabilities),
                        "highest_density_levels": list(density_levels),
@@ -185,6 +194,7 @@ def run_backtest(
     benchmark_models = {name: {"training-mean": TrainingMean, "last-value": LastValue}[name]() for name in experiment.evaluation.benchmarks}
     benchmark_predictions = []
     history_checks_passed = True
+    fit_rows = []
     for case in cases:
         history = case.history
         issued_at, target_time = case.issued_at, case.target_time
@@ -198,6 +208,7 @@ def run_backtest(
             "target_time": target_time.isoformat(), "prediction": None,
             "status": "failed", "error": None,
         }
+        saving_fit = False
         try:
             if (
                 len(history) < task.minimum_history
@@ -208,14 +219,40 @@ def run_backtest(
             ):
                 history_checks_passed = False
                 raise ValueError("Training history or target time violates the forecast task")
-            model_output = selected_model.forecast(ForecastRequest(history, issued_at, target_time, probabilities, density_levels))
+            request = ForecastRequest(history, issued_at, target_time, probabilities, density_levels)
+            if supports_fit_evidence:
+                fitted = selected_model.fit(request)
+                relative_fit = f"fits/{case.origin_index:06d}"
+                saving_fit = True
+                fit_passed = save_fit_evidence(fitted, output / relative_fit, identity={
+                    "dataset": dataset, "snapshot_id": selected_id,
+                    "origin_index": case.origin_index, "issued_at": row["issued_at"],
+                    "target_time": row["target_time"], "history_sha256": case.history_sha256,
+                    "training_count": len(history),
+                })
+                saving_fit = False
+                if not fit_passed:
+                    raise ValueError("Required fit checks failed; inspect saved per-origin fit evidence")
+                model_output = fitted.forecast
+            else:
+                model_output = selected_model.forecast(request)
             forecast = validate_forecast(model_output, probabilities, density_levels)
             row.update(prediction=forecast.mean, status="passed")
             quantile_outputs[row["target_time"]] = {item.probability: item.value for item in forecast.quantiles}
             density_outputs[row["target_time"]] = forecast.highest_density_regions
         except Exception as error:
+            if saving_fit and isinstance(error, OSError):
+                # Persisting runner-owned evidence must succeed; model-originated
+                # exceptions remain ordinary failed cases as for legacy adapters.
+                raise
             row["error"] = f"{type(error).__name__}: {error}"
         predictions.append(row)
+        if supports_fit_evidence:
+            relative_fit = f"fits/{case.origin_index:06d}"
+            fit_rows.append({"origin_index": case.origin_index, "target_time": row["target_time"],
+                             "history_sha256": case.history_sha256,
+                             "fit_directory": relative_fit if (output / relative_fit / "fit.json").is_file() else None,
+                             "status": row["status"], "error": row["error"]})
         for name, benchmark in benchmark_models.items():
             benchmark_row = {**row, "benchmark": name, "prediction": None, "status": "failed", "error": None}
             try:
@@ -251,6 +288,8 @@ def run_backtest(
         _write_csv(output / "highest_density.csv", density_predictions)
     if benchmark_models:
         _write_csv(output / "benchmark_predictions.csv", benchmark_predictions)
+    if supports_fit_evidence:
+        _write_csv(output / "fit_index.csv", fit_rows)
     actuals = select_actuals(versions, task)
     evaluations = _evaluate_points(predictions, actuals)
     _write_csv(output / "evaluation.csv", evaluations)
@@ -310,6 +349,9 @@ def run_backtest(
     }
     _write_json(output / "scores.json", scores)
     checks = [
+        {"name": "required_fit_evidence_and_checks", "required": supports_fit_evidence,
+         "status": ("passed" if all(item["status"] == "passed" for item in fit_rows) else "failed")
+                   if supports_fit_evidence else "not_applicable"},
         {"name": "input_schema_and_daily_calendar", "required": True, "status": "passed"},
         {"name": "eligible_history_and_target_alignment", "required": True,
          "status": "passed" if history_checks_passed else "failed"},

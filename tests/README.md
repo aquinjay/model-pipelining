@@ -7,10 +7,12 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **146 tests**. They use temporary fixtures/stores rather than
+There are currently **174 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
-NumPy, already installed through pandas, supplies an independent batch Gaussian
-calculation for the model tests.
+NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
+numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
+restricted home, use the [writable cache setup](../docs/parameter-uncertainty.md#run-exact-forecasts-or-request-an-audit)
+before running sampler tests.
 
 ## Test map
 
@@ -24,6 +26,8 @@ calculation for the model tests.
 | [test_uncertainty.py](test_uncertainty.py) | 21 | Observation predictive variance, quantile/HPD semantics, known scores, disconnected sets, capability failures, freezing/replay, old-artifact compatibility |
 | [test_diagnostics.py](test_diagnostics.py) | 12 | Independent initial-mean influence, strong prior completion, prior/noise distinction, sequential errors, isolation/replay, saved failures, explicit missing correlation, charts without models, CLI inheritance |
 | [test_experiments.py](test_experiments.py) | 16 | Named targets, release/revision isolation, actual vintages, available-history counts, disjoint target roles, benchmark freezing/failures, horizons, replay/history fingerprints, legacy version 2, both CLIs |
+| [test_normal_mean.py](test_normal_mean.py) | 18 | Hand posterior, independent raw-density/predictive quadrature, HPD mass/density, strong prior influence, numerical extremes, fit identity/freezing/replay/failures, delayed releases/final roles, exact/audit CLI |
+| [test_sampling.py](test_sampling.py) | 10 | Independent-chain posterior/predictive agreement, target-density ratios, warmup/acceptance, random-state isolation, seed/replay/order invariance, biased/stuck/missing diagnostics, partial failures, saved-only trace plotting |
 
 ## Data behavior checked in detail
 
@@ -117,3 +121,8 @@ are not a full calibration study. Better model scores, faster reactions, and
 particular empirical coverage rates are not implementation acceptance thresholds.
 A configurable check plan and automatic specialized diagnostic requirements
 remain future work; human interpretation remains separate from execution status.
+The optional unknown-mean audit does implement explicit saved computation
+criteria for its sampler, including reference tolerances based on MCSE. Passing
+them does not validate the constant-mean assumption or provide formal simulation-
+based calibration. Exact centering/scaling deliberately assists this tractable
+calibration exercise; it is not a difficult-posterior benchmark.

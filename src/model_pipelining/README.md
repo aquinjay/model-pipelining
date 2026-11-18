@@ -19,6 +19,9 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [models.py](models.py) | Shared requests/results, capabilities, training mean, and last-value baseline |
 | [experiments.py](experiments.py) | Immutable versioned task/evaluation specs, release parsing, as-of case planning, and scoring vintage selection |
 | [local_level.py](local_level.py) | Gaussian local-level adapter, filtering, prior simulation |
+| [normal_mean.py](normal_mean.py) | Unknown constant mean, exact posterior/predictive integration, optional sampler audit |
+| [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
+| [sampling.py](sampling.py) | Independent emcee Metropolis chains, ArviZ diagnostics, exact-reference audits |
 | [diagnostics.py](diagnostics.py) | Explicit assumption influence and sequential criticism; plots from saved diagnostic paths |
 | [uncertainty.py](uncertainty.py) | Shared output validation and compatible uncertainty evaluation |
 | [backtest.py](backtest.py) | Daily history selection, model execution, frozen forecasts, scoring, checks |
@@ -210,7 +213,7 @@ Read `manifest.json.status` and `checks.json` before interpreting results. Point
 fail independently; a declared benchmark failure also fails the run. The [walkthrough](../../docs/forecasting.md#read-the-results)
 explains status and [run-file reference](../../runs/README.md) lists artifacts.
 The library does not acquire/register/tag data, simulate priors, or draw charts
-inside `run_backtest`. The two run scripts call reporting automatically; the
+inside `run_backtest`. The three run scripts call reporting automatically; the
 local-level script also handles prior simulation/files.
 
 `plot_run` reads saved evidence and returns the chart path. `"auto"` prefers the
@@ -304,6 +307,67 @@ include `predictive_distribution(request) -> NormalDist`,
 `simulate_prior(*, count, seed=0) -> tuple[PriorDraw, ...]`.
 [The model guide](../../docs/local-level.md#library-interface-and-diagnostics)
 defines the diagnostic fields, timing, and separate simulation/reporting calls.
+
+## Unknown-mean model and optional fit evidence
+
+Import `NormalMean` and `MeanPosterior` from `model_pipelining.normal_mean`,
+`MCMCSettings` from `model_pipelining.sampling`, and `FitEvidence`,
+`FittedForecast` from `model_pipelining.inference`.
+
+```text
+NormalMean(*, prior_mean=0, prior_variance=100, observation_variance=1, mcmc=None)
+NormalMean.posterior(request) -> MeanPosterior
+NormalMean.predictive_distribution(request) -> NormalDist
+NormalMean.fit(request) -> FittedForecast
+NormalMean.forecast(request) -> Forecast
+plot_fit(run_directory, *, origin_index) -> Path
+```
+
+`MeanPosterior` fields are `mean`, `variance`, `prior_mean_weight`, and
+`observation_variance`; its `predictive_variance` property adds observation and
+parameter variances. Both configured variances must be positive. Unlike the
+dynamic local-level model, this exchangeable constant-mean model accepts gapped
+eligible histories, delayed issuance, and any future target. The runner still
+enforces experiment coordinates. Forecasts always use exact integration.
+
+`mcmc=MCMCSettings(...)` explicitly audits each fit; omitting it is exact-only.
+Fields/defaults and all computation criteria are in [the model and sampler
+guide](../../docs/parameter-uncertainty.md#computation-criteria-and-failures).
+`configuration` saves the nested settings as JSON; reconstruct that nested
+dictionary with `MCMCSettings(**settings)` before constructing the model.
+
+`FittedForecast` contains `forecast` and `evidence`. `FitEvidence` contains
+`metadata: dict`, `checks: tuple[dict, ...]`, `diagnostics: tuple[dict, ...]=()`,
+and `draws: tuple[dict, ...]=()`. These frozen records contain trusted adapter
+data; their nested dictionaries are not deeply immutable. Checks have unique
+nonblank `name`, boolean `required`, and `status` in `passed/failed/not_applicable`.
+At least one required check is needed; a required check cannot be inapplicable.
+All evidence must serialize as finite JSON; missing diagnostics use null plus
+a failed check. Draw rows must share one CSV schema.
+
+The optional boolean `supports_fit_evidence=True` makes the runner call
+`fit(request)` instead of `forecast(request)`. It saves runner-owned permanent
+input/history/issuance/target identity with evidence before accepting outputs.
+Required failed checks reject the candidate and fail that case while later cases
+continue. A malformed/missing result fails visibly. Per-case evidence/index files
+are frozen before actual-vintage selection. `implementation_files` can list
+helper `Path`s for source fingerprints; `NormalMean` includes its sampler helper
+when auditing. Existing adapters need neither optional capability.
+
+For direct callers, `fit` retains failed audit evidence without persisting it;
+`forecast` raises on failed required audits. `save_fit_evidence(result, directory,
+*, identity) -> bool` validates/persists records and returns required-check
+success; the runner invokes it automatically. Direct library callers choose
+whether to persist. Persistence errors propagate, leaving possible partial
+running output. This is one optional evidence boundary, not a configurable
+shared check-plan engine.
+
+`plot_fit` is imported from reporting and reads saved finished-run/fit files only.
+It creates `fits/NNNNNN/trace.png` with excluded warmup and exact parameter/
+predictive references. Exact-only fits have no trace. Existing charts are
+rejected; partial failed audit traces can be drawn when some draws were saved.
+The CLI requests this explicitly with `--plot-fit-origin`; it does not draw all
+fit traces automatically. See [run files](../../runs/README.md) for retention.
 
 ## Local-level diagnostics
 

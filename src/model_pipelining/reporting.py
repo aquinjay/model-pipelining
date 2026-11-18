@@ -5,11 +5,69 @@ from datetime import datetime
 import json
 import math
 from pathlib import Path
+from statistics import NormalDist
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from model_pipelining.uncertainty import interval_probabilities
+
+
+def plot_fit(run_directory: str | Path, *, origin_index: int) -> Path:
+    """Draw saved NormalMean audit traces/densities, including warmup separation.
+
+Reads finished run/fit evidence only; no fitting, input-store access, or sampler
+imports. A partial failed fit can be drawn if it retained some draws. Exact-only
+fits have no trace. Existing output is rejected.
+    """
+    if type(origin_index) is not int or origin_index < 0:
+        raise ValueError("origin_index must be a nonnegative integer")
+    _read_run(run_directory)
+    directory = Path(run_directory).expanduser() / "fits" / f"{origin_index:06d}"
+    summary = json.loads((directory / "fit.json").read_text(encoding="utf-8"))
+    if summary["format_version"] != 1:
+        raise ValueError("Unsupported fit format")
+    metadata = summary["metadata"]
+    if metadata.get("inference") != "analytic_with_mcmc_audit":
+        raise ValueError("This fit has no MCMC audit trace")
+    output = directory / "trace.png"
+    if output.exists():
+        raise FileExistsError(output)
+    with (directory / "draws.csv").open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    if not rows:
+        raise ValueError("This fit retained no draws")
+    warmup = metadata["sampler"]["settings"]["warmup"]
+    figure = Figure(figsize=(12, 7), constrained_layout=True)
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(2, 2)
+    for chain in sorted({int(row["chain"]) for row in rows}):
+        selected = [row for row in rows if int(row["chain"]) == chain]
+        for index, column in enumerate(("mu", "future_value")):
+            times = [int(row["draw"]) + (0 if row["warmup"] == "True" else warmup) for row in selected]
+            values = [float(row[column]) for row in selected]
+            if not all(math.isfinite(value) for value in values):
+                raise ValueError("Invalid saved draws")
+            axes[index, 0].plot(times, values, linewidth=0.5, alpha=0.65, label=f"chain {chain}")
+            retained = [float(row[column]) for row in selected if row["warmup"] == "False"]
+            if retained:
+                axes[index, 1].hist(retained, bins=40, density=True, histtype="step", alpha=0.7)
+    posterior = metadata["posterior"]
+    for index, (mean, variance, label) in enumerate((
+        (posterior["mean"], posterior["variance"], "mu (parameter)"),
+        (posterior["mean"], metadata["predictive_variance"], "future observation"),
+    )):
+        distribution = NormalDist(mean, math.sqrt(variance))
+        grid = [mean + math.sqrt(variance) * (-4 + i * 8 / 200) for i in range(201)]
+        axes[index, 1].plot(grid, [distribution.pdf(value) for value in grid], color="black", label="exact reference")
+        axes[index, 0].axvspan(0, warmup, alpha=0.1, color="grey", label="excluded warmup")
+        axes[index, 0].set(xlabel="iteration", ylabel=label)
+        axes[index, 1].set(xlabel=label, ylabel="retained-draw density")
+        axes[index, 0].legend(fontsize="small")
+        axes[index, 1].legend(fontsize="small")
+    figure.suptitle(f"Origin {origin_index}: {summary['status']} MCMC audit; forecasts use exact integration")
+    figure.savefig(output, dpi=150)
+    return output
 
 
 def _read_run(run_directory: str | Path) -> tuple[dict, dict, list[dict]]:
