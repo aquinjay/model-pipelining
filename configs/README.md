@@ -164,3 +164,5 @@ settings are saved and required failures reject a forecast; they do not tune
 model assumptions. See [methods, precision and commands](../docs/local-level-variance.md).
 
 Sequential checks reuse the reference settings in existing prior configurations. Select `scripts/check_sequential.py --config FILE` explicitly; add `sequential_checks` to an experiment evidence plan to require it. See [usage](../docs/sequential-checks.md).
+
+`scripts/calibrate_model.py` reuses reference settings from the prior JSON files. Trial count, observation count and seed are explicit CLI options, separate from historical experiment settings. See [calibration](../docs/calibration.md).

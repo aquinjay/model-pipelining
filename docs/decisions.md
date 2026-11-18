@@ -496,3 +496,7 @@ Use a dated entry with the question, decision, rationale, alternatives considere
 ## Sequential learned-variance diagnostics — 2026-11-18
 
 Task 1 extends criticism through provider-supplied serialized predictive laws. Predictions are written before scoring; historical issuance controls training releases and the development cutoff controls eligible scoring releases. Full mixture/Student-t CDFs supply PIT. Undefined variance is explicit; residual patterns have no approval threshold. Existing fixed-variance diagnostics remain readable. The workflow is explicitly invoked and can be experiment-required; its CLI plots automatically. Nine new tests exercise calculation and information boundaries. See [the contract](sequential-checks.md).
+
+## Continuous-CDF simulation calibration — 2026-11-18
+
+Task 2 uses repeated independent prior/data draws and marginal posterior CDFs, medians and equal-tail intervals. Known states are excluded. This evaluates current exact/numerical inference without pretending to audit sampled ranks or an MCMC backend. Truth/data are saved before fits; failed fits remain visible and invalidate unconditional interpretation of success-only bands. Uniform-reference bands account for multiple marginal parameters. Computation and human interpretation remain separate. Ten new tests and two 200-trial exercises support the slice; see [the calibration guide](calibration.md).

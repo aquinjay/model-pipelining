@@ -308,3 +308,7 @@ These records and configurable release rules are not implemented today.
 ## Sequential criticism with learned variance
 
 The optional provider `predictive(request)` supplies a serializable distribution before observing a target. Shared [sequential checks](sequential-checks.md) own release-aware scheduling, freezing, cutoff-eligible actual selection, PIT/errors and saved-only reporting. The explicit experiment evidence runner can require the workflow.
+
+## Model-level simulation calibration
+
+Provider-owned generators and marginal posterior summaries support [data-free continuous-CDF calibration](calibration.md). Shared execution freezes truth/data, retains every failed trial, and reports finite-simulation uncertainty separately from quadrature precision. It runs outside historical forecast origins and does not approve a model or validate an MCMC sampler.

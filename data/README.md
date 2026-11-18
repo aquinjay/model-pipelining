@@ -114,3 +114,5 @@ Choose an unused destination when repeating the example. Copying creates the rec
 Each saved receipt retains the original source, copy destination, UTC copy completion time, and byte count. Registration time is separate. Receipt details do not change the snapshot ID, which identifies the preserved bytes. See the [complete function guide](../src/model_pipelining/README.md#one-complete-workflow) for tagging, retrieval, and inspection.
 
 [Sequential checks](../docs/sequential-checks.md) use historical as-of training releases and cutoff-eligible scoring releases from the preserved snapshot. Input preparation and registration remain caller actions.
+
+[Simulation calibration](../docs/calibration.md) generates local prior/data trials without source snapshots. It saves simulated truth and observations in the selected run directory before fitting; no external/final data is used.

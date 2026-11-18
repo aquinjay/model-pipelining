@@ -232,3 +232,5 @@ explains replay arguments. Backup, retention, automatic restoration, and iterati
 lineage remain caller actions or future work.
 
 Sequential evidence folders contain `sequential_checks.json`, frozen `predictive_distributions.json`, `sequential.csv`, `summary.json`, `checks.json` and pending `review.json`. Explicit plotting adds `sequential.png`. See [the artifact semantics](../docs/sequential-checks.md).
+
+Calibration folders save `calibration.json`, frozen `trials/NNNNNN.json`, `calibration.csv`, `inference.json`, summaries/checks and pending review. The CLI also writes `calibration.png`; library plotting is explicit. [Failed trials remain visible](../docs/calibration.md).

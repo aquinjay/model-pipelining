@@ -122,6 +122,24 @@ class NormalMeanVarianceEvidence:
                 "df": posterior.degrees_of_freedom, "mean": posterior.mean,
                 "variance": posterior.predictive_variance, "inference": {"method": "exact_conjugate"}}
 
+    @property
+    def calibration_parameters(self):
+        return ("mean", "observation_variance")
+
+    def calibration_draw(self, count, generator):
+        variance = self.model.prior_scale/float(generator.gamma(self.model.prior_shape))
+        mean = float(generator.normal(self.model.prior_mean, math.sqrt(variance/self.model.prior_mean_precision)))
+        return {"mean": mean, "observation_variance": variance}, tuple(map(float, generator.normal(mean, math.sqrt(variance), count)))
+
+    def calibration_fit(self, request, truth, level):
+        posterior = self.model.posterior(request)
+        laws = {"mean": t(df=posterior.degrees_of_freedom, loc=posterior.mean, scale=math.sqrt(posterior.mean_scale_squared)),
+                "observation_variance": invgamma(a=posterior.shape, scale=posterior.scale)}
+        probabilities = ((1-level)/2, .5, (1+level)/2)
+        return {name: {"cdf": float(law.cdf(truth[name])), "lower": float(law.ppf(probabilities[0])),
+                       "median": float(law.ppf(.5)), "upper": float(law.ppf(probabilities[2]))}
+                for name, law in laws.items()}, {"method": "exact_conjugate"}
+
     def summarize(self, case, level):
         return _summary(self.model, case, level)
 

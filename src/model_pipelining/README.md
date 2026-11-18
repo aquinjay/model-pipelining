@@ -667,3 +667,7 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 ## Sequential predictive checks
 
 `sequential.run_sequential_checks(*, dataset, model, issued_at, output_directory, snapshot_id=None, tag=None, store="data/versioned", experiment=None) -> Path` freezes provider-supplied observation laws before scoring. `plot_sequential_checks(directory) -> tuple[Path, ...]` reads saved results. Providers implement `predictive(request) -> dict`; `EvidencePlan` accepts `sequential_checks`. See [selection, moment and failure rules](../../docs/sequential-checks.md).
+
+## Simulation calibration
+
+`calibration.run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95) -> Path` uses provider `calibration_draw(count, generator)`, `calibration_fit(request, truth, level)` and `calibration_parameters`. `plot_calibration(directory) -> Path` reads saved records. The CDF-based workflow runs explicitly outside historical experiments. See [semantics and failure rules](../../docs/calibration.md).

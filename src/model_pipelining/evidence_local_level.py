@@ -121,6 +121,34 @@ class LocalLevelVarianceEvidence:
                 "variance": law.variance if posterior.observation_variance_mean is not None else None,
                 "inference": posterior.evidence}
 
+    @property
+    def calibration_parameters(self):
+        return ("observation_variance", *(("initial_level",) if self.model.initial_variance > 0 else ()),
+                *(("last_level",) if self.model.initial_variance+self.model.evolution_variance > 0 else ()))
+
+    def calibration_draw(self, count, generator):
+        variance = self.model.prior_scale/float(generator.gamma(self.model.prior_shape))
+        initial = float(generator.normal(self.model.initial_mean, math.sqrt(self.model.initial_variance)))
+        state, values = initial, []
+        for _ in range(count):
+            state = float(generator.normal(state, math.sqrt(self.model.evolution_variance)))
+            values.append(float(generator.normal(state, math.sqrt(variance))))
+        truth = {"observation_variance": variance, "initial_level": initial, "last_level": state}
+        return {key: truth[key] for key in self.calibration_parameters}, tuple(values)
+
+    def calibration_fit(self, request, truth, level):
+        posterior = self.model.posterior(request)
+        laws = {"observation_variance": posterior}
+        if "initial_level" in truth:
+            means, variances = initial_posterior_components(posterior)
+            laws["initial_level"] = NormalMixture(posterior.weights, tuple(means), tuple(variances))
+        if "last_level" in truth:
+            laws["last_level"] = NormalMixture(posterior.weights, posterior.level_means, posterior.level_variances)
+        lower, upper = (1-level)/2, (1+level)/2
+        return {name: {"cdf": float(law.cdf(truth[name])), "lower": float(law.ppf(lower)),
+                       "median": float(law.ppf(.5)), "upper": float(law.ppf(upper))}
+                for name, law in laws.items()}, posterior.evidence
+
     def validate_scenarios(self, models):
         if any(type(model) is not type(self.model) for model in models):
             raise ValueError("Use matching local-level models")

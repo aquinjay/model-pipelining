@@ -256,7 +256,7 @@ numerical failure persistence, CLI compatibility and saved-only reporting.
 
 Evolution variance is still fixed. These checks do not establish that a random
 walk, Gaussian measurement noise, prior choices or a particular fixed evolution
-variance suit an application. Formal simulation-based calibration and fully
+variance suit an application. Sample-based calibration of MCMC-only fits and fully
 learned evolution/observation variances remain future work. No automatic model
 ranking, application choice, deployment or approval rule is added.
 
@@ -267,3 +267,5 @@ configuration/environment. Each series also exercised 1000 prior and posterior
 fresh-path replications and five prior settings over 162 learning points.
 These known synthetic fixtures are development evidence; the selected model
 and fixed evolution variance still require interpretation.
+
+[Continuous posterior-CDF calibration](calibration.md) is now implemented for the mean/variance and learned local-level models as a separate model-level workflow.
