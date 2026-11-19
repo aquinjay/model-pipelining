@@ -1,5 +1,32 @@
 # Local data
 
+The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
+state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
+generates its own 100-day synthetic CSV and registers it in the example output
+directory for both backtests.
+
+The [state-grid study](../docs/innovation-lattice.md) reuses the frozen synthetic
+histories from the probability-bound study. It automatically snapshots the
+selected cases and their comparison records in the new run directory.
+
+The [probability-bound follow-up](../docs/innovation-probability-bounds.md)
+copies the caller-selected particle study's already frozen synthetic histories,
+case results and short-history oracles into its own `inputs/` archive. It does
+not generate a new observational realization or create a preserved data snapshot.
+Its independent importance samples concern numerical integration uncertainty.
+
+The [innovation particle exercise](../docs/innovation-particles.md) generates
+matched synthetic numerical histories from caller-declared generator seeds and
+freezes their complete values in its run design before fitting. It uses no
+snapshot store or external input. These are development calculations without
+release timing or final-evaluation claims; they do not change preserved datasets.
+
+The [bounded innovation reference](../docs/innovation-reference.md) reads explicit
+short numerical histories from its JSON configuration. It freezes them in the
+selected run directory's `design.json`; it does not acquire/register inputs or
+create a snapshot store. Its equally spaced numerical cases carry no historical
+release or final-evaluation claim.
+
 The [explicit experiment evidence runner](../docs/evidence.md) uses this same
 verified store and pins a selected tag once across its required workflows.
 It does not acquire or register new input. Generated evidence stays under the
@@ -83,6 +110,12 @@ fitted state path. Smoothing is confined to the selected development history
 for these checks. Forecast filtering never receives future actuals.
 
 ## Copy and preserve an input
+
+The [three-model review study](../docs/model-review-study.md) separately generates
+and registers the original stable/shift sources plus a matched gradual-change
+source under its new run directory. Its explicit command prepares these inputs
+automatically; ordinary forecasting still requires caller-prepared snapshots.
+The study evaluates development targets only.
 
 After generating the source, launch Python from the repository root with `PYTHONPATH=src .venv/bin/python`:
 

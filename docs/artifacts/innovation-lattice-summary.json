@@ -1,0 +1,348 @@
+{
+  "kind": "innovation_lattice_summary",
+  "run": "runs/innovation-lattice-full-20261119",
+  "pilot": "runs/innovation-lattice-pilot-direct-20261119",
+  "parent": "runs/innovation-probability-bounds-checked-20261119",
+  "precision_status": "passed",
+  "samples_per_case": 262144,
+  "study_confidence": 0.95,
+  "case_confidence": 0.9970588235294118,
+  "environment": {
+    "python": "3.14.10",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "source_sha256": {
+    "scripts/study_innovation_lattice.py": "bc78d8494d1e8eec9e877a060a7a327113b1d0a3e50ae175b33fa42157562da4",
+    "src/model_pipelining/innovation_lattice.py": "b2ae79d442c53407fb17679a06844117c760585eefb9a5d186d9849fd5380204",
+    "scripts/check_innovation_probability_bounds.py": "5b281617ee173260b6f1ab3354d2459bf7110a9fc3776320c2624ad54bdea4b0",
+    "src/model_pipelining/innovation_probability_bounds.py": "f8202d508a40aabf35f0ca27ac9ab066d9108c0aa9f444f9d64e376cd9c41c30",
+    "scripts/run_innovation_particles.py": "a770b9af248156220b9604295068390a120a7601d66481f0fda453dcc5bd2dd9",
+    "src/model_pipelining/innovation_particles.py": "5aeaf55e5a477a92866e86271742d653e800079702684b58aaca04aba6256e3a",
+    "src/model_pipelining/innovation_reference.py": "878d48db0af1b5125149fea2b803afec1b5f4e4f505c5a9214efbe935af933a2",
+    "src/model_pipelining/local_level_variance.py": "6bc7f83f0f5a5c6bca7717ad949f863e3892fb8435a5ce493ad63c4a98ce108b",
+    "src/model_pipelining/models.py": "77c8dc0a482aa72d267d2cef09a90b85d4fc3874b0443749e125179beb59621f",
+    "src/model_pipelining/mixtures.py": "6f548ff781d2017a021c08f3ff48292151d6fe4287a47a3c555b7b9f009e7899",
+    "src/model_pipelining/inference.py": "88ea1364e393f5a135acf55c9b4366da626b231b97b0cba87f1bee58361409e7",
+    "src/model_pipelining/uncertainty.py": "4ede13e6994f74123aec7e271caa0cd7bbb711137b199c3dd4ecf1787145ee12"
+  },
+  "measured_case_seconds": 151.13796985399904,
+  "maximum_interval_width": 0.03378878939374386,
+  "maximum_long_history_scaled_particle_difference": 0.014334011726589324,
+  "largest_short_oracle_roundoff_above_one": 4.440892098500626e-16,
+  "case_results": [
+    {
+      "name": "short-prior",
+      "observations": 0,
+      "status": "completed",
+      "baseline_maximum_width": 0.008640217654606874,
+      "maximum_width": 0.008640217654606874,
+      "normalizer_lower": 0.9999061172573463,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 27,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": null,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 0.16744845199991687
+    },
+    {
+      "name": "short-short",
+      "observations": 3,
+      "status": "completed",
+      "baseline_maximum_width": 0.11402410725905254,
+      "maximum_width": 0.00979637816075879,
+      "normalizer_lower": 0.9695130278343564,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.001307319172682675,
+      "maximum_scaled_particle_estimate_difference": 0.0023978495609127126,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 5.483457791999626
+    },
+    {
+      "name": "short-quiet",
+      "observations": 6,
+      "status": "completed",
+      "baseline_maximum_width": 0.02209782485419287,
+      "maximum_width": 0.009784424706766326,
+      "normalizer_lower": 0.9692945970888904,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.0011813766352947175,
+      "maximum_scaled_particle_estimate_difference": 0.007463391369869621,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 2.497566719000133
+    },
+    {
+      "name": "short-gradual",
+      "observations": 6,
+      "status": "completed",
+      "baseline_maximum_width": 0.04147086957565216,
+      "maximum_width": 0.01032321630805133,
+      "normalizer_lower": 0.9714043275449104,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.0008815096694974045,
+      "maximum_scaled_particle_estimate_difference": 0.0021629714545772782,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 2.6964162140002372
+    },
+    {
+      "name": "short-abrupt",
+      "observations": 6,
+      "status": "completed",
+      "baseline_maximum_width": 0.9300327300156603,
+      "maximum_width": 0.010262891975887145,
+      "normalizer_lower": 0.9695926437295431,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.001298727374544062,
+      "maximum_scaled_particle_estimate_difference": 0.006250060752648057,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 3.7113421260000905
+    },
+    {
+      "name": "short-dominant",
+      "observations": 6,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.010301653385082599,
+      "normalizer_lower": 0.9692143128080217,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.0015294643877567426,
+      "maximum_scaled_particle_estimate_difference": 0.007745619414660693,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 3.8060375800000656
+    },
+    {
+      "name": "short-cap-eight",
+      "observations": 8,
+      "status": "completed",
+      "baseline_maximum_width": 0.02833295122684465,
+      "maximum_width": 0.008944554089685974,
+      "normalizer_lower": 0.9669904297597511,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 290,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.001926002894541749,
+      "maximum_scaled_particle_estimate_difference": 0.011973786439646972,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 2.3472647609996784
+    },
+    {
+      "name": "zero-jump",
+      "observations": 3,
+      "status": "completed",
+      "baseline_maximum_width": 0.051290720163413295,
+      "maximum_width": 0.00962326392641355,
+      "normalizer_lower": 0.9759890401476796,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 30,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.0015981813442134118,
+      "maximum_scaled_particle_estimate_difference": 0.0015981813441009463,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 3.1734537379998073
+    },
+    {
+      "name": "always-jump",
+      "observations": 3,
+      "status": "completed",
+      "baseline_maximum_width": 0.042230154669563036,
+      "maximum_width": 0.008815228328894031,
+      "normalizer_lower": 0.9753159317017922,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 30,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.001354601479820805,
+      "maximum_scaled_particle_estimate_difference": 0.0013546014797833905,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 2.0823315709999406
+    },
+    {
+      "name": "coincident-scales",
+      "observations": 3,
+      "status": "completed",
+      "baseline_maximum_width": 0.052427105445821076,
+      "maximum_width": 0.009716083194918124,
+      "normalizer_lower": 0.9759854554496529,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.001598181344213634,
+      "maximum_scaled_particle_estimate_difference": 0.0015981813441009463,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 3.1577455359997657
+    },
+    {
+      "name": "state-atoms",
+      "observations": 3,
+      "status": "completed",
+      "baseline_maximum_width": 0.057418269667099064,
+      "maximum_width": 0.00968332349625367,
+      "normalizer_lower": 0.9744190645544895,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "maximum_scaled_oracle_estimate_difference": 0.002345250974547075,
+      "maximum_scaled_particle_estimate_difference": 0.0014452645519212421,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 1.6096348759997454
+    },
+    {
+      "name": "stable-42",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03268065523871466,
+      "normalizer_lower": 0.11480182048954896,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.008583195472226635,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 18.608983609000006
+    },
+    {
+      "name": "abrupt-42",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03275617776692452,
+      "normalizer_lower": 0.11397492799295611,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.007769650003098594,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 21.69302744300012
+    },
+    {
+      "name": "gradual-42",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03281440499099042,
+      "normalizer_lower": 0.11410249040827773,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.014334011726589324,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 20.183053125999777
+    },
+    {
+      "name": "stable-314",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03378878939374386,
+      "normalizer_lower": 0.11539742855537284,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.009789743486664726,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 18.520619698000246
+    },
+    {
+      "name": "abrupt-314",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03349472911207563,
+      "normalizer_lower": 0.11527628435312506,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.005426901868310296,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 21.093386544999703
+    },
+    {
+      "name": "gradual-314",
+      "observations": 160,
+      "status": "completed",
+      "baseline_maximum_width": 1.0,
+      "maximum_width": 0.03310051753637033,
+      "normalizer_lower": 0.11492868209249862,
+      "oracle_comparison": null,
+      "maximum_scaled_oracle_estimate_difference": null,
+      "maximum_scaled_particle_estimate_difference": 0.0017217699431059006,
+      "comparison_scope": "Moment and density differences are descriptive. Long particle comparisons are empirical.",
+      "elapsed_seconds": 20.30620006800018
+    }
+  ],
+  "audit": {
+    "status": "passed",
+    "input_hashes": 48,
+    "source_hashes": 12,
+    "interval_replays": 17,
+    "pilot_case_exact_replays": 3,
+    "compared_oracle_probabilities": 872,
+    "all_short_oracle_probabilities_enclosed_without_allowance": false,
+    "original_failed_paths": [
+      {
+        "case": "short-quiet",
+        "path": "011100",
+        "oracle_probability": 5.026650786304123e-06,
+        "lower": 0.0,
+        "upper": 0.00014175039813322051,
+        "visits": 2
+      },
+      {
+        "case": "short-quiet",
+        "path": "101001",
+        "oracle_probability": 6.258310721343775e-06,
+        "lower": 0.0,
+        "upper": 0.0001299863447095973,
+        "visits": 1
+      },
+      {
+        "case": "short-gradual",
+        "path": "000111",
+        "oracle_probability": 2.17495497732142e-05,
+        "lower": 0.0,
+        "upper": 0.00016961278049637825,
+        "visits": 5
+      }
+    ],
+    "zero_mass_knots": 0
+  },
+  "repository_tests_passed": 446
+}

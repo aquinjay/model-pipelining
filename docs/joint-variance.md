@@ -91,6 +91,14 @@ atoms; `evolution_ppf` returns an actual support point. No interpolation creates
 an unsupported W value. `fit` saves full component evidence and labels every
 quadrature node with its W. Failed precision remains required evidence.
 
+Conditional V quantiles are numerical roots. When a W component has almost all
+posterior mass, conditional root error can put both marginal bracket endpoints
+on the same side of the requested probability. The marginal V quantile solver
+checks those signs and widens the failing side to the components' checked
+integration support, retaining the original root and CDF precision requirements.
+The [development review](model-review-study.md) exposed this case in a retained
+calibration trial; its regression also checks an independently bracketed root.
+
 The joint model supplies sequential, [generative predictive and prior-comparison](joint-evidence.md) capabilities. [Discrete-aware calibration](mixed-calibration.md) also handles its probability atoms; unsupported evidence still fails visibly. Existing models retain their established capabilities.
 
 ## Verification and limits

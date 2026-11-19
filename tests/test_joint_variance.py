@@ -78,6 +78,30 @@ class JointNumericalTests(unittest.TestCase):
                      for w,p,m in zip(posterior.evolution_weights,posterior.components,means))
         self.assertAlmostEqual(posterior.predictive().variance,expected)
 
+    def test_dominant_component_quantile_repairs_conditional_root_bracket(self):
+        # The fresh 1000-trial review study exposed this real numerical case.
+        # Generate its frozen prior/data stream instead of rounding its values.
+        model=LocalLevelJointVariance()
+        provider=model.evidence_provider()
+        generator=np.random.Generator(np.random.PCG64(np.random.SeedSequence([1911,2,538])))
+        truth,values=provider.calibration_draw(20,generator)
+        req=request(values)
+        posterior=model.posterior(req)
+        self.assertGreater(posterior.evolution_weights[-1],.9999999999)
+        probability=.025
+        conditional=min(p.ppf(probability) for p in posterior.components)
+        self.assertGreater(posterior.cdf(conditional),probability)
+        actual=posterior.ppf(probability)
+        self.assertLess(actual,conditional)
+        # Independent root bracket over a broad positive interval, outside all
+        # conditional quantiles. No component-quantile bracketing is reused.
+        from scipy.optimize import brentq
+        reference=brentq(lambda v:posterior.cdf(v)-probability,.1,2.,xtol=1e-13)
+        self.assertAlmostEqual(actual,reference,places=10)
+        self.assertAlmostEqual(posterior.cdf(actual),probability,places=10)
+        summaries,_=provider.calibration_fit(req,truth,.95)
+        self.assertEqual(set(summaries),set(provider.calibration_parameters))
+
     def test_precision_failure_is_required_and_keeps_all_component_evidence(self):
         model=LocalLevelJointVariance(quadrature=QuadratureSettings(minimum_nodes=8,maximum_nodes=16,maximum_expansions=1))
         result=model.fit(request((1,3,2)))

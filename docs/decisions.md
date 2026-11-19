@@ -1,5 +1,10 @@
 # Decisions and open questions
 
+The [independent moment and density check](innovation-moment-check.md) agrees
+with the state-grid approximation on `abrupt-42`. Use the existing Gaussian
+local-level adapters for the first BDLM workflow and keep external modeling
+frameworks optional at the adapter boundary.
+
 This is a chronological design history. A dated entry records what was decided
 at that time; later entries can supersede it. Use [the README](../README.md),
 [the API reference](../src/model_pipelining/README.md), and [the roadmap](roadmap.md)
@@ -554,3 +559,225 @@ exclude ignored run/dependency artifacts from discovery. Nine checker tests, a
 fresh 24-dependency installation, the 170-case walkthrough and actionlint support
 [the workflow](continuous-integration.md). Large simulation studies and model
 interpretation remain explicit; branch protection is an administrator decision.
+
+## Resume checkpoint — 2026-11-18
+
+Record completed work and the next three evidence-interpretation tasks in a
+tracked [next-session note](next-session.md), linked from the README and roadmap.
+The review/scoring/CI implementation is merged at `0ff5def` with passing hosted
+push/PR checks. Future work begins with complete reviews, then scenario/prior
+criticism and a documented modeling decision; this checkpoint does not select a
+new model or execute those planned studies.
+
+## Interpret model evidence before choosing the next transition — 2026-11-19
+
+- **Question:** use the completed forecasting/evidence/review infrastructure to
+  explain current model failures and choose a bounded next modeling question.
+- **Design:** start with the original mean-shift input, then stable and gradual
+  controls with identical noise. Freeze development/final boundaries, 70/20/40
+  target windows, reference settings, all declared alternative priors and seeds
+  before execution. Require all three historical evidence workflows plus
+  compatible model-level calibration for each reference review. Prior influence
+  remains descriptive; no score or discrepancy threshold approves a model.
+- **Compatibility:** earlier forecast plans and calibration source hashes differ.
+  Preserve them and generate an identified current exercise. Keep calibration's
+  20-observation prior/data scope separate from historical criticism and final
+  evaluation. All final-role targets remain excluded.
+- **Failure found:** fresh joint calibration failed at trial 538 of seed 1911.
+  Near-total mass on one W component exposed a numerical conditional-quantile
+  bracket error. Widen a failing side to checked integration support, retaining
+  root/CDF tolerances. Save the failed original exercise; the same 1,000 truth/
+  data files replay exactly after repair. A seeded regression compares a
+  separately bracketed root. All 3,000 replacement reference trials compute;
+  this replay is not an independent follow-up or adequacy approval.
+- **Execution:** explicit research scripts compose existing library workflows.
+  A continuation script reuses compatible complete artifacts, preserves partial
+  output and runs independent model/scenario jobs concurrently. This addresses
+  the concrete cost of this study without introducing a general scheduler or
+  changing inference. A JSON-list/Python-tuple reuse bug was detected and fixed;
+  its regression uses an actual joint forecast. Native artifacts retain their
+  own source hashes, and continuation source versions are retained locally.
+- **Interpretation:** the joint model improves stable-period behavior while its
+  abrupt-onset losses exceed the fixed-W model's. Later dynamic forecasts recover,
+  but replicated abrupt-change CUSUM remains unusual across every tested prior.
+  Lower aggregate CRPS therefore does not establish that the transition problem
+  is resolved. Stable/gradual controls and all declared priors remain visible.
+- **Next question:** investigate occasional large innovations while preserving
+  quiet periods. Start with fixed small/large innovation scales and mixture
+  probability; require a short-history independent enumeration/batch-Gaussian
+  reference, Gaussian limiting cases, explicit approximation precision,
+  fresh-path criticism, calibration and matched independent-seed comparisons.
+  No new transition adapter, continuous-W prior or MCMC forecast backend is
+  selected or implemented by this review. See [the study and validation
+  criteria](model-review-study.md).
+- **Completion:** nine reference reviews are ready; 45 forecasts retain 5,850
+  complete cases, 27 required historical workflows pass, and the 36 alternative
+  predictive workflows retain 72,000 replications. The audit checks 102 report
+  links, pre-change identity, PIT agreement and source versions. All 401 tests,
+  documentation checks and the temporary walkthrough pass locally. Curated
+  window/prior/onset summaries and a figure are tracked with the interpretation;
+  full runs remain local. This work is not newly published or model-approved.
+
+## Establish a bounded per-transition innovation oracle — 2026-11-19
+
+- **Question:** validate the occasional-large-innovation model before choosing a
+  longer-history inference method or adding a forecasting adapter.
+- **Model:** fixed caller probability and ordered small/large Gaussian innovation
+  variances, independent labels per daily transition, independent Gaussian initial
+  state and inverse-gamma shared V. The first transition precedes the first
+  observation; the next transition has the fixed prior probability. Keep
+  `prior_shape > 1` for finite reference moments, allow genuinely known states,
+  and cap numerical histories at eight observations.
+- **Reference:** enumerate every positive-prior sequence. Dense Cholesky/batch
+  Gaussian conditioning with Joseph covariance and adaptive rational-V integration
+  is compared with independent scalar Kalman filtering/backward smoothing and
+  refined log-V Gauss-Legendre integration. Require two successful refinements,
+  probability/first-moment tail bounds and full summary/CDF/density agreement.
+  Initial/final state atoms and allocation/V dependence remain explicit. No
+  component pruning or matched-Gaussian predictive substitution is introduced.
+- **Independent checks:** direct one-observation variance integrals and exact
+  known-level inverse-gamma/Student-t calculations supplement comparison of the
+  two methods. Probability zero/one and equal innovation variances recover the
+  existing Gaussian model; equal scales leave labels at their independent prior.
+- **Evidence:** seven frozen numerical cases replay exactly; maximum scaled
+  discrepancy is 4.78e-11 and the three existing-model limits agree within
+  3.90e-12. Fourteen new tests include failure persistence, all 256 paths, atoms,
+  posterior dependence and CLI/replay boundaries. Curated summary/figure are
+  tracked; full results remain under `runs/innovation-reference-verified-20261119/`.
+- **Feasibility/next:** 256 paths are tractable; 160 nondegenerate transitions
+  would require 2**160 paths before V integration. Retain this as a short-history
+  oracle and design a controlled approximation against it, with explicit omitted
+  mass or Monte Carlo evidence and preserved Gaussian limits. Forecast/provider
+  integration, fresh-path criticism, prior comparisons and calibration follow
+  that design. No long-history algorithm, generic MCMC backend or application
+  is selected by this prototype. All 415 tests pass. See [methods and limits](innovation-reference.md).
+
+## Investigate longer histories with replicated Gaussian-state particles — 2026-11-19
+
+- **Question:** determine whether the fixed small/large innovation model can be
+  approximated on the earlier 160-observation development histories before
+  extending forecast/provider boundaries.
+- **Method:** sample static shared V from its prior and propose each past label
+  using both observation likelihoods. Integrate Gaussian states analytically,
+  resample whole V/label/state ancestries systematically at declared ESS, and
+  smooth conditional initial/final states at completion. Preserve real state
+  atoms, V/allocation dependence and both fresh future innovation branches.
+  Prior/Gaussian limits automatically use checked scalar quadrature.
+- **Uncertainty:** combine independent complete filters through their estimated
+  evidence, then recompute centered marginal/joint moments. Use delete-one-run
+  jackknife MCSE, finite-probe/planned-look Student-t diagnostics, independent
+  particle-count refinement, evidence ESS and V ancestry. These are empirical
+  checks, not omitted-mass bounds, independent-particle errors or exact coverage.
+  Keep every attempted level and failure; do not replace failed replications.
+- **Scope:** at most 512 daily observations; stochastic calculations require
+  prior shape > 2. The study freezes seven original reference histories, four
+  limit/atom cases and six matched 160-observation cases, with 32 independent
+  filters and 4,096..32,768 particles per filter. Ordinary imports/backtests/CI
+  do not launch this explicit exercise. No new dependency or generic MCMC
+  backend is introduced.
+- **Decision:** retain this as a numerical feasibility prototype. Short-oracle
+  checks reveal overconfident error envelopes for rare paths, including two
+  entirely unvisited allocations. Small numerical discrepancies do not justify
+  discarding these checks. Resolve rare-path uncertainty before forecasting,
+  predictive criticism, prior comparisons and calibration. See the
+  [method, frozen results and limitations](innovation-particles.md).
+- **Recorded outcome:** all six long cases meet empirical refinement at 16,384
+  or 32,768 particles; the overall study remains unresolved because two short
+  cases miss three rare-path envelopes. Eight source hashes and 34 aggregations
+  audit successfully; eleven short cases and twelve selected long replicates
+  replay exactly. All 431 tests and documentation/walkthrough checks pass.
+  Work is local and uncommitted. See [the handoff](next-session.md).
+
+## Bound unseen innovation probabilities independently — 2026-11-19
+
+- **Problem:** the retained particle study has two unvisited positive-mass paths
+  and one underestimated rare path outside its empirical MCSE envelopes. Neither
+  particle refinement nor sampled ancestry proves missing mass is negligible.
+- **Design:** add a separate fixed-budget importance check. Propose V from
+  `IG(a+n/2,b)` and labels independently from their fixed prior. The Gaussian
+  likelihood bound yields scaled importance weights in [0,1]. Two-sided
+  empirical Bernstein bounds, unioned over every numerator and the shared
+  normalizer, give simultaneous posterior probability intervals. Unseen events
+  retain a positive radius. Preserve atom-aware state CDFs and the full two-branch
+  next-observation CDF. Densities, unbounded moments and floating arithmetic
+  remain outside this confidence contract.
+- **Execution:** the caller explicitly invokes the independent check or its
+  saved-study script. Freeze parent inputs/failures, source snapshots, settings,
+  query grids and error allocation before computing. Unresolved normalizers or
+  widths remain saved, and the study returns exit code 1. Original particle
+  inference, saved failures and its precision criteria remain unchanged.
+- **Evidence:** 262,144 independent draws per case with 95% study confidence
+  enclose all 872 probabilities from the eleven short oracles. Eight short
+  cases meet the width gate; three short and all six 160-observation cases do
+  not. The long-history normalizer has lower bound zero and intervals reach
+  [0,1]. This bounds unsupported zero-uncertainty claims but does not verify the
+  approximation. The [guide](innovation-probability-bounds.md) retains the three
+  prior failures, derivation, scope and reproducible evidence.
+- **Decision:** retain this as a conservative diagnostic and a completed design
+  investigation. The [next pilot](next-session.md#next-work) prioritizes a
+  data-informed importance proposal with a provable weight bound. Targeted
+  integration remains an alternative. Recheck long-history cost and ancestry
+  if particle inference changes. Keep Gaussian limits, atoms,
+  joint dependence and full predictive probes. Forecast/provider integration,
+  fresh-path criticism, prior robustness and calibration remain gated. All
+  442 software tests pass; useful numerical precision remains separate.
+
+## Use an observation-conditioned state grid for probability bounds — 2026-11-19
+
+The previous prior proposal left three short and all six long cases unresolved.
+The new proposal uses a finite state grid and a piecewise envelope over
+observation precision. A gamma density maximum and a convex likelihood chord
+bound each weight. A Gaussian lattice-sum bound controls the grid error for
+each allocation, and a gamma tail bound accounts for omitted precision ranges.
+Each draw uses conditional Gaussian smoothing to recover true state atoms and
+evaluate the full predictive mixture. The retained exploratory FFT produced
+incorrect small likelihoods in a dense Gaussian limit, so the study uses direct
+convolution.
+
+The corrected three-case pilot passed, then all 17 cases passed with the
+original 262,144 draws, confidence allocation, and maximum interval width
+of 0.10. The widest long-history interval was 0.03379. All 872 short oracle
+probabilities passed the retained comparator, including the original three
+rare-path failures. Callers explicitly run the pilot or the full study. The
+command archives the sources and inputs and preserves failed records. See the
+[derivation and results](innovation-lattice.md).
+
+Keep the state-grid proposal as the verified probability prototype. Its
+moments and predictive density estimates are descriptive. Verify these
+quantities independently on a long history and check cost and failure
+handling for repeated fits before deciding how to integrate forecasting and
+evidence providers.
+
+## Keep shared forecasting open to other model families
+
+Bayesian dynamic linear models are the first main use case. The project also
+covers other state-space models, harmonic regression, multivariate forecasting,
+and other families as concrete tasks arise. Keep model parameters, fitting,
+and specialized diagnostics in the adapter or evidence provider. Share data
+eligibility, execution, forecast recording, evaluation, and reporting across
+model families.
+
+Build each shared capability around a concrete example. Harmonic regression can
+exercise seasonal predictors with the existing scalar target. A joint
+multivariate forecast can establish requirements for series identity, alignment,
+release timing, and dependence in saved outputs. The current scalar contract
+continues to support the first use case. See the [roadmap](roadmap.md) and
+[reading guide](reading-guide.md).
+
+## Choose a bounded first BDLM workflow
+
+The continuous-state Gibbs study agrees with the state-grid results on
+`abrupt-42` at both independent budgets. Its short control needed a separate
+longer run to meet the same precision criteria. The full-budget state-grid
+fits took about 16 seconds each on the tested fixture. Use the existing
+Gaussian local-level adapters for the first BDLM workflows. Retain the
+rare-jump method as research for tasks that require it. The weekly harmonic
+example confirms that the current scalar contract supports a different
+family without shared runner changes. See the [evidence](innovation-moment-check.md).
+
+Keep external frameworks as optional adapter choices. PyDLM and PyMC Extras
+are candidates for research comparisons or an approved adapter. Check the
+workplace interpreter and approved packages before establishing a smaller
+installation profile. The repository's existing lock remains the full
+research environment. See the [PyDLM guide](https://pydlm.github.io/pydlm_user_guide.html)
+and [PyMC Extras state-space models](https://www.pymc.io/projects/extras/en/stable/statespace/models.html).

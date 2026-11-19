@@ -1,5 +1,13 @@
 # Repository instructions
 
+## Keep forecasting model independent
+
+Bayesian dynamic linear models are the first main use case. The shared pipeline
+also serves future state-space models, harmonic regression, multivariate
+forecasting, and other model families. Keep model-specific fitting and
+diagnostics in their adapters or evidence providers. Extend shared interfaces
+when a concrete model needs a new capability.
+
 ## Keep documentation current
 
 After making implementation or workflow changes, update the affected documentation as part of the same task, before reporting the work complete.
