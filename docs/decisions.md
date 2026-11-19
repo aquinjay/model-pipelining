@@ -797,3 +797,25 @@ compare against the last observed value. The 2024 run completed all 366 cases.
 The archived date labels support a simulated forecast origin. Operational use
 requires publication times or vintage histories. See the [setup, task design,
 and saved results](python312-public-forecast.md).
+
+## Compare annual seasonality and persistence on the NOAA development dates
+
+Large realized changes drove most of the baseline squared error. Compare an
+annual Fourier pair, a fitted one-day lag, and their combination at the same
+366 Central Park origins. The combination gave the lowest MAE and RMSE and
+higher error than persistence on quiet days. The annual-only model scored
+worse overall. Keep the regressions inside the explicit example and use the
+existing shared run and comparison contracts. Freeze the configurations for
+a later check on dates outside the 2024 development cohort. See the
+[diagnostics and results](noaa-seasonality.md).
+
+## Evaluate the frozen NOAA seasonal model on 2025
+
+Freeze the annual-plus-lag and lag-only settings, persistence control,
+2025 target dates and both point-score criteria before acquiring the 2025
+observations. Preserve the exact normalized 2023–2024 input as the prefix.
+Refit coefficients on each eligible expanding history. The combined model
+beat both controls on MAE and RMSE. Its quiet-day errors and warm mean error
+remain visible. Keep this as a later-period result under simulated archive
+availability. Real-time use requires release evidence.
+See the [full comparison and audit](noaa-later-period.md).

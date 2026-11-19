@@ -5,6 +5,16 @@ and normalized CSVs, their snapshot receipts, `design.json`, and `forecast/`.
 That subdirectory contains the normal shared forecasts, benchmark, scores, and
 saved-only `forecast.png`. Pass an existing local CSV and a new output directory.
 
+The [seasonal follow-up](../docs/noaa-seasonality.md) accepts a completed NOAA
+output directory and saves baseline diagnostics, three separate forecast runs,
+their matched comparison reports, `matched-cases.csv`, and `summary.json`.
+
+The [2025 evaluation](../docs/noaa-later-period.md) starts with an explicit
+freeze that writes `plan.json`, its digest, and the historical input. A
+separate evaluate command writes `evaluation/` with the new input snapshots,
+point forecasts, benchmark, comparison chart, `matched-cases.csv`, and
+`summary.json` for the final target dates.
+
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
 fit timings per case, and `summary.json`. A refined control writes a separate

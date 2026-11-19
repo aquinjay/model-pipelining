@@ -5,11 +5,15 @@ Updated: 2026-11-19. Start here when resuming the modeling work, then consult th
 
 ## Where we left off
 
-The research checkpoint was merged in [PR #7](https://github.com/aquinjay/model-pipelining/pull/7)
-as `b62b70f` after push and PR CI passed. The Python 3.12 follow-up verifies the
-Gaussian CSV workflow on Python 3.12.16 and runs the first public case using
-NOAA Central Park daily maximum temperatures. All 366 forecasts and benchmark
-cases completed. See the [verified setup and results](python312-public-forecast.md).
+The research checkpoint merged in [PR #7](https://github.com/aquinjay/model-pipelining/pull/7)
+as `b62b70f`. [PR #8](https://github.com/aquinjay/model-pipelining/pull/8) merged
+the Python 3.12 profile and 366-case public NOAA forecast as `f7aec5a`. The
+seasonal follow-up selected an annual curve plus one temperature lag on the
+2024 development dates. With the settings frozen before the 2025 download,
+the model beat both controls on the 365 later dates. Its MAE was 2.945 °C
+versus 3.214 °C for persistence, and its mean forecast error was +0.423 °C.
+See the [verified setup](python312-public-forecast.md), [development study](noaa-seasonality.md),
+and [later-year results](noaa-later-period.md).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
@@ -178,13 +182,14 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
-1. Compare a small seasonal model on the same Central Park development dates.
-   The last-value benchmark had slightly lower point errors than the Gaussian
-   local-level model. Keep the shared runner and the target calendar fixed.
-2. Use documented release timing and vintages before an operational claim. The
-   frozen archive replay simulates immediate availability. Reproduce the Python
-   3.12 profile on the workplace platform later, after the approved packages
-   are confirmed.
+1. Keep the frozen 2025 result as a point-forecast benchmark. Further NOAA
+   studies should address the warm bias or the quiet-day errors on new
+   development data and reserve another period for evaluation.
+2. A small two-series follow-up can compare separate forecasts of Central
+   Park's daily minimum and maximum on matched dates. Count forecasts with a
+   minimum above the maximum before deciding whether joint forecasting needs
+   a shared interface change. An operational NOAA workflow still needs
+   documented release timing and vintages. Workplace testing remains deferred.
 3. Revisit rare-jump integration if the task needs it. Use the saved timings and
    cross-checks to assess the cost, then specify the required predictive outputs
    and fresh-path criticism, prior comparisons, and calibration.
@@ -251,6 +256,8 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/noaa-2025-frozen-20261119/` | Plan saved before downloading 2025, exact 2023–2024 history, 2025 snapshots, matched forecasts, and the later-year audit inputs |
+| `runs/noaa-seasonality-verified-20261119/` | Baseline error diagnostics, matched forecasts and reports for three regressions, and their aggregate and grouped point scores |
 | `runs/noaa-central-park-20261119/verified-py312/` | Public NOAA raw and normalized snapshots, 366 scored forecasts, benchmark, chart, and design |
 | `runs/innovation-moment-check-verified-20261119/` | Frozen controls, independent Gibbs budgets on abrupt-42, grid timing and insufficient-budget result |
 | `runs/innovation-moment-control-refinement-20261119/` | Independent longer short-abrupt control against the same oracle and criteria |

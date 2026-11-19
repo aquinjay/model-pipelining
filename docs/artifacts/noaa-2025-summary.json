@@ -1,0 +1,511 @@
+{
+  "run": "runs/noaa-2025-frozen-20261119/evaluation",
+  "python": "3.12.16",
+  "plan": {
+    "frozen_at": "2026-11-19T22:15:09.065534+00:00",
+    "development_history_snapshot": "e427520555e8f9213cf5eb52e326ed7a31969e243ac6024e800a13a55bc81fa8",
+    "development_design_sha256": "81ee69b93f7b4e547b3f4b22fb903a76f0ed4bc50c5a768625d2536fbd7f0eba",
+    "target_start": "2025-01-01",
+    "target_end": "2025-12-31",
+    "cases": 365,
+    "experiment": {
+      "format_version": 2,
+      "task": {
+        "name": "central-park-daily-tmax",
+        "target_description": "Next dated observation of daily maximum temperature at Central Park",
+        "source_description": "NOAA GHCN-Daily archive request for USW00094728, using date labels and simulated availability",
+        "timestamp_column": "timestamp",
+        "target_column": "value",
+        "units": "degrees Celsius",
+        "calendar": "daily_utc",
+        "missing_policy": "reject",
+        "horizon_days": 1,
+        "minimum_history": 365,
+        "issuance_delay_seconds": 0,
+        "availability_column": null,
+        "revision_policy": "reject",
+        "actual_policy": "latest_in_snapshot"
+      },
+      "evaluation": {
+        "role": "final",
+        "final_start": "2025-01-01T00:00:00+00:00",
+        "final_end": "2026-01-01T00:00:00+00:00",
+        "benchmarks": [
+          "last-value"
+        ]
+      },
+      "evidence": {
+        "required_workflows": [],
+        "required_fit_checks": [],
+        "replications": 1000,
+        "seed": 0,
+        "interval_level": 0.95
+      }
+    },
+    "models": {
+      "annual-plus-lag": {
+        "intercept": true,
+        "annual_period_days": 365.2425,
+        "phase_origin": "2023-01-01",
+        "lag_days": 1
+      },
+      "lag-only": {
+        "intercept": true,
+        "annual_period_days": null,
+        "phase_origin": null,
+        "lag_days": 1
+      }
+    },
+    "target_source_url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USW00094728&startDate=2025-01-01&endDate=2025-12-31&dataTypes=TMAX&units=metric&includeAttributes=true&format=csv",
+    "metrics": [
+      "mae",
+      "rmse"
+    ],
+    "success": "Annual-plus-lag must beat both controls on overall MAE and RMSE",
+    "controls": [
+      "lag-only",
+      "last-value"
+    ],
+    "movement_thresholds_celsius": [
+      2,
+      5
+    ],
+    "secondary_comparisons": "Season and realized change groups are descriptive",
+    "scripts_sha256": {
+      "check_noaa_later_period.py": "2cd0f9cab5e3c516062a311e92b72d3cb642e937774fd1f24c26d2a508b81f8d",
+      "run_noaa_temperature.py": "0c5995437008e3bcb447da8f31677fcd8bac34e4fe16f9d1283ae8f0729175c7",
+      "study_noaa_seasonality.py": "59945f9ee22340f85b54f6e30e09608a16fc05f47f315c7b340eecc6fa76514f"
+    }
+  },
+  "inputs": {
+    "evaluated_at": "2026-11-19T22:15:22.488410+00:00",
+    "plan_sha256": "3d27d6f055f658642b6b3c6573ca64015a44186c9a5d8285df571123f89f8cd3",
+    "prefix_sha256": "e427520555e8f9213cf5eb52e326ed7a31969e243ac6024e800a13a55bc81fa8",
+    "raw_snapshot_id": "7033094cf342b2c2b7223b291ee83ff939f17736a12695c1231ae329d9ad547d",
+    "normalized_snapshot_id": "23563d191b9e09f7436635bd78502cd0c2b72aa6b7be10aa13ec54d9b5747672"
+  },
+  "results": {
+    "cases": 365,
+    "results": {
+      "annual-plus-lag": {
+        "overall": {
+          "cases": 365,
+          "bias": 0.42257264403081846,
+          "mae": 2.945279937801737,
+          "rmse": 3.844539186531258
+        },
+        "seasons": {
+          "DJF": {
+            "cases": 90,
+            "bias": 1.489843665257414,
+            "mae": 3.259313761454341,
+            "rmse": 3.9554478462123237
+          },
+          "MAM": {
+            "cases": 92,
+            "bias": 0.11670491727424141,
+            "mae": 4.144213416694795,
+            "rmse": 5.194292754690258
+          },
+          "JJA": {
+            "cases": 92,
+            "bias": 0.002000083535403572,
+            "mae": 2.3647611672516096,
+            "rmse": 2.994992592707595
+          },
+          "SON": {
+            "cases": 91,
+            "bias": 0.10145302333619893,
+            "mae": 2.0094865609194956,
+            "rmse": 2.7322135213478043
+          }
+        },
+        "months": {
+          "01": {
+            "cases": 31,
+            "bias": 1.74083764369512,
+            "mae": 3.10997072796465,
+            "rmse": 3.725096705670754
+          },
+          "02": {
+            "cases": 28,
+            "bias": 1.0772352847931401,
+            "mae": 2.9845425883736274,
+            "rmse": 3.815158684772721
+          },
+          "03": {
+            "cases": 31,
+            "bias": -0.7774236884114761,
+            "mae": 4.4270911426651995,
+            "rmse": 5.781905897308998
+          },
+          "04": {
+            "cases": 30,
+            "bias": -0.047456490956572735,
+            "mae": 4.6314860319308515,
+            "rmse": 5.546416095904184
+          },
+          "05": {
+            "cases": 31,
+            "bias": 1.1696994018930047,
+            "mae": 3.3897815469475563,
+            "rmse": 4.107415988337496
+          },
+          "06": {
+            "cases": 30,
+            "bias": 0.06577337061631638,
+            "mae": 3.2177014735094662,
+            "rmse": 3.7406185497089433
+          },
+          "07": {
+            "cases": 31,
+            "bias": -0.36997193486730046,
+            "mae": 1.8068628178695476,
+            "rmse": 2.2535808027666953
+          },
+          "08": {
+            "cases": 31,
+            "bias": 0.3122560176662565,
+            "mae": 2.097233413803487,
+            "rmse": 2.8286209137737974
+          },
+          "09": {
+            "cases": 30,
+            "bias": -0.5546476787231128,
+            "mae": 1.966391409961958,
+            "rmse": 2.7657747115073037
+          },
+          "10": {
+            "cases": 31,
+            "bias": 0.33343075400289457,
+            "mae": 2.008599825243884,
+            "rmse": 2.599019953998806
+          },
+          "11": {
+            "cases": 30,
+            "bias": 0.517843403706592,
+            "mae": 2.0534980054084975,
+            "rmse": 2.8309410513305355
+          },
+          "12": {
+            "cases": 31,
+            "bias": 1.6115282240132465,
+            "mae": 3.656837209339515,
+            "rmse": 4.289455105574952
+          }
+        },
+        "realized_change": {
+          "under_2": {
+            "cases": 158,
+            "bias": 0.31712005801285054,
+            "mae": 1.4507753518436872,
+            "rmse": 1.8408194595196998
+          },
+          "2_to_under_5": {
+            "cases": 127,
+            "bias": 0.41972524015186174,
+            "mae": 2.867545167704418,
+            "rmse": 3.301946179538837
+          },
+          "5_or_more": {
+            "cases": 80,
+            "bias": 0.6353617550741484,
+            "mae": 6.020330442598376,
+            "rmse": 6.590535474132397
+          }
+        },
+        "squared_error_share_on_5_or_more": 0.644095022045072
+      },
+      "lag-only": {
+        "overall": {
+          "cases": 365,
+          "bias": 0.061647638992292815,
+          "mae": 3.197283413519682,
+          "rmse": 4.255132671595178
+        },
+        "seasons": {
+          "DJF": {
+            "cases": 90,
+            "bias": 1.2520614059335657,
+            "mae": 3.3203633444167115,
+            "rmse": 4.242581518654204
+          },
+          "MAM": {
+            "cases": 92,
+            "bias": -0.11226322841293306,
+            "mae": 4.506717552978487,
+            "rmse": 5.801850445625353
+          },
+          "JJA": {
+            "cases": 92,
+            "bias": -1.0466314068953049,
+            "mae": 2.746636022624849,
+            "rmse": 3.4023688629256417
+          },
+          "SON": {
+            "cases": 91,
+            "bias": 0.1805952543574051,
+            "mae": 2.2073320437546493,
+            "rmse": 3.0144957972940425
+          }
+        },
+        "months": {
+          "01": {
+            "cases": 31,
+            "bias": 1.356146354042243,
+            "mae": 3.1055903193706773,
+            "rmse": 3.7806457564609524
+          },
+          "02": {
+            "cases": 28,
+            "bias": 0.9341396321466616,
+            "mae": 3.1114216504239525,
+            "rmse": 4.122198790034082
+          },
+          "03": {
+            "cases": 31,
+            "bias": -0.034029525152121036,
+            "mae": 4.902534062345471,
+            "rmse": 6.633436970845057
+          },
+          "04": {
+            "cases": 30,
+            "bias": -0.05650825771775967,
+            "mae": 5.036390032171139,
+            "rmse": 6.249940649169464
+          },
+          "05": {
+            "cases": 31,
+            "bias": -0.24445335492713877,
+            "mae": 3.598314773425068,
+            "rmse": 4.253747113286026
+          },
+          "06": {
+            "cases": 30,
+            "bias": -1.2939933087729045,
+            "mae": 3.5574209758344457,
+            "rmse": 4.125467223611922
+          },
+          "07": {
+            "cases": 31,
+            "bias": -1.1563428616917997,
+            "mae": 2.1663515222828194,
+            "rmse": 2.7339590001304694
+          },
+          "08": {
+            "cases": 31,
+            "bias": -0.6975374664108099,
+            "mae": 2.542289923086625,
+            "rmse": 3.2264411446981325
+          },
+          "09": {
+            "cases": 30,
+            "bias": -0.6616302399357495,
+            "mae": 2.2102117343843286,
+            "rmse": 3.0530650190000714
+          },
+          "10": {
+            "cases": 31,
+            "bias": 0.3964641514827269,
+            "mae": 2.2016339933964053,
+            "rmse": 2.7876796541970124
+          },
+          "11": {
+            "cases": 30,
+            "bias": 0.7997562216210602,
+            "mae": 2.2103403384951545,
+            "rmse": 3.195787608654102
+          },
+          "12": {
+            "cases": 31,
+            "bias": 1.4351316083420917,
+            "mae": 3.7238578995207225,
+            "rmse": 4.755548278147328
+          }
+        },
+        "realized_change": {
+          "under_2": {
+            "cases": 158,
+            "bias": -0.03802063481739742,
+            "mae": 1.1164763181631465,
+            "rmse": 1.3661295630486097
+          },
+          "2_to_under_5": {
+            "cases": 127,
+            "bias": -0.13374666168635832,
+            "mae": 3.225278597975669,
+            "rmse": 3.4256130558517772
+          },
+          "5_or_more": {
+            "cases": 80,
+            "bias": 0.56868093209379,
+            "mae": 7.262435071524962,
+            "rmse": 7.764942450938385
+          }
+        },
+        "squared_error_share_on_5_or_more": 0.7298731611036168
+      },
+      "last-value": {
+        "overall": {
+          "cases": 365,
+          "bias": 0.030410958904109563,
+          "mae": 3.213972602739726,
+          "rmse": 4.340888741777788
+        },
+        "seasons": {
+          "DJF": {
+            "cases": 90,
+            "bias": 0.09777777777777782,
+            "mae": 3.2711111111111113,
+            "rmse": 4.208113855662917
+          },
+          "MAM": {
+            "cases": 92,
+            "bias": -0.09565217391304351,
+            "mae": 4.6869565217391305,
+            "rmse": 6.047259530240699
+          },
+          "JJA": {
+            "cases": 92,
+            "bias": -0.07282608695652178,
+            "mae": 2.633695652173913,
+            "rmse": 3.3812301594692356
+          },
+          "SON": {
+            "cases": 91,
+            "bias": 0.19560439560439566,
+            "mae": 2.254945054945055,
+            "rmse": 3.0882264905836903
+          }
+        },
+        "months": {
+          "01": {
+            "cases": 31,
+            "bias": 0.09032258064516123,
+            "mae": 2.9419354838709673,
+            "rmse": 3.660512920167019
+          },
+          "02": {
+            "cases": 28,
+            "bias": -0.060714285714285686,
+            "mae": 3.1392857142857133,
+            "rmse": 4.153096951157568
+          },
+          "03": {
+            "cases": 31,
+            "bias": -0.39354838709677425,
+            "mae": 5.15483870967742,
+            "rmse": 6.902313777558288
+          },
+          "04": {
+            "cases": 30,
+            "bias": -5.921189464667501e-17,
+            "mae": 5.2,
+            "rmse": 6.518230843820533
+          },
+          "05": {
+            "cases": 31,
+            "bias": 0.10967741935483889,
+            "mae": 3.72258064516129,
+            "rmse": 4.446310540139414
+          },
+          "06": {
+            "cases": 30,
+            "bias": -0.4266666666666668,
+            "mae": 3.4666666666666677,
+            "rmse": 4.112501266463838
+          },
+          "07": {
+            "cases": 31,
+            "bias": 0.01612903225806463,
+            "mae": 2.0225806451612907,
+            "rmse": 2.589494906534428
+          },
+          "08": {
+            "cases": 31,
+            "bias": 0.18064516129032251,
+            "mae": 2.4387096774193546,
+            "rmse": 3.2949619411380744
+          },
+          "09": {
+            "cases": 30,
+            "bias": -0.0366666666666666,
+            "mae": 2.243333333333333,
+            "rmse": 3.11325124802566
+          },
+          "10": {
+            "cases": 31,
+            "bias": 0.41290322580645156,
+            "mae": 2.2838709677419353,
+            "rmse": 2.921113353809888
+          },
+          "11": {
+            "cases": 30,
+            "bias": 0.20333333333333325,
+            "mae": 2.2366666666666664,
+            "rmse": 3.2279508463833007
+          },
+          "12": {
+            "cases": 31,
+            "bias": 0.24838709677419357,
+            "mae": 3.7193548387096773,
+            "rmse": 4.736304534672712
+          }
+        },
+        "realized_change": {
+          "under_2": {
+            "cases": 158,
+            "bias": -0.03860759493670877,
+            "mae": 0.9158227848101269,
+            "rmse": 1.0856078038580363
+          },
+          "2_to_under_5": {
+            "cases": 127,
+            "bias": -0.1598425196850394,
+            "mae": 3.2732283464566927,
+            "rmse": 3.37446408693525
+          },
+          "5_or_more": {
+            "cases": 80,
+            "bias": 0.4687499999999999,
+            "mae": 7.6587499999999995,
+            "rmse": 8.097414710881491
+          }
+        },
+        "squared_error_share_on_5_or_more": 0.762662824358335
+      }
+    },
+    "improved": {
+      "lag-only": {
+        "mae": true,
+        "rmse": true
+      },
+      "last-value": {
+        "mae": true,
+        "rmse": true
+      }
+    },
+    "replicated": true
+  },
+  "audit": {
+    "frozen_before_download": true,
+    "original_history_prefix_unchanged": true,
+    "matched_cases": 365,
+    "all_cutoffs_before_targets": true,
+    "independently_recomputed_metrics": [
+      "mae",
+      "rmse"
+    ],
+    "byte_identical_replay_files": [
+      "matched-cases.csv",
+      "summary.json",
+      "annual-plus-lag/predictions.csv",
+      "annual-plus-lag/benchmark_predictions.csv",
+      "annual-plus-lag/scores.json",
+      "lag-only/predictions.csv",
+      "lag-only/benchmark_predictions.csv",
+      "lag-only/scores.json"
+    ],
+    "targeted_tests_passed": 84
+  }
+}

@@ -5,6 +5,15 @@ uses a caller-acquired NOAA daily maximum-temperature CSV with station and
 quality attributes. It preserves the source bytes and the normalized calendar
 as separate snapshots in its output directory.
 
+The [seasonal follow-up](../docs/noaa-seasonality.md) reuses the same normalized
+snapshot and saved actuals for all candidates. It reads the caller-selected
+NOAA run directory without a new download.
+
+For the [2025 evaluation](../docs/noaa-later-period.md), first freeze the exact
+2023–2024 normalized snapshot. Then supply the separate caller-acquired 2025
+NOAA file. The script preserves the 2025 raw bytes and appends the validated
+rows to the frozen history without rewriting its prefix.
+
 The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
 state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
 generates its own 100-day synthetic CSV and registers it in the example output
