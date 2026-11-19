@@ -1,0 +1,410 @@
+{
+  "kind": "innovation_particle_feasibility_summary",
+  "source_directory": "runs/innovation-particles-verified-20261119",
+  "study_precision_status": "unresolved",
+  "config_sha256": "681f6afd3759c7c24195462b1ff87486568a43b7ab8d101d48be6f72f16418ea",
+  "source_sha256": {
+    "scripts/run_innovation_particles.py": "a770b9af248156220b9604295068390a120a7601d66481f0fda453dcc5bd2dd9",
+    "src/model_pipelining/innovation_particles.py": "5aeaf55e5a477a92866e86271742d653e800079702684b58aaca04aba6256e3a",
+    "src/model_pipelining/innovation_reference.py": "878d48db0af1b5125149fea2b803afec1b5f4e4f505c5a9214efbe935af933a2",
+    "src/model_pipelining/local_level_variance.py": "6bc7f83f0f5a5c6bca7717ad949f863e3892fb8435a5ce493ad63c4a98ce108b",
+    "src/model_pipelining/models.py": "77c8dc0a482aa72d267d2cef09a90b85d4fc3874b0443749e125179beb59621f",
+    "src/model_pipelining/mixtures.py": "6f548ff781d2017a021c08f3ff48292151d6fe4287a47a3c555b7b9f009e7899",
+    "src/model_pipelining/inference.py": "88ea1364e393f5a135acf55c9b4366da626b231b97b0cba87f1bee58361409e7",
+    "src/model_pipelining/uncertainty.py": "4ede13e6994f74123aec7e271caa0cd7bbb711137b199c3dd4ecf1787145ee12"
+  },
+  "cases": [
+    {
+      "name": "short-prior",
+      "observations": 0,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": null,
+      "attempted_particles": [],
+      "maximum_scaled_halfwidth": null,
+      "refinement_envelope": null,
+      "minimum_variance_ancestors": null,
+      "replicate_evidence_ess": null,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 1.503686064552312e-11,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-short",
+      "observations": 3,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.004066686669889476,
+      "refinement_envelope": 0.016123208576828613,
+      "minimum_variance_ancestors": 8192,
+      "replicate_evidence_ess": 31.99919415798549,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 0.001333337360692799,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-quiet",
+      "observations": 6,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.011433723061001419,
+      "refinement_envelope": 0.039944334899878975,
+      "minimum_variance_ancestors": 4857,
+      "replicate_evidence_ess": 31.993435769525785,
+      "oracle_comparison": {
+        "status": "failed",
+        "maximum_scaled_difference": 0.007358263627471828,
+        "outside_empirical_envelope": 2,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-gradual",
+      "observations": 6,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.0070313430249309,
+      "refinement_envelope": 0.02219036488458216,
+      "minimum_variance_ancestors": 8192,
+      "replicate_evidence_ess": 31.99765119358594,
+      "oracle_comparison": {
+        "status": "failed",
+        "maximum_scaled_difference": 0.0029058188409741836,
+        "outside_empirical_envelope": 1,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-abrupt",
+      "observations": 6,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.008106522665966965,
+      "refinement_envelope": 0.028263670443613626,
+      "minimum_variance_ancestors": 8192,
+      "replicate_evidence_ess": 31.996724786312903,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 0.004951333378103995,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-dominant",
+      "observations": 6,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.009295555993644856,
+      "refinement_envelope": 0.03301213824121929,
+      "minimum_variance_ancestors": 8192,
+      "replicate_evidence_ess": 31.99674359502796,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 0.0062161550269039505,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "short-cap-eight",
+      "observations": 8,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.020285693378639426,
+      "refinement_envelope": 0.07206603524031888,
+      "minimum_variance_ancestors": 4857,
+      "replicate_evidence_ess": 31.983215246702933,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 0.011935779661011559,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "zero-jump",
+      "observations": 3,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": null,
+      "attempted_particles": [],
+      "maximum_scaled_halfwidth": null,
+      "refinement_envelope": null,
+      "minimum_variance_ancestors": null,
+      "replicate_evidence_ess": null,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 2.3480362953110813e-13,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "always-jump",
+      "observations": 3,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": null,
+      "attempted_particles": [],
+      "maximum_scaled_halfwidth": null,
+      "refinement_envelope": null,
+      "minimum_variance_ancestors": null,
+      "replicate_evidence_ess": null,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 3.9141339742015523e-13,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "coincident-scales",
+      "observations": 3,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": null,
+      "attempted_particles": [],
+      "maximum_scaled_halfwidth": null,
+      "refinement_envelope": null,
+      "minimum_variance_ancestors": null,
+      "replicate_evidence_ess": null,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 7.632783294297951e-13,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "state-atoms",
+      "observations": 3,
+      "oracle": true,
+      "status": "completed",
+      "accepted_particles": 8192,
+      "attempted_particles": [
+        4096,
+        8192
+      ],
+      "maximum_scaled_halfwidth": 0.00401353751873606,
+      "refinement_envelope": 0.013743035808588837,
+      "minimum_variance_ancestors": 8192,
+      "replicate_evidence_ess": 31.999605558244085,
+      "oracle_comparison": {
+        "status": "passed",
+        "maximum_scaled_difference": 0.0016442569919447036,
+        "outside_empirical_envelope": 0,
+        "scope": "Requested moments, every short path probability and CDF/density probes; empirical envelope, not coverage proof"
+      }
+    },
+    {
+      "name": "stable-42",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 16384,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384
+      ],
+      "maximum_scaled_halfwidth": 0.028839845317374373,
+      "refinement_envelope": 0.07752279431030888,
+      "minimum_variance_ancestors": 1569,
+      "replicate_evidence_ess": 31.973740150888432,
+      "oracle_comparison": null
+    },
+    {
+      "name": "abrupt-42",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 16384,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384
+      ],
+      "maximum_scaled_halfwidth": 0.030829193082841957,
+      "refinement_envelope": 0.07769309603892736,
+      "minimum_variance_ancestors": 1581,
+      "replicate_evidence_ess": 31.965136001380205,
+      "oracle_comparison": null
+    },
+    {
+      "name": "gradual-42",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 16384,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384
+      ],
+      "maximum_scaled_halfwidth": 0.03256327957581737,
+      "refinement_envelope": 0.08898127477954587,
+      "minimum_variance_ancestors": 1475,
+      "replicate_evidence_ess": 31.971717025388102,
+      "oracle_comparison": null
+    },
+    {
+      "name": "stable-314",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 32768,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384,
+        32768
+      ],
+      "maximum_scaled_halfwidth": 0.020115965912361602,
+      "refinement_envelope": 0.07760576827243773,
+      "minimum_variance_ancestors": 3674,
+      "replicate_evidence_ess": 31.983890894600197,
+      "oracle_comparison": null
+    },
+    {
+      "name": "abrupt-314",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 16384,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384
+      ],
+      "maximum_scaled_halfwidth": 0.030845116344677844,
+      "refinement_envelope": 0.09379517830513867,
+      "minimum_variance_ancestors": 1894,
+      "replicate_evidence_ess": 31.965151863719537,
+      "oracle_comparison": null
+    },
+    {
+      "name": "gradual-314",
+      "observations": 160,
+      "oracle": false,
+      "status": "completed",
+      "accepted_particles": 32768,
+      "attempted_particles": [
+        4096,
+        8192,
+        16384,
+        32768
+      ],
+      "maximum_scaled_halfwidth": 0.036213744854149556,
+      "refinement_envelope": 0.08807288598087021,
+      "minimum_variance_ancestors": 2856,
+      "replicate_evidence_ess": 31.97512332584423,
+      "oracle_comparison": null
+    }
+  ],
+  "validation": {
+    "status": "passed",
+    "study_precision_status": "unresolved",
+    "source_hashes_checked": 8,
+    "cases_checked": 17,
+    "all_saved_level_aggregations_recomputed": 34,
+    "full_short_case_replays": 11,
+    "selected_long_final_level_replicate_replays": 12,
+    "long_replay_indices": [
+      0,
+      31
+    ],
+    "full_long_study_replay": false,
+    "rare_path_envelope_misses": [
+      {
+        "case": "short-quiet",
+        "quantity": "sequence_probabilities[28]",
+        "scaled_error": 5.026650786304123e-06,
+        "empirical_envelope_with_numerical_allowance": 5e-06,
+        "scaled_mcse": 0.0
+      },
+      {
+        "case": "short-quiet",
+        "quantity": "sequence_probabilities[41]",
+        "scaled_error": 6.258310721343775e-06,
+        "empirical_envelope_with_numerical_allowance": 5e-06,
+        "scaled_mcse": 0.0
+      },
+      {
+        "case": "short-gradual",
+        "quantity": "sequence_probabilities[7]",
+        "scaled_error": 2.0438046472640992e-05,
+        "empirical_envelope_with_numerical_allowance": 8.687034788640982e-06,
+        "scaled_mcse": 8.297332857282516e-07
+      }
+    ],
+    "model_approval": false,
+    "seconds": 21.730617868999616,
+    "execution_environment": {
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "validator_sha256": "719487208f52f5b320ed3b314144f0345039e7dcd8e0cf3d990e6a38c03eb05d"
+  },
+  "fixture_identity": [
+    {
+      "case": "stable-42",
+      "observations": 160,
+      "status": "exact_match",
+      "source": "runs/model-review-study-20261119-fixed/source/stable.csv"
+    },
+    {
+      "case": "abrupt-42",
+      "observations": 160,
+      "status": "exact_match",
+      "source": "runs/model-review-study-20261119-fixed/source/mean-shift.csv"
+    },
+    {
+      "case": "gradual-42",
+      "observations": 160,
+      "status": "exact_match",
+      "source": "runs/model-review-study-20261119-fixed/source/gradual.csv"
+    }
+  ],
+  "repository_verification": {
+    "unittest_tests": 431,
+    "status": "passed",
+    "documentation_walkthrough": "passed: two temporary 170-case runs and comparison"
+  },
+  "next_step": "Resolve overconfident rare-path uncertainty against retained oracle failures before forecast/provider integration."
+}

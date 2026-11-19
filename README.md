@@ -11,6 +11,25 @@ an implementation is correct or that a model is suitable for an application.
 
 ## Start here
 
+The conservative probability follow-up encloses all retained short-oracle
+probabilities. Three short cases and all six 160-observation cases still fail
+the precision criteria. The next pilot uses the observations to improve the
+importance proposal while preserving a provable weight bound. See the
+[follow-up results](docs/innovation-probability-bounds.md) and
+[pilot plan](docs/next-session.md#next-work).
+
+To resume development, read the [checkpoint and next-session note](docs/next-session.md)
+for completed work, current priorities and saved evidence locations.
+The [three-model development study](docs/model-review-study.md) records nine
+complete reference reviews, matched scenario/prior comparisons, findings and the
+next bounded modeling question, with reproduction commands.
+The [short-history innovation reference](docs/innovation-reference.md) now checks
+per-transition small/large innovations through two independent calculations,
+including Gaussian limits and known-state atoms. It is capped at eight
+observations. The [longer-history particle prototype](docs/innovation-particles.md)
+supplies replicated Monte Carlo and refinement diagnostics, with a frozen
+160-observation feasibility study and retained rare-path failures.
+
 1. Follow [the forecasting walkthrough](docs/forecasting.md). It explains the
    workflow and runs the point baseline and fixed local-level model against the
    same preserved input.
@@ -43,6 +62,9 @@ explains which checks support each implementation claim.
 | Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
 | Bayesian mean and variance | Learn both with a normal/inverse-gamma prior, return exact Student-t forecasts, and optionally audit the joint posterior |
 | Joint variance learning | Explicit categorical evolution-variance prior, continuous observation-variance learning, full marginal forecasts and saved confounding |
+| Innovation reference | Enumerate every short-history small/large innovation sequence; independent batch/adaptive and filtering/quadrature checks, without a forecasting adapter |
+| Innovation approximation | Gaussian-state integration with sampled V/labels, independent-run MCSE, particle refinement and retained unresolved checks; standalone numerical prototype |
+| Innovation probability bounds | Independent bounded importance draws with simultaneous finite-sample intervals, nonzero unseen-event uncertainty and retained unresolved normalizers |
 | Simulation calibration | Data-free continuous/discrete/mixed posterior-CDF calibration, recovery, finite-trial uncertainty and saved failures |
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
@@ -166,6 +188,7 @@ explains how to read both execution and review status.
 | Check inference on simulated parameters and data | [Calibration](docs/calibration.md), [discrete/mixed calibration](docs/mixed-calibration.md) |
 | Investigate dynamics and learn both variances | [Joint model and study](docs/joint-variance.md) |
 | Criticize joint-model generated data and prior effects | [Joint evidence](docs/joint-evidence.md) |
+| Validate per-transition innovation inference | [Short oracle](docs/innovation-reference.md), [particle prototype](docs/innovation-particles.md) |
 | Understand previous choices | [Decision history](docs/decisions.md) |
 | Read the earlier, broader storage proposal | [Historical data-versioning proposal](docs/data-versioning.md) |
 

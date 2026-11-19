@@ -23,6 +23,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [sequential.py](sequential.py) | Freeze historical predictive laws and score PIT/errors on eligible development releases |
 | [calibration.py](calibration.py) | Data-free posterior-CDF calibration, recovery and explicit failure evidence |
 | [local_level_joint_variance.py](local_level_joint_variance.py) | Categorical W and continuous V joint learning, with full marginal forecasts |
+| [innovation_reference.py](innovation_reference.py) | Eight-observation all-sequence small/large innovation reference, independent batch/adaptive and Kalman/quadrature calculations |
 | [evidence_joint_level.py](evidence_joint_level.py) | Joint W/V/state replication and prior influence |
 | [state_mixtures.py](state_mixtures.py) | Credible-state CDF/generalized quantiles with genuine probability atoms |
 | [dynamics_study.py](dynamics_study.py) | Explicit dynamics comparisons on matched synthetic development cases |
@@ -690,6 +691,11 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 
 ## Discrete and mixed calibration
 
+Joint observation-variance quantiles verify their conditional-quantile bracket
+signs and widen a failing side to checked integration support before solving the
+marginal CDF. This handles nearly dominant categorical components without
+relaxing numerical acceptance; see [details](../../docs/joint-variance.md).
+
 The joint provider now supports `calibration`. It excludes fixed parameters and returns left/inclusive CDF bounds and actual closed-interval mass. `calibration_transform(item, *, seed, trial, parameter, interval_level)` randomizes only genuine jumps using independent parameter-labelled streams. Shared summaries retain randomized counts/mass and all failure records. Continuous CDF values and dataset seeds are unchanged. See [the contract and limits](../../docs/mixed-calibration.md).
 
 ## Saved experiment review
@@ -724,7 +730,89 @@ failures for unsupported moments/precision. `compare_runs` adds complete paired
 loss summaries and a chart when both runs declare distributions; review reports
 also display these losses. See [the full contract](../../docs/distribution-scoring.md).
 
+## Bounded innovation reference API
+
+Import `InnovationMixtureReference`, `ReferenceSettings`,
+`ReferencePrecisionError` and `run_innovation_reference` from
+`model_pipelining.innovation_reference`:
+
+```python
+from model_pipelining.innovation_reference import (
+    InnovationMixtureReference, ReferenceSettings, run_innovation_reference,
+)
+
+result = run_innovation_reference(
+    (0., .1, -.1, 3.8, 4.1, 3.9),
+    model=InnovationMixtureReference(small_variance=.01, large_variance=4., jump_probability=.05),
+    settings=ReferenceSettings(),
+    predictive_points=(-2., 0., 2., 4., 6.),
+    state_points=(0.,), variance_points=(.5, 1., 2.),
+)
+```
+
+Model/settings are optional and default to those records' defaults. Inputs are
+finite daily values, zero to eight observations; query grids are finite,
+strictly increasing tuples/lists of up to 64 points. V queries must be positive.
+`prior_shape > 1`; initial/small variances may be zero. The returned dictionary
+contains both numerical results, every positive-prior sequence, moment/CDF/density
+comparisons, precision/tail evidence and a required agreement check. Invalid
+inputs raise; unresolved computation raises `ReferencePrecisionError` with
+`.evidence`. No `Forecaster`, fit-evidence provider or forecast serializer is added.
+
+`enumerate_sequences(model, observation_count)` returns integer labels of shape
+`(sequence_count, observation_count)` and their log prior probabilities. Probability
+zero/one retains only the genuinely possible past sequence; coincident variances
+retain all labels at an interior probability. See [the model, defaults, CLI and
+feasibility limits](../../docs/innovation-reference.md).
+
+## Innovation particle API
+
+Import `ParticleSettings`, `ParticlePrecisionError`, and
+`run_innovation_particles` from `model_pipelining.innovation_particles`.
+`run_innovation_particles(values, *, model=None, settings=None,
+predictive_points=(-2.,0.,2.,4.,6.), state_points=(0.,), variance_points=(.5,1.,2.))`
+accepts zero to 512 daily finite values and the same model/query types as the
+bounded oracle. It returns a JSON-compatible dictionary with posterior probes,
+moments/dependence, independent-run MCSE, all attempted particle refinements,
+raw replicate summaries and ESS/ancestry diagnostics. Short histories also report
+all estimated path probabilities. No long-history path enumeration occurs.
+
+Settings default to 512..4,096 particles, 16 independent replicates, seed 0,
+resampling fraction .5, scaled tolerance .05, confidence .95 and minimum
+replicate-evidence fraction .5. Counts double and require at least two levels.
+Stochastic fits require `prior_shape > 2`. The prior and Gaussian limits
+automatically use checked native scalar quadrature, retaining shape > 1 and
+`mcse: null`. Invalid inputs raise `ValueError`; unresolved numerical or empirical
+precision raises `ParticlePrecisionError` with complete `.evidence`.
+
+Acceptance concerns empirical independent-run diagnostics at the requested probes.
+It certifies neither missing posterior mass nor rare-path coverage; an unvisited
+path can have estimated probability and MCSE both zero. The frozen study retains
+such oracle failures. No forecasting/evidence interface is added. See
+[the full method, example and study](../../docs/innovation-particles.md).
+
+## Conservative innovation probability API
+
+Import `ProbabilityBoundSettings` and `bound_innovation_probabilities` from
+`model_pipelining.innovation_probability_bounds`. The function accepts the same
+`values`, fixed `model`, and predictive/state/V query grids as the particle API;
+its separate `settings` specifies one fixed sample count, seed, confidence and
+tolerance. It automatically draws independent bounded importance samples and
+returns simultaneous probability intervals, normalizer bounds, sufficient
+statistics, proposal-visit and underflow counts. No observed visits still yield
+positive uncertainty. A nonpositive normalizer lower bound or overly wide
+intervals returns `status: unresolved`; the caller must inspect it. Invalid or
+nonfinite calculations raise `ValueError`. There is no automatic retry or change
+to `run_innovation_particles`, and these intervals are not replacement MCSEs.
+They do not bound densities, unbounded/joint moments or all points of a CDF.
+See [signature, derivation, confidence scope and frozen results](../../docs/innovation-probability-bounds.md).
+
 ## Repository verification workflow
+
+The explicit [development review study](../../docs/model-review-study.md) composes
+the existing library workflows through `scripts/review_model_study.py`; it adds
+no model capability or library runner stage. Its saved-only aggregation validates
+complete matching cohorts before deriving PIT, window summaries and paired losses.
 
 [GitHub Actions](../../docs/continuous-integration.md) runs the locked environment,
 complete tests and `scripts/check_documentation.py --walkthrough`. The checker

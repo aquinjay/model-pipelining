@@ -63,6 +63,12 @@ nonzero process status.
 
 ## Scientific evidence and review
 
+The conservative innovation-probability tests automatically check the independent
+dense-likelihood envelope identity, unseen-event bounds, near-dominant labels,
+atoms/Gaussian limits, invalid budgets, RNG isolation and bounded CLI/replay
+fixtures. The [full saved-study follow-up](innovation-probability-bounds.md)
+requires explicit caller execution and is not rerun or relabelled by CI.
+
 The suite includes small seeded calibration/reference checks. Large original and
 follow-up calibration studies remain explicit caller actions with saved evidence,
 not an automatic CI deliverable. CI completion means repository computations and
@@ -70,6 +76,21 @@ examples passed in the stated environment. Model adequacy, interpretation of
 predictive discrepancies/prior influence, scientific approval and merging remain
 separate decisions. Repository branch protection is configured by a repository
 administrator if a mandatory status check is wanted.
+
+The [three-model development review](model-review-study.md), its large calibration
+and alternative-prior simulations remain explicit research commands. CI runs the
+small cohort/continuation guards and seeded quantile regression in the ordinary
+suite; it does not rerun the large study or update its curated results.
+The bounded innovation-reference tests also run both numerical methods, exact/
+Gaussian limits and small CLI fixtures automatically. They require no saved local
+study; the seven-case reference command and any larger scientific validation
+remain explicit exercises.
+The particle tests add small independent conditioning/proposal/resampling and
+oracle checks, a deliberately unresolved 160-observation fit with tiny resource
+limits, and temporary CLI persistence/replay exercises. The full 17-case
+[particle study](innovation-particles.md) remains an explicit caller action; CI
+does not regenerate its curated results or imply that its empirical uncertainty
+checks have passed.
 
 ## Verification at introduction
 
@@ -79,8 +100,9 @@ examples completed both 170-case runs and the saved comparison. Nine checker tes
 cover stale links/anchors, encoded paths, reference links, ignored artifacts,
 syntax errors, non-execution and CLI failure codes. The complete suite has 391
 tests. The workflow passed local actionlint 1.7.7 validation, with its official
-release checksum verified. Hosted execution starts when this branch is pushed;
-local validation does not claim a GitHub-hosted result.
+release checksum verified. Hosted push and PR runs subsequently passed before
+[PR #6](https://github.com/aquinjay/model-pipelining/pull/6) merged at `0ff5def`.
+See the [checkpoint note](next-session.md) for the run links and next tasks.
 
 References: [GitHub Python CI](https://docs.github.com/en/actions/tutorials/build-and-test-code/python),
 [uv GitHub Actions integration](https://docs.astral.sh/uv/guides/integration/github/),

@@ -1,7 +1,33 @@
 # Configuration
 
+The [probability-bound follow-up](../docs/innovation-probability-bounds.md)
+reuses a saved particle study's frozen design and original failures. It has no
+separate JSON configuration: callers explicitly choose `--source-directory`, a
+new `--output-directory`, and fixed `--samples`, `--seed`, `--confidence` flags on
+`scripts/check_innovation_probability_bounds.py`. The command automatically
+freezes the inputs and source files and divides confidence error across the
+declared cases/probes; it never changes the parent particle configuration.
+
+[innovation_particles.json](innovation_particles.json) separately declares the
+particle numerical exercise: fixed model, particle/replicate/seed/refinement
+settings, finite query grids, explicit short oracle cases and long synthetic
+generator settings. Run `scripts/run_innovation_particles.py --config configs/innovation_particles.json --output-directory runs/particles-new`
+explicitly; omission of `--config` chooses this default file. The command freezes
+every generated value before fitting, saves all attempts/oracle comparisons and
+automatically plots the saved results. Unresolved cases produce exit 1 without
+discarding evidence. See [method, limits and results](../docs/innovation-particles.md).
+
+[innovation_reference.json](innovation_reference.json) is a separate bounded
+numerical exercise: fixed transition settings, unknown-V prior, precision
+settings, named short histories and predictive/state/V query grids. It is not
+an experiment/backtest configuration. Explicitly run
+`scripts/run_innovation_reference.py --config configs/innovation_reference.json --output-directory runs/reference-new`;
+omitting `--config` selects this fixed default file. The command freezes expanded
+inputs before calculating, runs both independent references and Gaussian limits,
+and plots saved results automatically. See [scope and results](../docs/innovation-reference.md).
+
 The backtest takes an optional versioned experiment through Python arguments or
-`--experiment FILE` in its three run scripts. The separate diagnostic command
+`--experiment FILE` in its four run scripts. The separate diagnostic command
 accepts an explicitly selected JSON file via `--config`. These are different
 schemas. No command discovers files from this directory automatically.
 
@@ -66,7 +92,7 @@ explicit caller actions.
 |---|---|---|
 | Input | `dataset` plus exactly one of `snapshot_id` or `tag`; resolve a tag once | `input` pins the permanent dataset/ID |
 | Task/evaluation | `experiment` or legacy daily arguments; default minimum history 30 | Expanded `experiment`, `experiment_sha256`, and task summary |
-| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` / `LocalLevelVariance(...)` | `model.configuration` and model identity/capabilities |
+| Model | `TrainingMean` by default or explicit `LocalLevel(...)` / `NormalMean(...)` / `NormalMeanVariance(...)` / `LocalLevelVariance(...)` / `LocalLevelJointVariance(...)` | `model.configuration` and model identity/capabilities |
 | Uncertainty request | `interval_levels=(0.8, 0.95)`; all run scripts accept `--interval-levels 0.8 0.95` | `evaluation` |
 | Local storage | Snapshot `store` and a new `output_directory` | Local locations are separate from permanent input identity |
 
@@ -174,6 +200,14 @@ The joint prior config includes explicit `evolution_weights`, V-scale and initia
 Joint calibration uses `scripts/calibrate_model.py --model local-level-joint-variance --config configs/local_level_joint_priors.json`. Set `initial_variance: 0` explicitly to investigate known-initial mixed-state atoms. Calibration options remain separate from historical experiment evidence settings. See [the mixed calibration guide](../docs/mixed-calibration.md).
 
 ## Saved review requirements
+
+The explicit [three-model study](../docs/model-review-study.md) expands the three
+existing prior configuration files above, retaining every named alternative.
+Its experiment requires predictive, prior-influence and sequential evidence;
+the study saves expanded settings and configuration hashes before execution.
+It runs only when the caller invokes `scripts/review_model_study.py`.
+The separate `scripts/check_study_priors.py` restores expanded alternatives from
+that saved design, rather than rereading possibly changed configuration files.
 
 `scripts/review_experiment.py` reads the evidence plan from the saved forecast;
 it accepts explicit forecast/evidence/calibration folders and a new output folder,

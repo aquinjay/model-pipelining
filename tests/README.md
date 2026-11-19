@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **391 tests**. They use temporary fixtures/stores rather than
+There are currently **442 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -15,7 +15,6 @@ restricted home, use the [writable cache setup](../docs/parameter-uncertainty.md
 before running sampler tests.
 
 ## Test map
-
 | File | Count | Main evidence |
 |---|---:|---|
 | [test_ingest.py](test_ingest.py) | 17 | Exact copies, overwrite/failure behavior, receipts, CSV/XLSX equivalence, worksheets/headers, invalid options |
@@ -36,15 +35,22 @@ before running sampler tests.
 | [test_evidence_interfaces.py](test_evidence_interfaces.py) | 22 | Provider extension without model dispatch, v1/v2 migration/comparison, caller-required fits/workflows, missing/optional evidence, pinned tags/history/settings, numerical failures, replay/final isolation, saved-only/legacy plots and both new CLI modes |
 | [test_sequential.py](test_sequential.py) | 9 | Full predictive CDFs, freezing, release-aware histories, own-target/final isolation, replay, failures and CLI |
 | [test_calibration.py](test_calibration.py) | 10 | Independent CDF references, simulation covariance, recovery, failed trials, seed/prefix isolation and CLI |
-| [test_joint_variance.py](test_joint_variance.py) | 13 | Independent batch/adaptive joint posterior references, limits, uncertainty, confounding, controlled studies and CLI |
+| [test_joint_variance.py](test_joint_variance.py) | 14 | Independent batch/adaptive joint posterior references, dominant-component V-quantile bracket repair, limits, uncertainty, confounding, controlled studies and CLI |
 | [test_joint_evidence.py](test_joint_evidence.py) | 10 | Joint parameter dependence, fresh paths, atoms, prior mass, support restrictions and historical evidence |
 | [test_mixed_calibration.py](test_mixed_calibration.py) | 10 | Randomized transforms, discrete/mixed CDF bounds, interval mass, replay and calibration failure/CLI behavior |
-
 | [test_experiment_review.py](test_experiment_review.py) | 18 | Saved-only review, identities/receipts, scope, missing/failed evidence, version conflicts, fit requirements, complete trial records, paths/concurrency and CLI |
-
 | [test_distribution_scoring.py](test_distribution_scoring.py) | 21 | Independent CDF-integral/density losses, full mixtures/tails/units, precision, all Bayesian adapters, freezing, release/final isolation, replay, partial failures and matched saved comparisons/review |
-
 | [test_documentation_checks.py](test_documentation_checks.py) | 9 | Local links/anchors/references, ignored artifact discovery, Python/Bash syntax without execution, incomplete fences and CLI failure codes |
+| [test_model_review_study.py](test_model_review_study.py) | 9 | Original fixture bytes/shared noise, saved-only full-CDF metrics, final exclusion, matched histories/vintages, rejected partial/duplicate HPD and score cohorts, fixed windows, continuation identity/source guards, JSON joint settings and retained failures/partial output |
+| [test_innovation_reference.py](test_innovation_reference.py) | 14 | Independent batch/filter conditioning, direct V integrals, exact Student-t/IG and Gaussian limits, label independence, future probability, posterior dependence, atoms, all 256 paths, bounded/invalid input, precision failures, RNG isolation and CLI/replay persistence |
+| [test_innovation_particles.py](test_innovation_particles.py) | 16 | Independent dense smoothing, hand optimal label/evidence update, unbiased systematic resampling, ancestry alignment, evidence-weighted joint moments and jackknife MCSE, oracle/limit/atom checks, refinement failures, long history without enumeration, seed/global-RNG isolation, CLI failure persistence and successful replay |
+| [test_innovation_probability_bounds.py](test_innovation_probability_bounds.py) | 11 | Dense-likelihood/prior/proposal envelope identity, unseen-event positive uncertainty, vacuous-normalizer failure, retained quiet/gradual oracles, Gaussian limits and atoms, near-dominant components, fixed-seed/global-RNG isolation, bounded long histories, saved-statistic interval replay, validation and CLI input/source freezing/overwrite rejection |
+
+The probability tests verify the finite-sample calculation and its assumptions;
+they do not certify floating arithmetic or useful precision on long histories.
+The full [17-case probability-bound follow-up](../docs/innovation-probability-bounds.md)
+is an explicit caller action outside CI. Its original particle failures and
+unresolved broad intervals stay retained separately from passing software tests.
 
 ## Data behavior checked in detail
 
@@ -207,7 +213,7 @@ calibration exercise; it is not a difficult-posterior benchmark.
 
 ## Joint variance and dynamics verification
 
-`test_joint_variance.py` adds 13 tests: independent batch-likelihood/adaptive quadrature references, W posterior weights, predictive CDF and confounding, scalar limit/HPD, known-state degeneracy, mixture root roundoff, numerical failures, configuration, replay/isolation, shared-noise matched studies, CLI and saved-only plots.
+`test_joint_variance.py` adds 14 tests: independent batch-likelihood/adaptive quadrature references, W posterior weights, predictive CDF and confounding, scalar limit/HPD, known-state degeneracy, mixture root roundoff, dominant-component V-quantile brackets, numerical failures, configuration, replay/isolation, shared-noise matched studies, CLI and saved-only plots.
 
 ## Joint generative verification
 

@@ -1,5 +1,47 @@
 # Saved run files
 
+The explicit [probability-bound follow-up](../docs/innovation-probability-bounds.md)
+creates an `innovation_probability_bound_study` with copied parent `inputs/`,
+archived implementation `sources/`, source/input hashes and environment in
+`study.json`, per-case `cases/NAME.json`, `summary.json`, `validation.json` and
+the saved-only `probability-bounds.png`. Each case saves probability intervals,
+normalizer bounds, sample means/variances for recalculation, short-path proposal
+visits and underflow counts. It uses independent fixed-budget samples without
+resampling. `status: completed` in the study concerns execution; the separate
+`precision_status` can remain unresolved and cause exit code 1. Neither this
+folder nor the original particle folder is shared forecast/review evidence.
+
+The explicit [particle exercise](../docs/innovation-particles.md) creates an
+`innovation_particle_study`: frozen expanded `design.json`, source/environment
+manifest `study.json`, `cases/NAME.json`, short `oracles/NAME.json`, `summary.json`,
+`checks.json`, pending `review.json` and `particles.png`. Each stochastic case
+retains every particle-count level, all independent-run raw summaries/evidence,
+MCSE/refinement checks and per-step ESS/resampling/V-ancestry diagnostics. Unresolved
+cases remain saved and cause a nonzero exit after the other cases execute. These
+probe-based numerical records are separate from forecasting fit artifacts and
+cannot be supplied to the shared experiment-review assembler.
+
+The explicit [innovation reference](../docs/innovation-reference.md) creates a
+separate `innovation_reference_study` folder: frozen `design.json`, `study.json`,
+both results per case, Gaussian-limit checks, summary/runtime/feasibility records,
+checks, pending human review and a saved-only chart. Failed numerical cases retain
+diagnostics and later cases continue. This eight-observation prototype folder is
+not a forecast run or input to the saved experiment-review assembler.
+
+The explicit [three-model review study](../docs/model-review-study.md) saves a
+study plan, generated source/store, calibration, nine reference reviews,
+alternative-prior forecasts, case/window summaries and paired losses under one
+new run directory. Its command orchestrates existing workflows and draws charts
+automatically. Ordinary forecast commands do not launch this study; retain the
+whole study directory to preserve the reports' source links.
+The separate `scripts/check_study_priors.py` command creates a new supplement
+directory containing predictive checks for every saved alternative prior. It
+restores the parent design and snapshots explicitly and draws charts automatically.
+After stopping an initial study process, `scripts/continue_model_review.py` can
+reuse its compatible complete artifacts and finish independent model/scenario
+jobs concurrently. It retains partial outputs before recomputing and writes a
+continuation receipt plus the latest review paths in the study manifest.
+
 This directory holds local execution evidence. Git tracks this README but ignores
 other contents: pushing code does not upload runs or the preserved data they use.
 For a runnable example, follow [the walkthrough](../docs/forecasting.md).
@@ -70,7 +112,7 @@ defines exact region/quantile validation and scoring rules.
 
 | File | Who creates it | Meaning |
 |---|---|---|
-| `forecast.png` | Explicit `plot_run` call; all three run scripts call it automatically | Saved means/actuals and the widest available HPD region by default |
+| `forecast.png` | Explicit `plot_run` call; all four run scripts call it automatically | Saved means/actuals and the widest available HPD region by default |
 | `fits/NNNNNN/trace.png` | Explicit `plot_fit` or normal-mean CLI trace flag | Saved audit traces/densities against exact references, with warmup separation |
 | `prior_predictive.csv` | Local-level script only | One 200-step simulated latent-level/observation trajectory before conditioning on data |
 | `prior_predictive.json` | Local-level script only | Seed, count, Python version, fixed settings, and pending prior review |

@@ -1,0 +1,337 @@
+{
+  "kind": "innovation_probability_bound_summary",
+  "source_directory": "runs/innovation-probability-bounds-checked-20261119",
+  "study_precision_status": "unresolved",
+  "study_confidence": 0.95,
+  "case_confidence": 0.9970588235294118,
+  "samples_per_case": 262144,
+  "source_sha256": {
+    "scripts/check_innovation_probability_bounds.py": "5b281617ee173260b6f1ab3354d2459bf7110a9fc3776320c2624ad54bdea4b0",
+    "src/model_pipelining/innovation_probability_bounds.py": "f8202d508a40aabf35f0ca27ac9ab066d9108c0aa9f444f9d64e376cd9c41c30",
+    "scripts/run_innovation_particles.py": "a770b9af248156220b9604295068390a120a7601d66481f0fda453dcc5bd2dd9",
+    "src/model_pipelining/innovation_particles.py": "5aeaf55e5a477a92866e86271742d653e800079702684b58aaca04aba6256e3a",
+    "src/model_pipelining/innovation_reference.py": "878d48db0af1b5125149fea2b803afec1b5f4e4f505c5a9214efbe935af933a2",
+    "src/model_pipelining/local_level_variance.py": "6bc7f83f0f5a5c6bca7717ad949f863e3892fb8435a5ce493ad63c4a98ce108b",
+    "src/model_pipelining/models.py": "77c8dc0a482aa72d267d2cef09a90b85d4fc3874b0443749e125179beb59621f",
+    "src/model_pipelining/mixtures.py": "6f548ff781d2017a021c08f3ff48292151d6fe4287a47a3c555b7b9f009e7899",
+    "src/model_pipelining/inference.py": "88ea1364e393f5a135acf55c9b4366da626b231b97b0cba87f1bee58361409e7",
+    "src/model_pipelining/uncertainty.py": "4ede13e6994f74123aec7e271caa0cd7bbb711137b199c3dd4ecf1787145ee12"
+  },
+  "input_sha256": {
+    "design.json": "f92a9d256d95d3f8d1042d6fd599739ffb278463555fe79b40889987f16298a4",
+    "study.json": "3b533c53cd4974ccf617bd7c7e0d66d99f15c94c0bb5d824cdeeceb4c5e69419",
+    "summary.json": "807c12489d0ab7d38ad28affb754d235db7d307e64b70cd7dfdb6d595b27fc8e",
+    "cases/short-prior.json": "0ecc8230b5962f0a278f8ed89d39e2510a29346a98b46b8b99521265cc659453",
+    "oracles/short-prior.json": "81f79763abede4a916c98a3a6314437997cf85d9d881505afb199aadd79d8e82",
+    "cases/short-short.json": "e4309418baf22d0429bbc02c7b1ac4ba52b830f1260b1c20a96524745eb4993b",
+    "oracles/short-short.json": "ff1c9d0c40c8fccc5573e815cbae40a7e30a466ff30d29fc8e9e7cebacf39b23",
+    "cases/short-quiet.json": "348e94aad080a09081710e6de2a4681956746db46e009d702713fdfd98b1dc75",
+    "oracles/short-quiet.json": "e14c2d950070170e499936341ebff79b790c3c68ebca692224b7d4939182e467",
+    "cases/short-gradual.json": "ea24afcf7677dea0dfcb555a56fb0e5ae4af5c0092c43f1b06a62684079a15b6",
+    "oracles/short-gradual.json": "1b87a713bdeee8f944d24a63fccaf4f23346f11d28bcf4ec26885aa6712146f8",
+    "cases/short-abrupt.json": "58dbb1b720e0d30ba99bed0d2b45fbeb2601f1ca321e18a706eb14159f40796d",
+    "oracles/short-abrupt.json": "9e04fdedd7af77ecc3d657d5002266b342600fcdbd0ce8da4e7abccb1debe330",
+    "cases/short-dominant.json": "23099849ac5acd3d03fa5bc3381029ba89a988e6ade4f8985f5b25c065a36377",
+    "oracles/short-dominant.json": "f1d344c06458b44114f704cb1ecbc83c0e7d34a70242a8ce27b7b3f4a2b10b80",
+    "cases/short-cap-eight.json": "8966f86405434aaecbd4b5078c441a23d4d986c61c338053acd48b423aac622d",
+    "oracles/short-cap-eight.json": "9ee4547a1c22a96571c3c273b9fe9d1c8ec814bf55a5a89c6f3babec6eba7472",
+    "cases/zero-jump.json": "e89d08307cfd6da248ea7083a60d9893dd1246b11f0955b8bdae935c43f5e126",
+    "oracles/zero-jump.json": "ddc40d9ecfeed576c3e7b753292bbfe83b463689fbc182708d47a1222682929c",
+    "cases/always-jump.json": "53abdefdb08dccaf8913427c775b07af88bf4fece496ee684a78e8433feb87c9",
+    "oracles/always-jump.json": "9465f20212bf59bb0eff98df247a4df7bb1a11c4e89290fdbc6780d3857dd2ab",
+    "cases/coincident-scales.json": "707f5c1ea62bf67158b7f086696ec0f9c5c2bd3213209ba7d92f75f70e164049",
+    "oracles/coincident-scales.json": "7841cad8e7fe96646cc07e2ad61c065c22a850b23a2786e2515c0503e3f734fc",
+    "cases/state-atoms.json": "594e5bd71425b74e4c5aa2240a117d2c3d38742e44b2e6f0b25b86238ce864da",
+    "oracles/state-atoms.json": "8422256ba2c3c9d22e28193392bd03e7b4327aa87fb78f3ff03c27972809fdb7",
+    "cases/stable-42.json": "b72c77a5ad8e34d9dcf4940f15b40e5d22d0a861acaebdb801911678396fc2b7",
+    "cases/abrupt-42.json": "00ef123fa18a4533d6aa1c29b114bcd3a8251540f7c02b688187c2935d431e30",
+    "cases/gradual-42.json": "bb0ffe4114e9ae9df94c29cd681ceed9f41ac2ada016a90bde40f47ba405da6c",
+    "cases/stable-314.json": "8ac63fa0a3b384e990aefc2687c6488331b497b53b052fbad8455bca4e79f861",
+    "cases/abrupt-314.json": "bd747b25b0b4004302c6ad879b26960caf4de12646e40ea9009a8e590102f5d5",
+    "cases/gradual-314.json": "3a0daf636648ac3b03f62547b439542ab0d42c4a1898edc1c9ea0b96e2ff957f"
+  },
+  "environment": {
+    "python": "3.14.10",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2"
+  },
+  "cases": [
+    {
+      "name": "short-prior",
+      "observations": 0,
+      "status": "completed",
+      "maximum_probability_width": 0.008640217654606874,
+      "scaled_normalizer_lower": 0.9999061172573463,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 27,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.1497160779999831
+    },
+    {
+      "name": "short-short",
+      "observations": 3,
+      "status": "unresolved",
+      "maximum_probability_width": 0.11402410725905254,
+      "scaled_normalizer_lower": 0.00898273508193255,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.19473547500001587
+    },
+    {
+      "name": "short-quiet",
+      "observations": 6,
+      "status": "completed",
+      "maximum_probability_width": 0.02209782485419287,
+      "scaled_normalizer_lower": 0.1719417653956895,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.20976932299993223
+    },
+    {
+      "name": "short-gradual",
+      "observations": 6,
+      "status": "completed",
+      "maximum_probability_width": 0.04147086957565216,
+      "scaled_normalizer_lower": 0.04001486763982831,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.22291224100001727
+    },
+    {
+      "name": "short-abrupt",
+      "observations": 6,
+      "status": "unresolved",
+      "maximum_probability_width": 0.9300327300156603,
+      "scaled_normalizer_lower": 0.00025879381093967414,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.22317814799998814
+    },
+    {
+      "name": "short-dominant",
+      "observations": 6,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 96,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.23899160999997093
+    },
+    {
+      "name": "short-cap-eight",
+      "observations": 8,
+      "status": "completed",
+      "maximum_probability_width": 0.02833295122684465,
+      "scaled_normalizer_lower": 0.11092374821890738,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 290,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.23373581100008778
+    },
+    {
+      "name": "zero-jump",
+      "observations": 3,
+      "status": "completed",
+      "maximum_probability_width": 0.051290720163413295,
+      "scaled_normalizer_lower": 0.04232056436644107,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 30,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.20528211499993176
+    },
+    {
+      "name": "always-jump",
+      "observations": 3,
+      "status": "completed",
+      "maximum_probability_width": 0.042230154669563036,
+      "scaled_normalizer_lower": 0.02549174420548243,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 30,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.1958201969999891
+    },
+    {
+      "name": "coincident-scales",
+      "observations": 3,
+      "status": "completed",
+      "maximum_probability_width": 0.052427105445821076,
+      "scaled_normalizer_lower": 0.04231384789847458,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.21234209599992937
+    },
+    {
+      "name": "state-atoms",
+      "observations": 3,
+      "status": "completed",
+      "maximum_probability_width": 0.057418269667099064,
+      "scaled_normalizer_lower": 0.05030488310140399,
+      "oracle_comparison": {
+        "status": "passed",
+        "outside_bounds": 0,
+        "checked_probabilities": 37,
+        "numerical_allowance": 5e-06
+      },
+      "elapsed_seconds": 0.1741001000000324
+    },
+    {
+      "name": "stable-42",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.826727941999934
+    },
+    {
+      "name": "abrupt-42",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.9460151939999832
+    },
+    {
+      "name": "gradual-42",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.9825163310000562
+    },
+    {
+      "name": "stable-314",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.9848886670000638
+    },
+    {
+      "name": "abrupt-314",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.988119451999978
+    },
+    {
+      "name": "gradual-314",
+      "observations": 160,
+      "status": "unresolved",
+      "maximum_probability_width": 1.0,
+      "scaled_normalizer_lower": 0.0,
+      "oracle_comparison": null,
+      "elapsed_seconds": 1.9751876949999314
+    }
+  ],
+  "original_empirical_failures": [
+    {
+      "case": "short-quiet",
+      "path": "011100",
+      "oracle_probability": 5.026650786304123e-06,
+      "original_particle_estimate": 0.0,
+      "original_particle_mcse": 0.0,
+      "original_envelope_halfwidth_with_allowance": 5e-06,
+      "bounded_estimate": 4.421831675261117e-06,
+      "bounded_lower": 0.0,
+      "bounded_upper": 0.0006196877509754966,
+      "independent_proposal_visits": 29
+    },
+    {
+      "case": "short-quiet",
+      "path": "101001",
+      "oracle_probability": 6.258310721343775e-06,
+      "original_particle_estimate": 0.0,
+      "original_particle_mcse": 0.0,
+      "original_envelope_halfwidth_with_allowance": 5e-06,
+      "bounded_estimate": 4.6992657144094625e-06,
+      "bounded_lower": 0.0,
+      "bounded_upper": 0.0006203277717498187,
+      "independent_proposal_visits": 22
+    },
+    {
+      "case": "short-gradual",
+      "path": "000111",
+      "oracle_probability": 2.17495497732142e-05,
+      "original_particle_estimate": 1.311503300573208e-06,
+      "original_particle_mcse": 8.297332857282516e-07,
+      "original_envelope_halfwidth_with_allowance": 8.687034788640982e-06,
+      "bounded_estimate": 2.1095758829528084e-05,
+      "bounded_lower": 0.0,
+      "bounded_upper": 0.002668675631885017,
+      "independent_proposal_visits": 25
+    }
+  ],
+  "audit": {
+    "status": "passed",
+    "precision_status": "unresolved",
+    "model_approval": false,
+    "source_hashes": 10,
+    "input_hashes": 31,
+    "interval_recalculations": 17,
+    "full_fixed_budget_replays": 17,
+    "oracle_probabilities": 872,
+    "scope": "Archived/current source hashes; archived/unchanged parent input hashes; all interval/check recalculations, short-oracle comparisons and exact independent fixed-budget replays; original particle study not rerun"
+  },
+  "total_case_seconds": 13.964038474999825,
+  "limitations": [
+    "One fixed-budget family under iid/exact-arithmetic assumptions; no floating error certificate",
+    "No density, unbounded/joint-moment or uniform CDF bound",
+    "Three short and all six long cases remain unresolved; enclosure alone is not useful precision",
+    "Original particle method/study and failed MCSE envelopes are unchanged"
+  ],
+  "next_step": "Targeted integration or sharper data-aware envelope/proposal before forecast/provider integration",
+  "repository_verification": {
+    "status": "passed",
+    "unittest_tests": 442,
+    "documentation_markdown_files": 42,
+    "local_links_and_anchors": 583,
+    "python_examples": 33,
+    "bash_examples": 42,
+    "forecasting_walkthrough": "Two temporary 170-case runs and saved comparison passed",
+    "whitespace": "git diff --check passed",
+    "study_precision_status": "unresolved"
+  }
+}

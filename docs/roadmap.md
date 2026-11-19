@@ -1,10 +1,40 @@
 # Roadmap
 
-Updated: 2026-11-18. This page records implemented scope and review priorities.
+Updated: 2026-11-19. This page records implemented scope and review priorities.
 For usage, start with [the walkthrough](forecasting.md). For past choices, use
 [the decision history](decisions.md); historical proposals are not build checklists.
 
 ## Resume here
+
+The conservative probability follow-up encloses all 872 retained short-oracle
+probabilities, including the three paths that failed the original particle
+envelopes. Three short cases and all six 160-observation cases still fail the
+precision criteria. The next experiment is an importance proposal informed by
+the observations, with a provable weight bound for unseen paths. Start with
+the abrupt and dominant short histories and `abrupt-42`. Expand to all 17 cases
+if the pilot meets the existing precision criteria. Forecast/provider integration
+follows independent verification. See the [follow-up results](innovation-probability-bounds.md)
+and [pilot plan](next-session.md#next-work).
+
+The three planned interpretation tasks are complete. The [development study](model-review-study.md)
+records nine compatible reference reviews, 45 matched forecasts, all declared
+prior alternatives, 3,000 fresh calibration trials and the next bounded modeling
+question. Read its results and [the updated checkpoint](next-session.md) when
+resuming. The [short-history innovation reference](innovation-reference.md) is
+also complete: independent batch/adaptive and filtering/quadrature calculations,
+all three Gaussian limits and an explicit eight-observation cap. The
+[longer-history particle prototype](innovation-particles.md) now implements
+independent-filter MCSE, evidence weighting and refinement. Its oracle checks
+expose rare-path uncertainty failures that must be resolved before extending
+forecasting/evidence interfaces.
+
+The study also exposed and repaired a numerical joint-V quantile bracket
+failure, retaining its original trial. That checkpoint passed 401 tests; the
+current local suite passes 442 tests, including fourteen reference, sixteen
+particle prototype and eleven conservative-probability tests.
+The study and repair are recorded on `feature/innovation-inference-study`,
+based on merged checkpoint `0ff5def`. Hosted CI and review belong to the PR
+stage.
 
 Step 1, the computational review of the current modeling workflow, is complete.
 The [review record](workflow-review.md) explains one concrete forecast, saved
@@ -93,7 +123,7 @@ No new model, sampler, application or automatic human decision is introduced.
 | Area | Implemented | Detailed reference |
 |---|---|---|
 | Environment | CPython 3.14, development pin 3.14.10, uv lock and pip export, unittest | [Setup](../README.md#development-environment) |
-| Synthetic sources | Two seeded 200-day series and generation manifest | [Data](../data/README.md) |
+| Synthetic sources | Two seeded baseline 200-day series and a shared-noise gradual-change review fixture | [Data](../data/README.md), [development study](model-review-study.md) |
 | Ingestion | Local copy receipts and CSV/XLSX table reading | [Ingestion](ingestion.md) |
 | Preservation | One-file SHA-256 snapshots, verified retrieval, repeat registration events, optional receipt context | [Snapshots](snapshots.md) |
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
@@ -102,17 +132,19 @@ No new model, sampler, application or automatic human decision is introduced.
 | Parameter learning | Unknown constant Gaussian mean with known or learned observation variance; exact normal/Student-t predictions, optional independent-chain audits and saved fit evidence | [Parameter uncertainty](parameter-uncertainty.md), [joint model](normal-mean-variance.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
-| Reporting | Saved-result charts/comparisons; HPD preferred; version-1 point artifacts still readable | [Run files](../runs/README.md) |
+| Reporting | Saved-only reviews, charts and matched-case comparisons with full-law losses; HPD preferred; old point artifacts readable | [Run files](../runs/README.md) |
 | Model evidence | Explicit full-path prior/noise influence, conditional initial-mean weights, sequential criticism, saved-only diagnostic charts | [Diagnostics](diagnostics.md) |
 | Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
-| Dynamic parameter learning | Fixed evolution variance, unknown observation variance, checked quadrature/mixture forecasts and dynamic evidence workflows | [Learned local-level variance](local-level-variance.md) |
+| Dynamic parameter learning | Learned observation variance, fixed or categorical evolution variance, checked quadrature/mixture forecasts and dynamic evidence | [Scalar model](local-level-variance.md), [joint model](joint-variance.md) |
+| Innovation reference | Fixed small/large transition variances and probability, all-sequence integration through eight observations, independent conditioning/integration checks | [Bounded reference](innovation-reference.md) |
 | Evidence requirements | Provider-based calculations, caller-required fit names/workflows, explicit pinned-history execution and failure receipts | [Experiment evidence](evidence.md) |
 | Task/evaluation contracts | Version-2 task/evaluation/evidence specs (version 1 readable); manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The suite currently has 391 tests. [The test guide](../tests/README.md) maps them
+The merged checkpoint had 391 tests; the current local suite has 415.
+[The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
 isolation, frozen-file replay, legacy compatibility, and failure handling.
@@ -233,7 +265,11 @@ summary records. Artifacts are local under
 `runs/evidence-interface-20261117-fewaws1h/`; the evidence plan used 1000 prior
 and posterior replications and two priors over 162 learning points each.
 
-## Next decisions, not automatic implementation
+## Earlier priorities and remaining design choices
+
+The November 19 [development review](model-review-study.md) completes the
+collected-evidence interpretation below. The dated sequence remains useful
+context; current work should follow the bounded question at the top of this page.
 
 The [completed modeling review](modeling-review.md) follows implementation and
 verification of the three learned local-level tasks. It finds the work aligned
@@ -245,10 +281,12 @@ the synthetic discrepancies as open modeling evidence.
   fit names and required separate workflows fail visibly when evidence is missing.
   Further abstraction should follow a concrete need rather than adding a registry
   or another backend by default.
-- **Review collected evidence:** interpret prior predictive implications,
-  posterior discrepancies and prior influence together before choosing a richer
-  model. The implemented comparisons do not tune priors, minimize influence or
-  choose an application automatically.
+- **Review collected evidence completed:** prior predictive implications,
+  posterior discrepancies, prior influence and windowed losses are interpreted
+  together in the development study. The small dynamic-model CRPS ordering
+  changes under the larger-V prior, while the shift-pattern discrepancy persists.
+  A reference prototype should investigate that concrete question; current
+  models remain infrastructure benchmarks.
 - **Further model evidence:** extend whole-dataset predictive checks to another
   model only when useful. An arbitrary-stage configurable check plan, exploratory
   overrides, and application-specific human/release criteria remain open.
@@ -315,7 +353,8 @@ The third slice, [repository CI](continuous-integration.md), is implemented with
 pinned actions/uv/Python, lock/export checks, the complete suite, documentation
 links/anchors/example syntax and temporary walkthrough execution. Nine added
 tests bring the suite to 391. The fresh locked environment and local workflow
-linter passed. Hosted execution starts after the workflow is pushed.
+linter passed. Hosted push and PR checks passed before [PR #6](https://github.com/aquinjay/model-pipelining/pull/6)
+merged into main at `0ff5def`.
 
 All three authorized review/comparison tasks are complete. The next bounded work
 is to interpret one collected experiment review, stating the remaining predictive
@@ -324,3 +363,60 @@ model complexity, continuous-W priors or MCMC-only prediction should follow a
 concrete unmet need in that evidence. Current progress supports the broader goal:
 repeatable, model-independent experiments with comparable saved results and
 explicit computational versus human review.
+
+## Completed development interpretation — 2026-11-19
+
+The [study](model-review-study.md) completes the three planned review tasks:
+nine ready-for-review reference combinations, all 45 declared forecasts, 27
+required historical workflows, 3,000 current calibration trials and 36
+alternative-prior predictive exercises. It retains the original failed numerical
+trial and the repair, compares fixed development windows and documents a bounded
+transition question. Curated summaries/figure are tracked; full source evidence
+and validation receipts remain local. The 401-test suite and documentation
+walkthrough pass locally. This checkpoint selects a reference investigation and
+its validation requirements; it does not approve or implement the candidate model.
+
+## Bounded innovation reference completed — 2026-11-19
+
+The [reference prototype](innovation-reference.md) completes the short-history
+investigation: every positive-prior sequence, independent batch/adaptive and
+filtering/quadrature calculations, direct/exact references and Gaussian limits.
+Seven frozen cases agree within 4.78e-11 and replay exactly; all three existing-
+model limits agree within 3.90e-12. Fourteen new tests bring the suite to 415.
+The eight-observation cap and 2**160 nondegenerate path count make the remaining
+feasibility question explicit. A controlled longer-history approximation comes
+next, with error evidence against this oracle before forecasting/provider
+integration and broader criticism/calibration. No longer-history algorithm or
+MCMC backend is selected here.
+
+## Longer-history particle investigation — 2026-11-19
+
+The [particle prototype](innovation-particles.md) implements the next feasibility
+step: sampled shared V/labels, analytical Gaussian states, independent-filter
+evidence weighting, joint moments, jackknife MCSE, particle-count refinement and
+saved ancestry diagnostics. Prior and Gaussian limits use native checked
+quadrature automatically; known-state atoms and fresh future probabilities stay
+explicit. Sixteen added tests bring the locally passing suite to 431.
+
+The frozen study compares eleven short/limit/atom cases with the independent
+oracle and investigates six matched 160-observation histories. Rare unvisited or
+underrepresented paths expose overconfident empirical envelopes even when the
+reported aggregate precision gates pass. The failed checks remain part of the
+evidence for the conservative probability follow-up below.
+
+## Conservative probability investigation — 2026-11-19
+
+The [independent probability check](innovation-probability-bounds.md) implements
+an analytic importance-weight envelope and simultaneous finite-sample bounds for
+label/path, state/V and full predictive CDF probes. Unvisited positive-mass events
+retain a positive uncertainty radius; a normalizer with a zero lower bound
+leaves explicitly unresolved intervals. All 872 short-oracle probability checks
+are enclosed, but three short and all six long cases fail useful precision at
+the fixed 262,144-draw budget. Forecast/provider integration remains gated.
+The audit verifies ten source and 31 input fingerprints, recalculates every
+interval/check and replays all 17 independent calls exactly. Eleven added tests
+bring the suite to 442; passing software checks do not resolve wide bounds.
+The [pilot plan](next-session.md#next-work) prioritizes a sharper importance
+proposal and retains targeted integration as an alternative. Keep the original
+empirical failures, joint dependence, state atoms, Gaussian limits and complete
+predictive-law checks for comparison.

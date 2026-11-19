@@ -1,5 +1,11 @@
 # Architecture: current behavior and future design
 
+The standalone [conservative probability check](innovation-probability-bounds.md)
+uses independent fixed-budget importance draws with a known weight envelope.
+Simultaneous bounds cover requested posterior probabilities and explicitly retain
+unresolved normalizers. It is separate from the particle MCSE and shared
+forecast/evidence interfaces; it adds no inference backend or model approval.
+
 Read [the walkthrough](forecasting.md) for usage. This page explains responsibility
 boundaries. Sections marked **implemented** describe code that exists; the later
 workflow/checking sections are **design guidance**, not an implemented framework.
@@ -26,12 +32,12 @@ not a sandbox preventing an adapter from independently reading files.
 |---|---|---|
 | Application/task | Versioned task/evaluation/evidence requirements, targets/units, release/revision rules, benchmarks, and development/final periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
-| Model adapter | Point benchmarks, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, conjugate unknown-mean/variance models, optional sampler audits | Unknown evolution variance, intractable sampled prediction, incremental updates, broader checks |
+| Model adapter | Point benchmarks, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, categorical joint evolution/noise variance, conjugate unknown-mean/variance models, optional sampler audits | Continuous evolution-variance priors, intractable sampled prediction, incremental updates, broader checks |
 | Runner | Historical origins, eligible histories, output validation, fit evidence with caller-required names, explicit required evidence workflows and visible failures | Arbitrary-stage dispatch and explicit exploratory overrides |
-| Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, separate highest-density set summaries | Full predictive density/sample scores when supported |
+| Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, highest-density set summaries and full Student-t/Gaussian-mixture CRPS/log losses | Further distribution/sample capabilities when needed |
 | Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
 | Reporting | Saved-only unified reviews, charts and matched-case comparisons including full-law losses | Further application delivery |
-| Predictive criticism | Constant-mean and learned-noise local-level replications/prior comparisons, release-aware development selection, descriptive evidence and saved-only charts | Further models' full-data checks, application-specific review |
+| Predictive criticism | Constant-mean, learned-noise and joint-model replications/prior comparisons, sequential criticism, marginal calibration, release-aware development selection and saved-only charts | Further models' full-data checks, application-specific review |
 
 A run's directory and manifest identify its model/configuration and saved cases.
 There is no global run-ID registry. No orchestration service, release process,
@@ -349,3 +355,49 @@ locked dependencies, verify the pip export, check documentation and run the full
 suite. The documented walkthrough executes in temporary storage. Automatic checks
 verify repository behavior in the stated Linux environment; larger calibration
 evidence and human interpretation remain explicit workflows.
+
+## Explicit development review exercise
+
+The [three-model study](model-review-study.md) composes existing workflows with
+an explicit research script. Its plan fixes scenarios, priors, seeds, evidence
+requirements and comparison windows before execution. Reference reviews keep
+model-level calibration separate from historical criticism. Saved-only summaries
+validate complete cases/histories/vintages and retain every alternative prior.
+This is a concrete iteration exercise, not an automatic runner stage or release
+service. A numerical failure found by the study remains retained alongside its
+regression and the replacement exercise.
+
+## Bounded per-transition innovation reference
+
+[innovation_reference.py](../src/model_pipelining/innovation_reference.py) supplies
+an independent numerical oracle for short daily histories. It enumerates all
+positive-prior small/large innovation sequences with fixed transition settings,
+learning one shared observation variance. Dense Gaussian conditioning/adaptive
+positive-axis integration and Kalman filtering/smoothing/log-V quadrature retain
+their separate likelihood and integration calculations. Shared result assembly
+is checked against direct one-observation integrals, exact conjugate limits and
+the existing scalar model.
+
+This module is not a `Forecaster` or evidence provider. It has no release-aware
+input selector, backtest dispatch, HPD serializer, long-history pruning or
+sampler. The explicit reference CLI freezes numerical cases and settings, retains
+failed precision evidence and draws saved-only charts. Its eight-observation cap
+makes computational scope explicit. A future approximation must compare against
+this oracle and declare probability/Monte Carlo precision before entering the
+shared forecast/evidence boundaries. See [the reference guide](innovation-reference.md).
+
+## Longer-history particle prototype
+
+[innovation_particles.py](../src/model_pipelining/innovation_particles.py) samples
+one shared V and locally observation-adapted labels per particle, integrating
+Gaussian states analytically and retaining joint initial/final/V-label moments.
+Independent filters combine through their evidence estimates; complete-run
+jackknife MCSE, particle-count refinement, replicate-evidence ESS and V ancestry
+are explicit empirical diagnostics. Gaussian limits/prior use checked native
+scalar quadrature automatically. No exact retained-mass guarantee is claimed.
+
+The separate CLI freezes numerical inputs, saves all attempted levels and short
+independent oracles, and draws saved-only charts. Rare-path uncertainty failures
+remain visible and gate forecast integration. The prototype supplies no shared
+Forecaster/evidence capability or new runner dispatch. See [contract and
+limitations](innovation-particles.md).

@@ -90,8 +90,17 @@ class JointVariancePosterior:
         values=[p.ppf(probability) for p in self.components]
         if max(values)==min(values):
             return values[0]
+        low,high=math.log(min(values)),math.log(max(values))
+        # Conditional quantiles are numerical roots. If one W component has
+        # almost all the mass, its small root error can put both endpoints on
+        # the same side of the marginal target. Widen only the failing side to
+        # the checked integration support; keep the actual CDF root tolerance.
+        if self.cdf(math.exp(low))>probability:
+            low=min(p.log_bounds[0] for p in self.components)
+        if self.cdf(math.exp(high))<probability:
+            high=max(p.log_bounds[1] for p in self.components)
         root=math.exp(brentq(lambda z:self.cdf(math.exp(z))-probability,
-                            math.log(min(values)),math.log(max(values)),xtol=1e-10,rtol=1e-12))
+                            low,high,xtol=1e-10,rtol=1e-12))
         if abs(self.cdf(root)-probability)>10*self.model.quadrature.relative_tolerance:
             raise ValueError("Joint variance quantile precision failed")
         return root

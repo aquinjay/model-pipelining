@@ -1,0 +1,120 @@
+[
+  {
+    "name": "prior",
+    "observations": 0,
+    "sequences": 1,
+    "joint_nodes": 512,
+    "maximum_scaled_difference": 1.503641655631327e-11,
+    "past_jump_probabilities": [],
+    "last_mean": 0.0,
+    "observation_variance_mean": 0.9999999999999998,
+    "variance_jump_count_covariance": 0.0
+  },
+  {
+    "name": "short",
+    "observations": 3,
+    "sequences": 8,
+    "joint_nodes": 4096,
+    "maximum_scaled_difference": 1.0781653347891051e-12,
+    "past_jump_probabilities": [
+      0.031606192939193145,
+      0.04480378596941822,
+      0.3201577852931925
+    ],
+    "last_mean": 1.3453021662110787,
+    "observation_variance_mean": 1.3146690610409701,
+    "variance_jump_count_covariance": -0.1711960978532711
+  },
+  {
+    "name": "quiet",
+    "observations": 6,
+    "sequences": 64,
+    "joint_nodes": 16384,
+    "maximum_scaled_difference": 7.225470222138597e-14,
+    "past_jump_probabilities": [
+      0.023940848768007516,
+      0.01571274379116452,
+      0.013942604321140865,
+      0.013634428317102482,
+      0.014474000378145474,
+      0.017752914831717363
+    ],
+    "last_mean": 0.013885007800945513,
+    "observation_variance_mean": 0.4530590474730688,
+    "variance_jump_count_covariance": 0.00312855549817493
+  },
+  {
+    "name": "gradual",
+    "observations": 6,
+    "sequences": 64,
+    "joint_nodes": 16384,
+    "maximum_scaled_difference": 3.067060494466034e-13,
+    "past_jump_probabilities": [
+      0.02619638394479623,
+      0.024562884730395456,
+      0.0315475716615975,
+      0.04237296904128306,
+      0.0393979876387164,
+      0.032374943284475266
+    ],
+    "last_mean": 0.6421552410557978,
+    "observation_variance_mean": 0.5683622854843021,
+    "variance_jump_count_covariance": -0.0040117351987049715
+  },
+  {
+    "name": "abrupt",
+    "observations": 6,
+    "sequences": 64,
+    "joint_nodes": 16384,
+    "maximum_scaled_difference": 3.139153520459459e-11,
+    "past_jump_probabilities": [
+      0.024933053101020175,
+      0.01929241818567506,
+      0.022340057062039943,
+      0.9913416411643154,
+      0.026676123912682738,
+      0.02067647450062695
+    ],
+    "last_mean": 3.7787922125302993,
+    "observation_variance_mean": 0.5341158308090168,
+    "variance_jump_count_covariance": -0.003821291817238559
+  },
+  {
+    "name": "dominant",
+    "observations": 6,
+    "sequences": 64,
+    "joint_nodes": 32768,
+    "maximum_scaled_difference": 1.1446399383885364e-13,
+    "past_jump_probabilities": [
+      0.02517202692310896,
+      0.020248363055486624,
+      0.0264927574785075,
+      0.9993241837764769,
+      0.025734765245958555,
+      0.02154595453200752
+    ],
+    "last_mean": 5.779369647730608,
+    "observation_variance_mean": 0.5405089142203324,
+    "variance_jump_count_covariance": 0.006503307705780226
+  },
+  {
+    "name": "cap-eight",
+    "observations": 8,
+    "sequences": 256,
+    "joint_nodes": 65536,
+    "maximum_scaled_difference": 4.774936002149843e-11,
+    "past_jump_probabilities": [
+      0.023743443076419807,
+      0.01460734412190885,
+      0.012522470559074898,
+      0.01176191938259483,
+      0.01157511031377902,
+      0.011939715441314712,
+      0.013204713362296925,
+      0.016304846677471882
+    ],
+    "last_mean": 0.02659159856629626,
+    "observation_variance_mean": 0.3781632479050813,
+    "variance_jump_count_covariance": 0.002625255102611135
+  }
+]

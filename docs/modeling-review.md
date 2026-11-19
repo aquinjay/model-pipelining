@@ -120,7 +120,8 @@ model-independent evaluation goal. Each model supplies its law from the same fit
 shared code owns freezing, selected actuals, proper losses and matching cohorts.
 Saved review keeps historical criticism, prior influence and calibration in their
 own scopes, with a separate pending human decision. CI checks repository behavior
-in a stated environment; hosted execution begins after the workflow is pushed.
+in a stated environment. Hosted push and PR checks passed before the merge;
+the [next-session note](next-session.md) records the checkpoint and planned work.
 
 The mean-shift development exercise completed 130 matching cases each for the
 constant-mean Student-t, fixed-evolution learned-noise and categorical joint models.
@@ -140,3 +141,61 @@ should answer that documented discrepancy rather than expand the adapter list
 without a use case. No new sampler is required merely to use the completed review
 and comparison workflow. The current numerical/reference tests support computation;
 scientific model adequacy remains an explicit judgment.
+
+## Development interpretation follow-up — 2026-11-19
+
+The [three-model development study](model-review-study.md) now uses the saved
+review/scoring tools on the original mean shift and matched stable/gradual
+controls, including every declared prior alternative. The mean-shift comparison
+shows that the joint model's aggregate CRPS gain comes from its stable-period
+behavior; its onset CRPS/log loss is worse than fixed W, and later dynamic losses
+are almost identical. Replicated shift-pattern CUSUM remains discrepant across
+the tested priors. A changing level improves sequential adaptation without
+necessarily reproducing the observed whole-trajectory pattern.
+
+The exercise also found and repaired a dominant-component variance-quantile
+bracket failure. The original failed trial is retained, a separately bracketed
+reference supports the repair, and fresh compatible calibration keeps its own
+sample-size scope. This is a concrete benefit of interpreting complete evidence
+rather than equating successful forecasts with verified inference or adequacy.
+
+The next bounded question is an occasional-large-innovation transition with
+initially fixed transition hyperparameters, validated first against short-history
+enumeration and Gaussian limits. The study records the remaining predictive,
+calibration and approximation criteria. Broader adapter diversity remains useful
+after demonstrating one justified modeling iteration; real-data application
+choice stays deferred.
+
+## Short-history reference follow-up — 2026-11-19
+
+The [innovation reference](innovation-reference.md) implements the bounded
+enumeration investigation. It compares independent batch/adaptive and
+filtering/quadrature calculations, preserves state atoms and V/allocation
+dependence, and checks exact/direct references and all Gaussian limits. Seven
+short numerical cases agree within 4.78e-11 and replay exactly. This establishes
+an oracle through eight observations; it is not a longer-history forecast
+implementation or a scientific adequacy result. The next step is to design a
+controlled approximation against that oracle before adding forecasting/provider
+support and broader predictive/calibration studies.
+
+## Particle feasibility follow-up — 2026-11-19
+
+The [particle prototype](innovation-particles.md) now samples shared V/past labels
+and integrates Gaussian states. Independent-filter evidence weighting, jackknife
+MCSE and refinement expose computational uncertainty on longer histories. The
+short oracle detects overconfident empirical error for rare paths, including
+unvisited positive-mass paths. These failures remain saved; successful finite
+probe estimates do not establish reliable rare-path coverage or scientific
+adequacy. Resolve that uncertainty design before forecast/provider integration.
+
+### Conservative probability follow-up — 2026-11-19
+
+The [independent probability check](innovation-probability-bounds.md) now gives
+unseen events positive finite-sample uncertainty using bounded importance draws.
+All 872 retained short-oracle probabilities are enclosed, including the three
+previous empirical failures. Three short and all six long cases remain too wide
+at the frozen budget; enclosure alone does not establish useful precision.
+The [next pilot](next-session.md#next-work) tests a data-informed importance
+proposal with a provable weight bound and preserves the original failures and
+moment/density checks. Forecast integration, predictive criticism, prior
+robustness and calibration follow independent verification.

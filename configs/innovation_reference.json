@@ -1,0 +1,24 @@
+{
+  "model": {
+    "initial_mean": 0,
+    "initial_variance": 1,
+    "small_variance": 0.01,
+    "large_variance": 4,
+    "jump_probability": 0.05,
+    "prior_shape": 3,
+    "prior_scale": 2
+  },
+  "settings": {},
+  "predictive_points": [-4, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8],
+  "state_points": [0, 2, 4],
+  "variance_points": [0.5, 1, 2],
+  "cases": {
+    "prior": [],
+    "short": [0, 0.1, 3],
+    "quiet": [0, 0.1, -0.1, 0.05, 0.1, -0.05],
+    "gradual": [0, 0.1, 0.3, 0.7, 1, 1.3],
+    "abrupt": [0, 0.1, -0.1, 3.8, 4.1, 3.9],
+    "dominant": [0, 0, 0.05, 6, 6.02, 6],
+    "cap-eight": [0, 0.1, -0.1, 0.05, 0.1, -0.1, 0.15, 0]
+  }
+}
