@@ -2,6 +2,8 @@
 
 Use this page to look up arguments, return types, and records. For a complete
 example with explanations, start with [the forecasting walkthrough](../../docs/forecasting.md).
+The [public NOAA example](../../docs/python312-public-forecast.md) reuses
+`LocalLevel`, `run_backtest`, and `plot_run` on the focused Python 3.12 profile.
 All relative paths below are relative to the repository root. Launch Python with:
 
 ```bash

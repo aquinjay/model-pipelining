@@ -1,5 +1,10 @@
 # Saved run files
 
+The [Central Park example](../docs/python312-public-forecast.md) saves the raw
+and normalized CSVs, their snapshot receipts, `design.json`, and `forecast/`.
+That subdirectory contains the normal shared forecasts, benchmark, scores, and
+saved-only `forecast.png`. Pass an existing local CSV and a new output directory.
+
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
 fit timings per case, and `summary.json`. A refined control writes a separate

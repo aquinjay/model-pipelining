@@ -16,6 +16,11 @@ and Python behind the current work and those later topics.
 
 ## Start here
 
+For Python 3.12, the focused CSV profile runs the Gaussian local-level model,
+shared scoring, and chart generation. The public example forecasts daily
+maximum temperature at Central Park from a preserved NOAA archive. Start with
+the [Python 3.12 setup and example](docs/python312-public-forecast.md).
+
 The state-grid proposal meets the probability criteria on all 17 frozen cases.
 An independent Gibbs calculation also agrees on moments and predictive density
 for `abrupt-42`. Repeated grid fits took about 16 seconds each on this machine,
@@ -173,6 +178,7 @@ explains how to read both execution and review status.
 | Run and understand the complete example | [Forecasting walkthrough](docs/forecasting.md) |
 | Understand the Bayesian model and its equations | [Local-level model](docs/local-level.md) |
 | Learn the statistics and Python used here and explore later model families | [Reading guide](docs/reading-guide.md) |
+| Run the CSV forecasting workflow on Python 3.12 | [Python 3.12 setup and public NOAA example](docs/python312-public-forecast.md) |
 | Understand HPD regions, quantiles, and output rules | [Shared uncertainty](docs/uncertainty.md) |
 | Look up a function, argument, or return type | [Python API reference](src/model_pipelining/README.md) |
 | Copy/read a local CSV or workbook | [Ingestion](docs/ingestion.md) |
@@ -204,6 +210,9 @@ planned describe future responsibilities. Decision history and the historical
 storage proposal explain earlier choices; they are not setup instructions.
 
 ## Development environment
+
+The Python 3.14 environment below runs the full research suite. For the verified
+Python 3.12 CSV workflow, use the separate [pinned profile and example](docs/python312-public-forecast.md#set-up-the-verified-profile).
 
 Use an isolated environment named `.venv`. The setup supports standard Python tooling and an optional uv workflow; the pipeline itself will not depend on uv.
 

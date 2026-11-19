@@ -63,6 +63,10 @@ nonzero process status.
 
 ## Scientific evidence and review
 
+The Python 3.12 compatibility check uses the separate CSV profile and a caller-
+acquired data file. The 3.14 workflow continues to check the full research lock
+and suite. See the [explicit 3.12 setup and run](python312-public-forecast.md).
+
 The independent Gibbs checks compare the Gaussian state block against dense
 calculations and exercise known state atoms. The [full cross-check and timing
 study](innovation-moment-check.md) runs on explicit invocation.

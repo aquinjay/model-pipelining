@@ -5,6 +5,12 @@ Updated: 2026-11-19. Start here when resuming the modeling work, then consult th
 
 ## Where we left off
 
+The research checkpoint was merged in [PR #7](https://github.com/aquinjay/model-pipelining/pull/7)
+as `b62b70f` after push and PR CI passed. The Python 3.12 follow-up verifies the
+Gaussian CSV workflow on Python 3.12.16 and runs the first public case using
+NOAA Central Park daily maximum temperatures. All 366 forecasts and benchmark
+cases completed. See the [verified setup and results](python312-public-forecast.md).
+
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
 results and separate computational checks and human interpretation. Application
@@ -35,7 +41,7 @@ follow-up. The subsequent checkpoint records the state-grid study, independent
 Gibbs check, harmonic example, and reading guide. It passed 449 tests and the
 documentation walkthrough locally. Full run directories are ignored by Git.
 
-The last merged implementation checkpoint is recorded on `main` through
+The preceding merged experiment-review checkpoint is recorded on `main` through
 [PR #6](https://github.com/aquinjay/model-pipelining/pull/6), merge commit
 `0ff5def`. Local `main` was synchronized after the merge. The three implementation
 commits are:
@@ -172,13 +178,13 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
-1. Verify the first Gaussian BDLM workflow on the workplace Python version and
-   approved package set when those are known. Identify the packages it actually
-   needs and keep research studies and external adapters optional where practical.
-2. Use a concrete forecasting task to choose the first model settings and any
-   missing capabilities. The harmonic example already exercises seasonal
-   features derived from timestamps. Additional series, predictors, or joint
-   outputs should follow a concrete case.
+1. Compare a small seasonal model on the same Central Park development dates.
+   The last-value benchmark had slightly lower point errors than the Gaussian
+   local-level model. Keep the shared runner and the target calendar fixed.
+2. Use documented release timing and vintages before an operational claim. The
+   frozen archive replay simulates immediate availability. Reproduce the Python
+   3.12 profile on the workplace platform later, after the approved packages
+   are confirmed.
 3. Revisit rare-jump integration if the task needs it. Use the saved timings and
    cross-checks to assess the cost, then specify the required predictive outputs
    and fresh-path criticism, prior comparisons, and calibration.
@@ -245,6 +251,7 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/noaa-central-park-20261119/verified-py312/` | Public NOAA raw and normalized snapshots, 366 scored forecasts, benchmark, chart, and design |
 | `runs/innovation-moment-check-verified-20261119/` | Frozen controls, independent Gibbs budgets on abrupt-42, grid timing and insufficient-budget result |
 | `runs/innovation-moment-control-refinement-20261119/` | Independent longer short-abrupt control against the same oracle and criteria |
 | `runs/weekly-harmonic-example-20261119/` | 72 matched scalar forecasts and comparison report for the harmonic example and training mean |

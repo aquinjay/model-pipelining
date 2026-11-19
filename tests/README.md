@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **449 tests**. They use temporary fixtures/stores rather than
+There are currently **452 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -47,6 +47,12 @@ before running sampler tests.
 | [test_innovation_probability_bounds.py](test_innovation_probability_bounds.py) | 11 | Dense-likelihood/prior/proposal envelope identity, unseen-event positive uncertainty, vacuous-normalizer failure, retained quiet/gradual oracles, Gaussian limits and atoms, near-dominant components, fixed-seed/global-RNG isolation, bounded long histories, saved-statistic interval replay, validation and CLI input/source freezing/overwrite rejection |
 | [test_innovation_lattice.py](test_innovation_lattice.py) | 4 | State-grid likelihoods versus dense Gaussian references, including unlikely observations in Gaussian limits, positive upper bounds for unseen events, exact state atoms, resource failures and replay |
 | [test_innovation_gibbs_check.py](test_innovation_gibbs_check.py) | 3 | Banded likelihood and Gaussian state draws against dense calculations, zero-transition atom entry and exit, and independent-seed replay |
+| [test_noaa_temperature.py](test_noaa_temperature.py) | 3 | Public example calendar sorting, leap-day inclusion, preserved units, and rejection of quality flags, gaps, and duplicate dates |
+
+The [Python 3.12 profile](../docs/python312-public-forecast.md) passed 80 targeted
+tests covering the Gaussian local-level adapter, backtests, experiment timing,
+distribution scores, and the NOAA CSV validation. The public NOAA run is explicit
+and uses a caller-acquired CSV. Unit tests use generated input.
 
 The probability tests verify the finite-sample calculation and its assumptions;
 they do not certify floating arithmetic or useful precision on long histories.

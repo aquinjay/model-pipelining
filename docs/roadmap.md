@@ -6,6 +6,14 @@ For usage, start with [the walkthrough](forecasting.md). For past choices, use
 
 ## Resume here
 
+The [research checkpoint](https://github.com/aquinjay/model-pipelining/pull/7)
+is merged. The first concrete public task forecasts next-day maximum
+temperature at Central Park. On Python 3.12.16, the Gaussian model and
+last-value benchmark completed all 366 matched development cases with four
+direct packages. The next workplace check is package approval and platform
+reproduction. Real-time use also needs publication dates and vintages. See the
+[profile, task, and results](python312-public-forecast.md).
+
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it
 needs. Use concrete examples from harmonic regression, other state-space models,
@@ -18,8 +26,7 @@ The state-grid importance proposal passes the probability criteria on all 17
 cases. An independent Gibbs calculation also agreed on the moments and
 predictive probes for `abrupt-42`. Repeated-fit cost favors the existing Gaussian
 local-level adapters for the first BDLM workflow. A small harmonic regression
-example already exercises the shared forecast contract across 72 cases. The
-next practical check is the approved workplace environment and package set.
+example already exercises the shared forecast contract across 72 cases.
 See the [verification results](innovation-moment-check.md) and
 [next work](next-session.md#next-work).
 
@@ -37,7 +44,8 @@ forecasting/evidence interfaces.
 
 The study also exposed and repaired a numerical joint-V quantile bracket
 failure, retaining its original trial. That checkpoint passed 401 tests. The
-current suite includes 449 tests across the research and production code.
+merged research suite passed 449 tests. The NOAA example adds three input
+validation tests. The focused Python 3.12 verification passed 80 targeted tests.
 The study and repair are recorded on `feature/innovation-inference-study`,
 based on merged checkpoint `0ff5def`. Hosted CI and review belong to the PR
 stage.

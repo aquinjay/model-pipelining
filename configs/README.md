@@ -1,5 +1,10 @@
 # Configuration
 
+The [Central Park example](../docs/python312-public-forecast.md) fixes the NOAA
+station, metric units, date range, Gaussian model settings, and benchmark. The
+caller selects the local CSV and a new output directory. The script records the
+resolved task and model in `design.json` before the backtest.
+
 The [innovation moment check](../docs/innovation-moment-check.md) inherits the
 observations, model and query grids from a completed state-grid study. The
 caller selects a source and new output directory. The script freezes Gibbs
