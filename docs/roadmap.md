@@ -17,6 +17,15 @@ Real-time use needs publication dates and vintages. See the
 [profile](python312-public-forecast.md), [seasonal comparison](noaa-seasonality.md),
 and [later-year evaluation](noaa-later-period.md).
 
+The [temperature pair study](noaa-temperature-pair.md) matches separate minimum
+and maximum forecasts at the same 365 origins. The seasonal pair had zero
+crossed point forecasts and lower daily-range error than persistence. Shared
+errors motivate a joint distribution for a task that needs probabilities about
+the range. The study uses the scalar runner and reports the pair after fitting.
+The [next experiment](next-session.md#next-work) compares independent and
+date-matched residual pairs for a range probability on later dates. It uses
+the same point forecasts and freezes the 2025 calibration pairs before scoring.
+
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it
 needs. Use concrete examples from harmonic regression, other state-space models,

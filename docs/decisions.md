@@ -819,3 +819,13 @@ beat both controls on MAE and RMSE. Its quiet-day errors and warm mean error
 remain visible. Keep this as a later-period result under simulated archive
 availability. Real-time use requires release evidence.
 See the [full comparison and audit](noaa-later-period.md).
+
+## Match separate NOAA minimum and maximum forecasts before adding joint outputs
+
+Run the same seasonal regression and persistence baseline for minimum and
+maximum temperature with matching origins and eligible dates. On the 365
+matched 2025 dates, both pairs retained minimum-to-maximum order. The
+seasonal pair lowered range MAE by 14.8%. Its minimum and maximum forecast
+errors had a correlation of 0.603. Keep the scalar point forecasts as
+benchmarks. Use a concrete probability about the range to motivate a joint
+output in a later evaluation. See the [paired results](noaa-temperature-pair.md).

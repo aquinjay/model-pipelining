@@ -71,3 +71,6 @@ CSV, then saves snapshots, both forecasts, the required benchmark, and a
 comparison chart under `evaluation/`. It also writes `summary.json` and
 `matched-cases.csv`. Reproduce the original result with the original frozen
 plan and retrieved bytes. New downloads may reflect archive revisions.
+
+The [temperature pair study](noaa-temperature-pair.md) reuses this frozen
+maximum run and pairs it with a separate minimum forecast.

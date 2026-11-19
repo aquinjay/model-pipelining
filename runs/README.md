@@ -15,6 +15,11 @@ separate evaluate command writes `evaluation/` with the new input snapshots,
 point forecasts, benchmark, comparison chart, `matched-cases.csv`, and
 `summary.json` for the final target dates.
 
+The [temperature pair study](../docs/noaa-temperature-pair.md) saves the new
+archive and minimum snapshots, `design.json`, one scalar `minimum/` run, and
+the paired `matched-extrema.csv`, `summary.json`, and `paired-forecasts.png`.
+It reads the completed maximum run as a caller-supplied input.
+
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
 fit timings per case, and `summary.json`. A refined control writes a separate

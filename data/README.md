@@ -14,6 +14,11 @@ For the [2025 evaluation](../docs/noaa-later-period.md), first freeze the exact
 NOAA file. The script preserves the 2025 raw bytes and appends the validated
 rows to the frozen history without rewriting its prefix.
 
+The [temperature pair study](../docs/noaa-temperature-pair.md) accepts a
+separate metric NOAA CSV containing both extremes and their attributes.
+It compares the downloaded maximum values with the frozen maximum snapshot
+and registers the new raw archive and normalized minimum series.
+
 The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
 state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
 generates its own 100-day synthetic CSV and registers it in the example output

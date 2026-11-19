@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **456 tests**. They use temporary fixtures/stores rather than
+There are currently **458 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -50,13 +50,15 @@ before running sampler tests.
 | [test_noaa_temperature.py](test_noaa_temperature.py) | 3 | Public example calendar sorting, leap-day inclusion, preserved units, and rejection of quality flags, gaps, and duplicate dates |
 | [test_noaa_seasonality.py](test_noaa_seasonality.py) | 2 | Known annual-plus-lag prediction, one-day horizon enforcement, and unmatched saved case rejection |
 | [test_noaa_later_period.py](test_noaa_later_period.py) | 2 | Frozen final date boundaries, exact history preservation, and rejection of changed inputs before reading evaluation data |
+| [test_noaa_extrema.py](test_noaa_extrema.py) | 2 | Ordered-range scoring with a deliberately crossed pair and rejection of mismatched eligible dates |
 
 The [Python 3.12 profile](../docs/python312-public-forecast.md) passed 80 targeted
 tests covering the Gaussian local-level adapter, backtests, experiment timing,
 distribution scores, and the NOAA CSV validation. The public NOAA run is explicit
 and uses a caller-acquired CSV. Unit tests use generated input. The
-[seasonal and later-year checks](../docs/noaa-later-period.md) bring the verified
-Python 3.12 subset to 84 tests.
+[seasonal and later-year checks](../docs/noaa-later-period.md) and
+[two-series checks](../docs/noaa-temperature-pair.md) bring the verified
+Python 3.12 subset to 86 tests.
 
 The probability tests verify the finite-sample calculation and its assumptions;
 they do not certify floating arithmetic or useful precision on long histories.

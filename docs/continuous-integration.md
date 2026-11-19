@@ -69,6 +69,8 @@ and suite. See the [explicit 3.12 setup and run](python312-public-forecast.md).
 The [2025 model comparison](noaa-later-period.md) also runs explicitly with a
 caller-supplied archive. CI verifies the freeze and input guards with local
 fixtures.
+The [temperature pair study](noaa-temperature-pair.md) also runs explicitly.
+CI tests the ordering and alignment calculations with local fixtures.
 
 The independent Gibbs checks compare the Gaussian state block against dense
 calculations and exercise known state atoms. The [full cross-check and timing

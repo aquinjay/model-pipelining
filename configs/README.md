@@ -15,6 +15,11 @@ The [2025 evaluation](../docs/noaa-later-period.md) explicitly freezes the
 the caller supplies a separate 2025 CSV. The script verifies the frozen plan
 and inputs automatically before evaluation.
 
+The [temperature pair study](../docs/noaa-temperature-pair.md) reuses the
+frozen 2025 maximum run and its seasonal settings for a separate minimum
+forecast. The caller names the saved maximum study, local NOAA archive, and
+new output directory.
+
 The [innovation moment check](../docs/innovation-moment-check.md) inherits the
 observations, model and query grids from a completed state-grid study. The
 caller selects a source and new output directory. The script freezes Gibbs
