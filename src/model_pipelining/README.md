@@ -24,6 +24,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [calibration.py](calibration.py) | Data-free posterior-CDF calibration, recovery and explicit failure evidence |
 | [local_level_joint_variance.py](local_level_joint_variance.py) | Categorical W and continuous V joint learning, with full marginal forecasts |
 | [innovation_reference.py](innovation_reference.py) | Eight-observation all-sequence small/large innovation reference, independent batch/adaptive and Kalman/quadrature calculations |
+| [innovation_lattice.py](innovation_lattice.py) | Observation-conditioned state-grid proposal and probability intervals with explicit grid and tail error |
+| [innovation_gibbs_check.py](innovation_gibbs_check.py) | Research sampler using a tridiagonal Gaussian precision solve, with an exact blocked label draw for short atom controls |
 | [evidence_joint_level.py](evidence_joint_level.py) | Joint W/V/state replication and prior influence |
 | [state_mixtures.py](state_mixtures.py) | Credible-state CDF/generalized quantiles with genuine probability atoms |
 | [dynamics_study.py](dynamics_study.py) | Explicit dynamics comparisons on matched synthetic development cases |
@@ -792,6 +794,15 @@ such oracle failures. No forecasting/evidence interface is added. See
 [the full method, example and study](../../docs/innovation-particles.md).
 
 ## Conservative innovation probability API
+
+`bound_innovation_probabilities_lattice(values, *, model=None, settings=None,
+predictive_points=(-2., 0., 2., 4., 6.), state_points=(0.,), variance_points=(.5,
+1., 2.))` accepts the same `ProbabilityBoundSettings` as
+`bound_innovation_probabilities`. It automatically builds the proposal, draws
+and returns intervals, grid and tail diagnostics, and descriptive moment and
+density estimates. Callers inspect `status` or explicitly invoke the study
+script for a frozen comparison. See [derivation, limits and study
+usage](../../docs/innovation-lattice.md).
 
 Import `ProbabilityBoundSettings` and `bound_innovation_probabilities` from
 `model_pipelining.innovation_probability_bounds`. The function accepts the same

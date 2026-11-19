@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **442 tests**. They use temporary fixtures/stores rather than
+There are currently **449 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -45,6 +45,8 @@ before running sampler tests.
 | [test_innovation_reference.py](test_innovation_reference.py) | 14 | Independent batch/filter conditioning, direct V integrals, exact Student-t/IG and Gaussian limits, label independence, future probability, posterior dependence, atoms, all 256 paths, bounded/invalid input, precision failures, RNG isolation and CLI/replay persistence |
 | [test_innovation_particles.py](test_innovation_particles.py) | 16 | Independent dense smoothing, hand optimal label/evidence update, unbiased systematic resampling, ancestry alignment, evidence-weighted joint moments and jackknife MCSE, oracle/limit/atom checks, refinement failures, long history without enumeration, seed/global-RNG isolation, CLI failure persistence and successful replay |
 | [test_innovation_probability_bounds.py](test_innovation_probability_bounds.py) | 11 | Dense-likelihood/prior/proposal envelope identity, unseen-event positive uncertainty, vacuous-normalizer failure, retained quiet/gradual oracles, Gaussian limits and atoms, near-dominant components, fixed-seed/global-RNG isolation, bounded long histories, saved-statistic interval replay, validation and CLI input/source freezing/overwrite rejection |
+| [test_innovation_lattice.py](test_innovation_lattice.py) | 4 | State-grid likelihoods versus dense Gaussian references, including unlikely observations in Gaussian limits, positive upper bounds for unseen events, exact state atoms, resource failures and replay |
+| [test_innovation_gibbs_check.py](test_innovation_gibbs_check.py) | 3 | Banded likelihood and Gaussian state draws against dense calculations, zero-transition atom entry and exit, and independent-seed replay |
 
 The probability tests verify the finite-sample calculation and its assumptions;
 they do not certify floating arithmetic or useful precision on long histories.

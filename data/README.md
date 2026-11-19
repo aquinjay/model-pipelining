@@ -1,5 +1,14 @@
 # Local data
 
+The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
+state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
+generates its own 100-day synthetic CSV and registers it in the example output
+directory for both backtests.
+
+The [state-grid study](../docs/innovation-lattice.md) reuses the frozen synthetic
+histories from the probability-bound study. It automatically snapshots the
+selected cases and their comparison records in the new run directory.
+
 The [probability-bound follow-up](../docs/innovation-probability-bounds.md)
 copies the caller-selected particle study's already frozen synthetic histories,
 case results and short-history oracles into its own `inputs/` archive. It does

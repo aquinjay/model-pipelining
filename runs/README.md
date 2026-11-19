@@ -1,5 +1,19 @@
 # Saved run files
 
+The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
+`design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
+fit timings per case, and `summary.json`. A refined control writes a separate
+directory. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
+saves a local snapshot, two point backtests, and their shared comparison report.
+
+The explicit [state-grid study](../docs/innovation-lattice.md) creates an
+`innovation_lattice_study` with frozen `inputs/` and `sources/`, hashed in
+`study.json`. Each case under `cases/` saves probability bounds, proposal grid
+and tail diagnostics, moments and density estimates for comparison, and
+sufficient statistics for recalculating intervals. `summary.json` also
+compares results with the parent bounds, short-history oracles and retained
+particle estimates. Exit code 1 preserves records for unresolved or failed cases.
+
 The explicit [probability-bound follow-up](../docs/innovation-probability-bounds.md)
 creates an `innovation_probability_bound_study` with copied parent `inputs/`,
 archived implementation `sources/`, source/input hashes and environment in

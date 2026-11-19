@@ -227,8 +227,9 @@ supplies nonzero uncertainty for unseen paths and encloses all 872 retained
 short-oracle probabilities. Its fixed-budget bounds remain too wide on abrupt
 and long histories. The original failures and this investigation's unresolved
 status remain unchanged; a wide enclosing interval does not establish precision.
-The [next pilot](next-session.md#next-work) tests a data-informed importance
-proposal with a provable weight bound. Targeted integration remains an alternative.
+The subsequent [state-grid study](innovation-lattice.md) meets the probability
+precision criteria on all 17 cases. The particle results remain empirical
+comparisons for the six long histories.
 
 There is no certified discarded-mass bound or uniform CDF/density bound. The
 diagnostics may miss unvisited modes or underestimate rare-path uncertainty.

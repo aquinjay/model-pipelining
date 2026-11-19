@@ -1,0 +1,515 @@
+{
+  "kind": "innovation_moment_check_summary",
+  "run": "runs/innovation-moment-check-verified-20261119",
+  "control_refinement": "runs/innovation-moment-control-refinement-20261119",
+  "combined_verification": "passed_with_control_refinement",
+  "initial": {
+    "short-abrupt": {
+      "checks": {
+        "chain_precision": false,
+        "comparisons": false
+      },
+      "fit_seconds": 1.414038303000325
+    },
+    "short-dominant": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 1.451499956999669
+    },
+    "state-atoms": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 8.205205074999867
+    },
+    "zero-jump": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 0.5431704149996222
+    },
+    "always-jump": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 0.538748951999878
+    },
+    "coincident-scales": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 1.5695583310002803
+    },
+    "lattice-41": {
+      "status": "completed",
+      "fit_seconds": 16.518814979000126,
+      "maximum_probability_width": 0.03289053744141557
+    },
+    "lattice-43": {
+      "status": "completed",
+      "fit_seconds": 16.272814918999757,
+      "maximum_probability_width": 0.03300498880936098
+    },
+    "lattice-insufficient-budget": {
+      "expected_status": "unresolved",
+      "actual_status": "unresolved"
+    },
+    "abrupt-42-coarse": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 2.7488075539999954
+    },
+    "abrupt-42-refined": {
+      "checks": {
+        "chain_precision": true,
+        "comparisons": true
+      },
+      "fit_seconds": 5.48833410799989
+    },
+    "refinement_passed": true,
+    "verification_passed": false
+  },
+  "refined_control": {
+    "case": "short-abrupt",
+    "verification_passed": true,
+    "checks": {
+      "chain_precision": true,
+      "comparisons": true
+    },
+    "fit_seconds": 14.720872841000073
+  },
+  "acceptance": {
+    "initial_mean": 0.05,
+    "last_mean": 0.05,
+    "initial_variance": 0.05,
+    "last_variance": 0.05,
+    "initial_last_covariance": 0.05,
+    "observation_variance_mean": 0.05,
+    "variance_jump_count_covariance": 0.08,
+    "jump_count": 0.2,
+    "predictive_mean": 0.05,
+    "predictive_variance": 0.08,
+    "next_jump_probability": 1e-12,
+    "predictive_cdf": 0.025,
+    "predictive_density": 0.01,
+    "initial_cdf_lower": 0.025,
+    "initial_cdf_upper": 0.025,
+    "last_cdf_lower": 0.025,
+    "last_cdf_upper": 0.025,
+    "variance_cdf": 0.025
+  },
+  "refined_diagnostics": {
+    "initial_mean": {
+      "estimate": 9.95589456060868,
+      "mcse": 0.0014192133808755448,
+      "rhat": 1.0000470946169684,
+      "ess_bulk": 62527.308095647284,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "last_mean": {
+      "estimate": 15.272658017716797,
+      "mcse": 0.0016044963042081578,
+      "rhat": 1.000003455045196,
+      "ess_bulk": 52876.95566782246,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "initial_variance": {
+      "estimate": 0.12431301558936471,
+      "mcse": 0.0016852863006945923,
+      "rhat": 1.0000476087078396,
+      "ess_bulk": 45799.075815462595,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "last_variance": {
+      "estimate": 0.12444026421763103,
+      "mcse": 0.001670378123137232,
+      "rhat": 0.9999951046041926,
+      "ess_bulk": 44823.64353858397,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "initial_last_covariance": {
+      "estimate": -0.0002187794165987496,
+      "mcse": 0.0004938586650791169,
+      "rhat": 1.0000477770101195,
+      "ess_bulk": 66566.18566288117,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "observation_variance_mean": {
+      "estimate": 0.8486786920194531,
+      "mcse": 0.00044681712912779197,
+      "rhat": 0.9999898131180988,
+      "ess_bulk": 48071.3197486024,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "variance_jump_count_covariance": {
+      "estimate": -0.005288800850915621,
+      "mcse": 0.0007838540511350178,
+      "rhat": 1.0000385288486553,
+      "ess_bulk": 53772.31059268655,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "jump_count": {
+      "estimate": 3.8869781494140625,
+      "mcse": 0.019455351086186026,
+      "rhat": 1.000241388027032,
+      "ess_bulk": 8732.670887497066,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_mean": {
+      "estimate": 15.272658017716797,
+      "mcse": 0.0016044963042081578,
+      "rhat": 1.000003455045196,
+      "ess_bulk": 52876.95566782246,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_variance": {
+      "estimate": 1.1826189562370844,
+      "mcse": 0.0017530630767331053,
+      "rhat": 1.0000057505284967,
+      "ess_bulk": 40932.858425501596,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "next_jump_probability": {
+      "estimate": 0.05000000000000001,
+      "mcse": 0.0,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "structural_constant",
+      "passed": true
+    },
+    "predictive_cdf:-4.0": {
+      "estimate": 2.4891137921512987e-19,
+      "mcse": 1.6709294236109725e-20,
+      "rhat": 1.0000158409097606,
+      "ess_bulk": 51091.54026944858,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:-4.0": {
+      "estimate": 9.386420228877598e-19,
+      "mcse": 5.912087851069865e-20,
+      "rhat": 1.0000157075718874,
+      "ess_bulk": 51125.489917539264,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:-2.0": {
+      "estimate": 3.3367467702573367e-16,
+      "mcse": 1.2984421256718521e-17,
+      "rhat": 1.000014461103906,
+      "ess_bulk": 51350.30122436809,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:-2.0": {
+      "estimate": 1.1438258229691528e-15,
+      "mcse": 4.071901801203278e-17,
+      "rhat": 1.0000142555673965,
+      "ess_bulk": 51385.29756015299,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:0.0": {
+      "estimate": 2.2254792652203405e-13,
+      "mcse": 4.7271828676248865e-15,
+      "rhat": 1.0000131386865643,
+      "ess_bulk": 51605.52996762383,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:0.0": {
+      "estimate": 6.83817137731476e-13,
+      "mcse": 1.3075268523360496e-14,
+      "rhat": 1.0000130289628995,
+      "ess_bulk": 51647.40722109714,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:2.0": {
+      "estimate": 7.208171109961361e-11,
+      "mcse": 8.301604076032536e-13,
+      "rhat": 1.0000118104281637,
+      "ess_bulk": 51861.588133423946,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:2.0": {
+      "estimate": 1.9506328592191213e-10,
+      "mcse": 1.9995392451392974e-12,
+      "rhat": 1.0000116087859001,
+      "ess_bulk": 51912.844242659994,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:4.0": {
+      "estimate": 1.1125139063931792e-08,
+      "mcse": 7.23406497376125e-11,
+      "rhat": 1.000010237126212,
+      "ess_bulk": 52105.89367791583,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:4.0": {
+      "estimate": 2.5945344870343713e-08,
+      "mcse": 1.4955991723491528e-10,
+      "rhat": 1.000009760660574,
+      "ess_bulk": 52154.747487260815,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:6.0": {
+      "estimate": 8.095779419003149e-07,
+      "mcse": 3.2069414079462503e-09,
+      "rhat": 1.0000083649906304,
+      "ess_bulk": 52317.99058794678,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:6.0": {
+      "estimate": 1.5827375956512233e-06,
+      "mcse": 5.56015151964404e-09,
+      "rhat": 1.0000079505877695,
+      "ess_bulk": 52373.77082390297,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:8.0": {
+      "estimate": 2.7728086521840192e-05,
+      "mcse": 7.246127151515658e-08,
+      "rhat": 1.0000066415822169,
+      "ess_bulk": 52498.852426730125,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:8.0": {
+      "estimate": 4.379162734627208e-05,
+      "mcse": 1.0089550660138103e-07,
+      "rhat": 1.0000060315497903,
+      "ess_bulk": 52552.82439918951,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:10.0": {
+      "estimate": 0.00045088270883554256,
+      "mcse": 8.234423255513063e-07,
+      "rhat": 1.000004797317154,
+      "ess_bulk": 52635.403533324876,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:10.0": {
+      "estimate": 0.0005466053483601485,
+      "mcse": 8.740200167479458e-07,
+      "rhat": 1.000003892118569,
+      "ess_bulk": 52683.94175060672,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:12.0": {
+      "estimate": 0.004078619648688696,
+      "mcse": 1.0676507480222911e-05,
+      "rhat": 1.0000063899800968,
+      "ess_bulk": 52280.926599130355,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:12.0": {
+      "estimate": 0.004803108806973994,
+      "mcse": 1.893925945227583e-05,
+      "rhat": 1.0000096468192277,
+      "ess_bulk": 51955.972736611395,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:15.0": {
+      "estimate": 0.39477353415857624,
+      "mcse": 0.0005496420008178908,
+      "rhat": 1.0000021111427995,
+      "ess_bulk": 53042.49673773029,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:15.0": {
+      "estimate": 0.38051388529817093,
+      "mcse": 0.0003112578774206108,
+      "rhat": 0.9999861819427307,
+      "ess_bulk": 41323.5413336001,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_cdf:20.0": {
+      "estimate": 0.9991366638764767,
+      "mcse": 3.192327170834968e-06,
+      "rhat": 1.0000107195249264,
+      "ess_bulk": 52454.497767557674,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "predictive_density:20.0": {
+      "estimate": 0.0009752037069905865,
+      "mcse": 4.727103511977241e-06,
+      "rhat": 1.0000102258301402,
+      "ess_bulk": 52597.361953368956,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "initial_cdf_lower:0.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "initial_cdf_upper:0.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "last_cdf_lower:0.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "last_cdf_upper:0.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "initial_cdf_lower:10.0": {
+      "estimate": 0.556182861328125,
+      "mcse": 0.001970282466967767,
+      "rhat": 1.0000326726651858,
+      "ess_bulk": 63587.43587566497,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "initial_cdf_upper:10.0": {
+      "estimate": 0.556182861328125,
+      "mcse": 0.001970282466967767,
+      "rhat": 1.0000326726651858,
+      "ess_bulk": 63587.43587566497,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "last_cdf_lower:10.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "last_cdf_upper:10.0": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "initial_cdf_lower:15.0": {
+      "estimate": 1.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "initial_cdf_upper:15.0": {
+      "estimate": 1.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "last_cdf_lower:15.0": {
+      "estimate": 0.200592041015625,
+      "mcse": 0.0015786591707442272,
+      "rhat": 0.9999706866267416,
+      "ess_bulk": 64344.59005726743,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "last_cdf_upper:15.0": {
+      "estimate": 0.200592041015625,
+      "mcse": 0.0015786591707442272,
+      "rhat": 0.9999706866267416,
+      "ess_bulk": 64344.59005726743,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "variance_cdf:0.5": {
+      "estimate": 0.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    },
+    "variance_cdf:1.0": {
+      "estimate": 0.927703857421875,
+      "mcse": 0.0010598984279716656,
+      "rhat": 1.000023353642807,
+      "ess_bulk": 59703.88870029383,
+      "kind": "mcmc",
+      "passed": true
+    },
+    "variance_cdf:2.0": {
+      "estimate": 1.0,
+      "mcse": null,
+      "rhat": null,
+      "ess_bulk": null,
+      "kind": "constant_sample",
+      "passed": null
+    }
+  },
+  "max_density_difference": 0.0002651073566102835,
+  "harmonic_example": {
+    "directory": "runs/weekly-harmonic-example-20261119",
+    "matched_cases": 72,
+    "scores": {
+      "training-mean": {
+        "mae": 1.8435495389092713,
+        "rmse": 2.077220574794516
+      },
+      "weekly-harmonic-example": {
+        "mae": 0.24746462436124986,
+        "rmse": 0.31014200029514066
+      }
+    }
+  },
+  "audit": "Archived hashes checked for both study runs. Initial failure and independent refinement retained.",
+  "exact_draw_replays": [
+    "abrupt-42-refined",
+    "short-abrupt control refinement"
+  ]
+}

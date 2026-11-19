@@ -195,7 +195,8 @@ unseen events positive finite-sample uncertainty using bounded importance draws.
 All 872 retained short-oracle probabilities are enclosed, including the three
 previous empirical failures. Three short and all six long cases remain too wide
 at the frozen budget; enclosure alone does not establish useful precision.
-The [next pilot](next-session.md#next-work) tests a data-informed importance
-proposal with a provable weight bound and preserves the original failures and
-moment/density checks. Forecast integration, predictive criticism, prior
-robustness and calibration follow independent verification.
+The subsequent [state-grid proposal](innovation-lattice.md) meets the
+probability precision checks on all 17 cases. An independent Gibbs calculation
+then agreed on the moments and density probes on `abrupt-42`. At the measured
+cost, the rare-jump model stays a research option and the existing Gaussian
+adapters serve the first BDLM workflows. See the [verification](innovation-moment-check.md).

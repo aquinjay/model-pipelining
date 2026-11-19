@@ -191,11 +191,9 @@ temporary 170-case walkthrough runs are checked separately.
 
 ![Conservative probability widths and the retained rare-path oracle masses](figures/innovation-probability-bounds.png)
 
-## Next bounded question
+## Subsequent study
 
-The next pilot will use the observations to propose plausible V and jump paths
-under a provable weight bound. Compare it with the independent short-history
-oracles and check whether it yields useful interval widths on `abrupt-42`. A
-positive lower bound on the normalizer and maximum probability interval width
-of 0.10 are the existing precision criteria. See the [pilot cases and follow-up
-checks](next-session.md#next-work).
+The subsequent [state-grid proposal](innovation-lattice.md) uses the
+observations to propose plausible V and jump paths under an explicit bound.
+It passes the original probability precision criteria on all 17 cases.
+This study remains the baseline for those comparisons.

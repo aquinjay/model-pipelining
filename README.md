@@ -9,14 +9,20 @@ evaluation, and reporting. The current models are small examples for developing
 and verifying that infrastructure. Better scores alone do not establish that
 an implementation is correct or that a model is suitable for an application.
 
+Bayesian dynamic linear models are the first main use case. The project also
+targets other state-space models, harmonic regression, and multivariate
+forecasting. See the [reading guide](docs/reading-guide.md) for the statistics
+and Python behind the current work and those later topics.
+
 ## Start here
 
-The conservative probability follow-up encloses all retained short-oracle
-probabilities. Three short cases and all six 160-observation cases still fail
-the precision criteria. The next pilot uses the observations to improve the
-importance proposal while preserving a provable weight bound. See the
-[follow-up results](docs/innovation-probability-bounds.md) and
-[pilot plan](docs/next-session.md#next-work).
+The state-grid proposal meets the probability criteria on all 17 frozen cases.
+An independent Gibbs calculation also agrees on moments and predictive density
+for `abrupt-42`. Repeated grid fits took about 16 seconds each on this machine,
+so the first BDLM workflows use the existing Gaussian adapters. A weekly
+harmonic regression example exercises the same runner and reporting. See the
+[independent check](docs/innovation-moment-check.md) and
+[harmonic example](docs/reading-guide.md#run-the-weekly-harmonic-example).
 
 To resume development, read the [checkpoint and next-session note](docs/next-session.md)
 for completed work, current priorities and saved evidence locations.
@@ -64,7 +70,7 @@ explains which checks support each implementation claim.
 | Joint variance learning | Explicit categorical evolution-variance prior, continuous observation-variance learning, full marginal forecasts and saved confounding |
 | Innovation reference | Enumerate every short-history small/large innovation sequence; independent batch/adaptive and filtering/quadrature checks, without a forecasting adapter |
 | Innovation approximation | Gaussian-state integration with sampled V/labels, independent-run MCSE, particle refinement and retained unresolved checks; standalone numerical prototype |
-| Innovation probability bounds | Independent bounded importance draws with simultaneous finite-sample intervals, nonzero unseen-event uncertainty and retained unresolved normalizers |
+| Innovation probability bounds | Independent bounded importance draws, simultaneous intervals, state-grid and omitted tail allowances, and positive uncertainty for unseen events |
 | Simulation calibration | Data-free continuous/discrete/mixed posterior-CDF calibration, recovery, finite-trial uncertainty and saved failures |
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
@@ -166,6 +172,7 @@ explains how to read both execution and review status.
 |---|---|
 | Run and understand the complete example | [Forecasting walkthrough](docs/forecasting.md) |
 | Understand the Bayesian model and its equations | [Local-level model](docs/local-level.md) |
+| Learn the statistics and Python used here and explore later model families | [Reading guide](docs/reading-guide.md) |
 | Understand HPD regions, quantiles, and output rules | [Shared uncertainty](docs/uncertainty.md) |
 | Look up a function, argument, or return type | [Python API reference](src/model_pipelining/README.md) |
 | Copy/read a local CSV or workbook | [Ingestion](docs/ingestion.md) |

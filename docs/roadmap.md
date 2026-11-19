@@ -6,15 +6,22 @@ For usage, start with [the walkthrough](forecasting.md). For past choices, use
 
 ## Resume here
 
-The conservative probability follow-up encloses all 872 retained short-oracle
-probabilities, including the three paths that failed the original particle
-envelopes. Three short cases and all six 160-observation cases still fail the
-precision criteria. The next experiment is an importance proposal informed by
-the observations, with a provable weight bound for unseen paths. Start with
-the abrupt and dominant short histories and `abrupt-42`. Expand to all 17 cases
-if the pilot meets the existing precision criteria. Forecast/provider integration
-follows independent verification. See the [follow-up results](innovation-probability-bounds.md)
-and [pilot plan](next-session.md#next-work).
+Bayesian dynamic linear models are the first main use case within a broader
+forecasting project. Keep the first integration focused on the capabilities it
+needs. Use concrete examples from harmonic regression, other state-space models,
+and multivariate forecasting to guide future changes to shared interfaces. A
+small harmonic regression example is a candidate for checking that a different
+model can use the same data selection, evaluation, and reporting. See the
+[reading guide](reading-guide.md) and [model boundary](architecture.md#implemented-model-boundary).
+
+The state-grid importance proposal passes the probability criteria on all 17
+cases. An independent Gibbs calculation also agreed on the moments and
+predictive probes for `abrupt-42`. Repeated-fit cost favors the existing Gaussian
+local-level adapters for the first BDLM workflow. A small harmonic regression
+example already exercises the shared forecast contract across 72 cases. The
+next practical check is the approved workplace environment and package set.
+See the [verification results](innovation-moment-check.md) and
+[next work](next-session.md#next-work).
 
 The three planned interpretation tasks are complete. The [development study](model-review-study.md)
 records nine compatible reference reviews, 45 matched forecasts, all declared
@@ -29,9 +36,8 @@ expose rare-path uncertainty failures that must be resolved before extending
 forecasting/evidence interfaces.
 
 The study also exposed and repaired a numerical joint-V quantile bracket
-failure, retaining its original trial. That checkpoint passed 401 tests; the
-current local suite passes 442 tests, including fourteen reference, sixteen
-particle prototype and eleven conservative-probability tests.
+failure, retaining its original trial. That checkpoint passed 401 tests. The
+current suite includes 449 tests across the research and production code.
 The study and repair are recorded on `feature/innovation-inference-study`,
 based on merged checkpoint `0ff5def`. Hosted CI and review belong to the PR
 stage.
@@ -143,7 +149,8 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The merged checkpoint had 391 tests; the current local suite has 415.
+The merged checkpoint passed 391 tests. The short-history reference checkpoint
+passed 415 tests, and the latest local checkpoint passed 449.
 [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future
@@ -299,8 +306,10 @@ the synthetic discrepancies as open modeling evidence.
 - **Real-data application (deferred):** fill the implemented task/evaluation
   contract with an actual source and verified historical release claims when
   application choice becomes useful; it is not the immediate project objective.
-- **Another adapter:** choose a concrete need before adding a contrasting model
-  such as boosting; preserve point-only capability handling when appropriate.
+- **Another adapter:** use a concrete forecasting example to exercise a different
+  set of assumptions and capabilities. Harmonic regression is a candidate for
+  seasonal predictors. Multivariate forecasting will also need explicit series
+  alignment and a way to express dependence when a model returns a joint forecast.
 
 The Bayesian adapter was selected before the real-data application. This is an
 order of learning tasks, not a requirement to finish every possible storage or
@@ -416,7 +425,5 @@ the fixed 262,144-draw budget. Forecast/provider integration remains gated.
 The audit verifies ten source and 31 input fingerprints, recalculates every
 interval/check and replays all 17 independent calls exactly. Eleven added tests
 bring the suite to 442; passing software checks do not resolve wide bounds.
-The [pilot plan](next-session.md#next-work) prioritizes a sharper importance
-proposal and retains targeted integration as an alternative. Keep the original
-empirical failures, joint dependence, state atoms, Gaussian limits and complete
-predictive-law checks for comparison.
+The subsequent [state-grid proposal](innovation-lattice.md) passes the
+probability criteria on all cases while retaining the original comparators.

@@ -63,6 +63,14 @@ nonzero process status.
 
 ## Scientific evidence and review
 
+The independent Gibbs checks compare the Gaussian state block against dense
+calculations and exercise known state atoms. The [full cross-check and timing
+study](innovation-moment-check.md) runs on explicit invocation.
+
+The state-grid regression tests compare lattice likelihoods with dense Gaussian
+references and check atoms, unseen-event intervals, replay and resource errors.
+The full [state-grid study](innovation-lattice.md) runs on explicit invocation.
+
 The conservative innovation-probability tests automatically check the independent
 dense-likelihood envelope identity, unseen-event bounds, near-dominant labels,
 atoms/Gaussian limits, invalid budgets, RNG isolation and bounded CLI/replay

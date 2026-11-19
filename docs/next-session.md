@@ -11,20 +11,29 @@ results and separate computational checks and human interpretation. Application
 selection remains deferred. The evidence-interpretation phase is complete;
 the [three-model development study](model-review-study.md) records results,
 prior robustness, limitations and the next bounded modeling question.
+Bayesian dynamic linear models are the first main use case. Keep work on them
+bounded to their concrete needs and keep shared code usable for harmonic
+regression, other state-space models, and multivariate forecasting. Use the
+[reading guide](reading-guide.md) to trace the statistics and code behind each
+step.
 The [short-history innovation reference](innovation-reference.md) and
 [longer-history particle investigation](innovation-particles.md) are implemented.
-The [conservative probability follow-up](innovation-probability-bounds.md)
-enclosed all 872 short-oracle probabilities across 11 cases and replayed all
-17 runs exactly. Three short cases and all six 160-observation cases still fail
-the probability precision criteria. The current code checkpoint passed 442
-tests and the documentation walkthrough locally.
+The state-grid proposal passed the existing probability criteria on all 17
+frozen cases. A continuous-state Gibbs calculation independently agreed on the
+saved moments and predictive density for `abrupt-42`. Repeated grid fits took
+about 16 seconds each. Use the existing Gaussian local-level adapters for the
+first BDLM workflows and keep the rare-jump model as a research option. A
+weekly harmonic example now exercises the same shared runner and reporting.
+See the [independent check](innovation-moment-check.md) and
+[harmonic example](reading-guide.md#run-the-weekly-harmonic-example).
 
 The `feature/innovation-inference-study` branch records the development review,
 numerical repair, innovation prototypes, tests and curated evidence. It starts
 from merged checkpoint `0ff5def`. Review and hosted CI belong to the PR stage.
-The research checkpoint preserves the failures for comparison in the next
-pilot. Forecast integration requires independent precision verification.
-Full run directories are ignored by Git.
+Commit `092efcd` records the development review, reference and prior probability
+follow-up. The subsequent checkpoint records the state-grid study, independent
+Gibbs check, harmonic example, and reading guide. It passed 449 tests and the
+documentation walkthrough locally. Full run directories are ignored by Git.
 
 The last merged implementation checkpoint is recorded on `main` through
 [PR #6](https://github.com/aquinjay/model-pipelining/pull/6), merge commit
@@ -47,8 +56,8 @@ that future edits have already been verified.
 
 ## Completed development review — 2026-11-19
 
-The current study and numerical repair are local work after that merged
-checkpoint. No new commit, push, PR or hosted CI result is implied.
+The development study and numerical repair are recorded in `092efcd` on the
+feature branch, based on the merged checkpoint above.
 
 | Evidence | Completed scope |
 |---|---|
@@ -163,28 +172,41 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
-1. Prototype an importance proposal that uses the observations to concentrate
-   draws on plausible shared observation variances V and jump paths. Derive an
-   explicit weight bound and preserve support for every positive-mass path.
-   Targeted integration remains an alternative if the weight bound stays loose.
-2. Start with `short-abrupt`, `short-dominant` and `abrupt-42` from the frozen
-   study. Compare the two short histories with their independent oracles. On
-   `abrupt-42`, compare with the retained particle output and check the new
-   bound's precision. The retained particle output is an empirical comparison.
-3. Use the existing probability criteria for the pilot: a positive lower bound
-   on the normalizer and maximum interval width of 0.10 at the declared confidence
-   and budget. If the pilot meets them, run all 17 saved cases, including the three
-   paths that failed the original particle envelopes. Keep the model, histories
-   and query grids fixed for comparison. Retain failed checks and preserve the
-   Gaussian limits, state atoms, V/path joint moments and full predictive CDF and
-   density checks. Recheck runtime and ancestry if particle inference changes.
+1. Verify the first Gaussian BDLM workflow on the workplace Python version and
+   approved package set when those are known. Identify the packages it actually
+   needs and keep research studies and external adapters optional where practical.
+2. Use a concrete forecasting task to choose the first model settings and any
+   missing capabilities. The harmonic example already exercises seasonal
+   features derived from timestamps. Additional series, predictors, or joint
+   outputs should follow a concrete case.
+3. Revisit rare-jump integration if the task needs it. Use the saved timings and
+   cross-checks to assess the cost, then specify the required predictive outputs
+   and fresh-path criticism, prior comparisons, and calibration.
 
-After the approximation is independently verified, extend forecasting/provider
-interfaces and run fresh-path predictive criticism, matched prior comparisons,
-calibration/recovery and independent-seed stable/gradual/abrupt studies. The
-current prototype establishes a short-history calculation, not those scientific
-adequacy results. Broader adapter diversity and real-data application choice
-remain separate project decisions.
+## Independent moment and density checkpoint
+
+Both Gibbs budgets on `abrupt-42` passed against the original grid and two grid
+reruns. Five short oracle controls passed at the first budget. `short-abrupt`
+needed longer chains to meet the frozen precision criteria. A 32-draw grid
+limit returned `unresolved` and preserved the failure record. No additional
+dependency was needed for the check or the 72-case harmonic example. See the
+[study and reproduction commands](innovation-moment-check.md).
+
+## State-grid checkpoint — 2026-11-19
+
+The three-case pilot used `short-abrupt`, `short-dominant` and `abrupt-42`.
+The direct-convolution rerun passed all three at the original sample count,
+confidence allocation, and width limit of 0.10. The full 17-case repeat used
+the same settings. The earlier FFT pilot remains archived because a dense
+Gaussian limit exposed significant roundoff in small likelihoods.
+All 446 tests passed. The audit recalculated all 17 interval sets and matched
+the three pilot case files byte for byte.
+
+The grid likelihood bounds hold pathwise in exact arithmetic. Independent
+weighted draws and deterministic grid/tail allowances satisfy the probability
+criteria at the saved probes. Point estimates of densities and moments remain
+descriptive. The existing particle fits are empirical comparisons for long
+histories. See the [derivation and full results](innovation-lattice.md).
 
 ## Conservative probability checkpoint — 2026-11-19
 
@@ -212,7 +234,7 @@ densities. The original particle method and study remain unchanged.
 - The audit verifies ten archived/current source hashes and 31 archived/unchanged
   parent inputs, recalculates all intervals/checks and replays all 17 independent
   fixed-budget calls exactly. It does not rerun the original particle study.
-- All **442 tests pass**, including eleven new probability-bound tests. The
+- That checkpoint passed **442 tests**, including eleven probability-bound tests. The
   three original failed envelopes and the exploratory bound runs are retained.
 
 ## Saved local evidence to inspect
@@ -223,6 +245,11 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/innovation-moment-check-verified-20261119/` | Frozen controls, independent Gibbs budgets on abrupt-42, grid timing and insufficient-budget result |
+| `runs/innovation-moment-control-refinement-20261119/` | Independent longer short-abrupt control against the same oracle and criteria |
+| `runs/weekly-harmonic-example-20261119/` | 72 matched scalar forecasts and comparison report for the harmonic example and training mean |
+| `runs/innovation-lattice-full-20261119/` | State-grid results for all 17 cases, copied input and source artifacts, validation and comparisons |
+| `runs/innovation-lattice-pilot-direct-20261119/` | Three-case pilot with direct convolution at the full declared budget |
 | `runs/innovation-probability-bounds-checked-20261119/` | Fixed-budget independent probability follow-up, original inputs/failures, source snapshots, bounds and unresolved precision; see its guide |
 | `runs/innovation-particles-verified-20261119/` | Frozen 17-case particle/oracle investigation, all refinements and empirical uncertainty failures; see the particle guide for results and validation scope |
 | `runs/innovation-reference-verified-20261119/` | Seven frozen short numerical histories, both independent calculations, three Gaussian limits, feasibility/timing, saved chart and validation; curated exports are linked in the guide |

@@ -1,5 +1,11 @@
 # Architecture: current behavior and future design
 
+The standalone state-grid follow-up uses an observation-conditioned proposal,
+with pathwise Gaussian grid bounds and a separate bound on omitted
+observation-variance tails. It uses the exact conditional Gaussian smoother for
+the reported probes and produces a research artifact through an explicit CLI.
+See the [state-grid study](innovation-lattice.md).
+
 The standalone [conservative probability check](innovation-probability-bounds.md)
 uses independent fixed-budget importance draws with a known weight envelope.
 Simultaneous bounds cover requested posterior probabilities and explicitly retain
@@ -55,6 +61,22 @@ Both uncertainty kinds target the future observed value in original units.
 State or parameter distributions belong in separate diagnostic outputs.
 Normal-specific filtering/quantile calculations stay inside the adapter. The
 runner never branches on model-family names or invents missing uncertainty.
+
+Bayesian dynamic linear models are the first main use case. Keep their priors,
+state equations, inference, and diagnostics in the model or evidence provider.
+The shared layer handles eligible data, run execution, declared forecast
+outputs, and evaluation. Harmonic regression, other state-space models, and
+multivariate models should be able to reuse those responsibilities. Extend the
+request for dated predictors or the result for joint forecasts when a concrete
+model exercises that need. A joint result should preserve cross-series
+dependence. The current request and result describe a scalar target.
+
+External modeling libraries can be optional adapter dependencies. Keep their
+imports out of shared execution so a workplace installation can use the approved
+models available there. Confirm the workplace Python version and approved
+packages before choosing a smaller dependency profile. The current locked
+environment includes the research tools. The weekly harmonic example exercises
+the existing scalar contract with NumPy and the shared runner.
 
 Capabilities make supported outputs required at the requested levels. Shared
 checks enforce complete, finite, structurally valid outputs. Highest-density

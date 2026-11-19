@@ -1,8 +1,9 @@
 # Decisions and open questions
 
-The latest numerical follow-up adds [conservative probability bounds](innovation-probability-bounds.md).
-Its short-history enclosure checks pass while useful long-history precision
-remains unresolved; see the dated decision below.
+The [independent moment and density check](innovation-moment-check.md) agrees
+with the state-grid approximation on `abrupt-42`. Use the existing Gaussian
+local-level adapters for the first BDLM workflow and keep external modeling
+frameworks optional at the adapter boundary.
 
 This is a chronological design history. A dated entry records what was decided
 at that time; later entries can supersede it. Use [the README](../README.md),
@@ -720,3 +721,63 @@ new model or execute those planned studies.
   joint dependence and full predictive probes. Forecast/provider integration,
   fresh-path criticism, prior robustness and calibration remain gated. All
   442 software tests pass; useful numerical precision remains separate.
+
+## Use an observation-conditioned state grid for probability bounds — 2026-11-19
+
+The previous prior proposal left three short and all six long cases unresolved.
+The new proposal uses a finite state grid and a piecewise envelope over
+observation precision. A gamma density maximum and a convex likelihood chord
+bound each weight. A Gaussian lattice-sum bound controls the grid error for
+each allocation, and a gamma tail bound accounts for omitted precision ranges.
+Each draw uses conditional Gaussian smoothing to recover true state atoms and
+evaluate the full predictive mixture. The retained exploratory FFT produced
+incorrect small likelihoods in a dense Gaussian limit, so the study uses direct
+convolution.
+
+The corrected three-case pilot passed, then all 17 cases passed with the
+original 262,144 draws, confidence allocation, and maximum interval width
+of 0.10. The widest long-history interval was 0.03379. All 872 short oracle
+probabilities passed the retained comparator, including the original three
+rare-path failures. Callers explicitly run the pilot or the full study. The
+command archives the sources and inputs and preserves failed records. See the
+[derivation and results](innovation-lattice.md).
+
+Keep the state-grid proposal as the verified probability prototype. Its
+moments and predictive density estimates are descriptive. Verify these
+quantities independently on a long history and check cost and failure
+handling for repeated fits before deciding how to integrate forecasting and
+evidence providers.
+
+## Keep shared forecasting open to other model families
+
+Bayesian dynamic linear models are the first main use case. The project also
+covers other state-space models, harmonic regression, multivariate forecasting,
+and other families as concrete tasks arise. Keep model parameters, fitting,
+and specialized diagnostics in the adapter or evidence provider. Share data
+eligibility, execution, forecast recording, evaluation, and reporting across
+model families.
+
+Build each shared capability around a concrete example. Harmonic regression can
+exercise seasonal predictors with the existing scalar target. A joint
+multivariate forecast can establish requirements for series identity, alignment,
+release timing, and dependence in saved outputs. The current scalar contract
+continues to support the first use case. See the [roadmap](roadmap.md) and
+[reading guide](reading-guide.md).
+
+## Choose a bounded first BDLM workflow
+
+The continuous-state Gibbs study agrees with the state-grid results on
+`abrupt-42` at both independent budgets. Its short control needed a separate
+longer run to meet the same precision criteria. The full-budget state-grid
+fits took about 16 seconds each on the tested fixture. Use the existing
+Gaussian local-level adapters for the first BDLM workflows. Retain the
+rare-jump method as research for tasks that require it. The weekly harmonic
+example confirms that the current scalar contract supports a different
+family without shared runner changes. See the [evidence](innovation-moment-check.md).
+
+Keep external frameworks as optional adapter choices. PyDLM and PyMC Extras
+are candidates for research comparisons or an approved adapter. Check the
+workplace interpreter and approved packages before establishing a smaller
+installation profile. The repository's existing lock remains the full
+research environment. See the [PyDLM guide](https://pydlm.github.io/pydlm_user_guide.html)
+and [PyMC Extras state-space models](https://www.pymc.io/projects/extras/en/stable/statespace/models.html).

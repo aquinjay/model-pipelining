@@ -1,5 +1,17 @@
 # Configuration
 
+The [innovation moment check](../docs/innovation-moment-check.md) inherits the
+observations, model and query grids from a completed state-grid study. The
+caller selects a source and new output directory. The script freezes Gibbs
+budgets, seeds and comparison thresholds in the output design. A separate
+`--refine-control` invocation repeats a named control with longer chains.
+
+The [state-grid study](../docs/innovation-lattice.md) inherits the frozen model,
+queries, seed, confidence and draw budget from a saved probability-bound study.
+The caller supplies a parent `--source-directory` and new `--output-directory`.
+The command runs the three pilot cases by default. Select `--all-cases` for the
+full design or `--samples` for a separate draw budget.
+
 The [probability-bound follow-up](../docs/innovation-probability-bounds.md)
 reuses a saved particle study's frozen design and original failures. It has no
 separate JSON configuration: callers explicitly choose `--source-directory`, a
