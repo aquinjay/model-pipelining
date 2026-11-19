@@ -1,0 +1,18 @@
+# CSV Gaussian backtests, scoring and charts on CPython 3.12.
+# Resolved and tested on Linux x86-64 with CPython 3.12.16.
+# Direct dependencies
+matplotlib==3.11.2
+numpy==2.5.4
+pandas==3.1.1
+scipy==1.18.1
+
+# Transitive dependencies
+contourpy==1.4.0
+cycler==0.12.1
+fonttools==4.68.0
+kiwisolver==1.5.1
+packaging==26.3
+pillow==13.0.0
+pyparsing==3.3.3
+python-dateutil==4.0.0
+tzdata==2026.6

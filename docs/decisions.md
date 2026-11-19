@@ -781,3 +781,19 @@ workplace interpreter and approved packages before establishing a smaller
 installation profile. The repository's existing lock remains the full
 research environment. See the [PyDLM guide](https://pydlm.github.io/pydlm_user_guide.html)
 and [PyMC Extras state-space models](https://www.pymc.io/projects/extras/en/stable/statespace/models.html).
+
+## Verify a focused Python 3.12 workflow on public data
+
+The first workplace workflow needs CSV input, the existing Gaussian local-level
+adapter, shared scoring, and a saved chart. A clean CPython 3.12.16 environment
+completed that workflow with pandas, NumPy, SciPy, and Matplotlib plus nine
+transitive packages. The pinned Python 3.12 profile is separate from the full
+Python 3.14 research lock. Workplace compatibility requires testing the approved
+packages on the workplace platform.
+
+Use Central Park daily maximum temperature as the first public development
+task. Preserve the retrieved NOAA archive bytes and normalized input and
+compare against the last observed value. The 2024 run completed all 366 cases.
+The archived date labels support a simulated forecast origin. Operational use
+requires publication times or vintage histories. See the [setup, task design,
+and saved results](python312-public-forecast.md).

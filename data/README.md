@@ -1,5 +1,10 @@
 # Local data
 
+The [Central Park example](../docs/python312-public-forecast.md#prepare-the-public-task)
+uses a caller-acquired NOAA daily maximum-temperature CSV with station and
+quality attributes. It preserves the source bytes and the normalized calendar
+as separate snapshots in its output directory.
+
 The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
 state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)
 generates its own 100-day synthetic CSV and registers it in the example output

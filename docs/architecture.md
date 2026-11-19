@@ -74,9 +74,10 @@ dependence. The current request and result describe a scalar target.
 External modeling libraries can be optional adapter dependencies. Keep their
 imports out of shared execution so a workplace installation can use the approved
 models available there. Confirm the workplace Python version and approved
-packages before choosing a smaller dependency profile. The current locked
-environment includes the research tools. The weekly harmonic example exercises
-the existing scalar contract with NumPy and the shared runner.
+packages before choosing an installation source. A focused Python 3.12 profile
+now runs the scalar Gaussian CSV workflow on Linux. The full research environment
+is pinned separately. The weekly harmonic and NOAA examples exercise the same
+scalar contract. See the [Python 3.12 verification](python312-public-forecast.md).
 
 Capabilities make supported outputs required at the requested levels. Shared
 checks enforce complete, finite, structurally valid outputs. Highest-density

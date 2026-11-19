@@ -1,0 +1,200 @@
+{
+  "kind": "public_noaa_forecast_and_python312_verification",
+  "saved_run": "runs/noaa-central-park-20261119/verified-py312",
+  "retrieved_utc_date": "2026-11-19",
+  "environment": {
+    "python": "3.12.16",
+    "system": "Linux",
+    "machine": "x86_64",
+    "pinned_profile": "requirements-python312.txt",
+    "profile_sha256": "ca726b1ec2a7bd795c1e2ec31619fe343c4ee0940f594d4a2ea270ad0897c44b",
+    "verified_versions": {
+      "contourpy": "1.4.0",
+      "cycler": "0.12.1",
+      "fonttools": "4.68.0",
+      "kiwisolver": "1.5.1",
+      "matplotlib": "3.11.2",
+      "numpy": "2.5.4",
+      "packaging": "26.3",
+      "pandas": "3.1.1",
+      "pillow": "13.0.0",
+      "pyparsing": "3.3.3",
+      "python-dateutil": "4.0.0",
+      "scipy": "1.18.1",
+      "tzdata": "2026.6"
+    }
+  },
+  "verification": {
+    "targeted_python312_tests_passed": 80,
+    "dependency_check": "passed",
+    "synthetic_walkthrough": "two 170-case runs completed under Python 3.12",
+    "replayed_files": [
+      "central-park-tmax.csv",
+      "forecast/predictions.csv",
+      "forecast/benchmark_predictions.csv",
+      "forecast/scores.json"
+    ],
+    "matching_forecast_and_benchmark_cases": 366,
+    "training_cutoffs_before_targets": true
+  },
+  "design": {
+    "source_url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USW00094728&startDate=2023-01-01&endDate=2024-12-31&dataTypes=TMAX&units=metric&includeAttributes=true&format=csv",
+    "raw_dataset": "noaa-central-park-raw",
+    "raw_snapshot_id": "33afc325ddd692469272d0eb26b0be54605f815d6e2fd18bfa02b1df5384f645",
+    "dataset": "noaa-central-park-tmax",
+    "snapshot_id": "e427520555e8f9213cf5eb52e326ed7a31969e243ac6024e800a13a55bc81fa8",
+    "start": "2023-01-01",
+    "end": "2024-12-31",
+    "station": "USW00094728",
+    "rows": 731,
+    "model": {
+      "initial_mean": 15.0,
+      "initial_variance": 100.0,
+      "observation_variance": 4.0,
+      "evolution_variance": 9.0
+    },
+    "script_sha256": "90523ac7958ae8a309becf006fcb9e70da18199a0255c9d985ea2f238fd66fff",
+    "availability": "Simulate the archived daily value being known at its UTC date label. These labels do not establish real historical publication times.",
+    "experiment": {
+      "format_version": 2,
+      "task": {
+        "name": "central-park-daily-tmax",
+        "target_description": "Next dated observation of daily maximum temperature at Central Park",
+        "source_description": "NOAA GHCN-Daily archive request for USW00094728, using date labels and simulated availability",
+        "timestamp_column": "timestamp",
+        "target_column": "value",
+        "units": "degrees Celsius",
+        "calendar": "daily_utc",
+        "missing_policy": "reject",
+        "horizon_days": 1,
+        "minimum_history": 365,
+        "issuance_delay_seconds": 0,
+        "availability_column": null,
+        "revision_policy": "reject",
+        "actual_policy": "latest_in_snapshot"
+      },
+      "evaluation": {
+        "role": "development",
+        "final_start": null,
+        "final_end": null,
+        "benchmarks": [
+          "last-value"
+        ]
+      },
+      "evidence": {
+        "required_workflows": [],
+        "required_fit_checks": [],
+        "replications": 1000,
+        "seed": 0,
+        "interval_level": 0.95
+      }
+    }
+  },
+  "scores": {
+    "expected_count": 366,
+    "scored_count": 366,
+    "failed_count": 0,
+    "complete": true,
+    "mae": 2.9402141827441075,
+    "rmse": 3.7721700360365498,
+    "scope": "Successful cases only; partial scores are not a complete-run comparison",
+    "benchmarks": {
+      "status": "completed",
+      "runs": [
+        {
+          "name": "last-value",
+          "expected_count": 366,
+          "scored_count": 366,
+          "failed_count": 0,
+          "complete": true,
+          "mae": 2.93551912568306,
+          "rmse": 3.758436775380892,
+          "scope": "Successful cases only; partial scores are not a complete-run comparison"
+        }
+      ]
+    },
+    "distribution": {
+      "status": "completed",
+      "method": {
+        "version": 1,
+        "crps": "cdf_integral_loss_closed_form",
+        "log_score": "negative_natural_log_density",
+        "direction": "lower_is_better",
+        "target": "future_observation",
+        "density_measure": "Lebesgue_in_target_units",
+        "crps_relative_roundoff_budget": 1e-07
+      },
+      "expected_count": 366,
+      "scored_count": 366,
+      "failed_count": 0,
+      "mean_crps": 2.1188076434862677,
+      "mean_log_score": 2.7498974812236874,
+      "scope": "Successful cases only; incomplete scores cannot enter a full-cohort comparison"
+    },
+    "uncertainty": {
+      "status": "completed",
+      "expected_count": 366,
+      "scored_count": 366,
+      "failed_count": 0,
+      "intervals": [
+        {
+          "level": 0.8,
+          "scored_count": 366,
+          "covered_count": 304,
+          "coverage": 0.8306010928961749,
+          "mean_width": 10.252412524356807,
+          "mean_interval_score": 13.645668931836552
+        },
+        {
+          "level": 0.95,
+          "scored_count": 366,
+          "covered_count": 349,
+          "coverage": 0.953551912568306,
+          "mean_width": 15.67971187632043,
+          "mean_interval_score": 18.14628888740733
+        }
+      ],
+      "quantiles": [
+        {
+          "probability": 0.025,
+          "scored_count": 366,
+          "mean_pinball_loss": 0.24201155531164623
+        },
+        {
+          "probability": 0.1,
+          "scored_count": 366,
+          "mean_pinball_loss": 0.7143545275123954
+        },
+        {
+          "probability": 0.9,
+          "scored_count": 366,
+          "mean_pinball_loss": 0.6502123656712595
+        },
+        {
+          "probability": 0.975,
+          "scored_count": 366,
+          "mean_pinball_loss": 0.21164566687353728
+        }
+      ],
+      "highest_density_regions": [
+        {
+          "level": 0.8,
+          "scored_count": 366,
+          "covered_count": 304,
+          "coverage": 0.8306010928961749,
+          "mean_total_width": 10.252412524356807,
+          "mean_segment_count": 1
+        },
+        {
+          "level": 0.95,
+          "scored_count": 366,
+          "covered_count": 349,
+          "coverage": 0.953551912568306,
+          "mean_total_width": 15.67971187632043,
+          "mean_segment_count": 1
+        }
+      ],
+      "scope": "Successful uncertainty cases only; coverage is descriptive, not an approval criterion"
+    }
+  }
+}
