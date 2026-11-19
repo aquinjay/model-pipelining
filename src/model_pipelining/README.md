@@ -49,6 +49,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
+| [adapters.py](adapters.py) | Name-to-class catalog that scripts use to rebuild adapters from saved settings |
 
 ## Terms and record boundaries
 
@@ -355,6 +356,7 @@ NormalMean.posterior(request) -> MeanPosterior
 NormalMean.predictive_distribution(request) -> NormalDist
 NormalMean.fit(request) -> FittedForecast
 NormalMean.forecast(request) -> Forecast
+NormalMean.from_configuration(configuration) -> NormalMean
 plot_fit(run_directory, *, origin_index) -> Path
 ```
 
@@ -417,6 +419,7 @@ NormalMeanVariance.posterior(request) -> NormalInverseGammaPosterior
 NormalMeanVariance.predictive_distribution(request) -> frozen scipy.stats.t
 NormalMeanVariance.fit(request) -> FittedForecast
 NormalMeanVariance.forecast(request) -> Forecast
+NormalMeanVariance.from_configuration(configuration) -> NormalMeanVariance
 ```
 
 The posterior fields are `mean`, `mean_precision`, `shape`, `scale`, and
@@ -661,6 +664,30 @@ plan. Per-origin fit names are enforced by `run_backtest`, while separate workfl
 requirements remain pending in forecast manifests. See [the evidence guide](../../docs/evidence.md)
 for all `EvidencePlan` fields, statuses, compatibility and examples.
 
+## Rebuilding adapters from saved settings
+
+Every repository adapter (`NormalMean`, `NormalMeanVariance`, `LocalLevel`,
+`LocalLevelVariance`, `LocalLevelJointVariance`) provides
+`from_configuration(configuration)`. It accepts the JSON form of the adapter's
+`configuration` property, such as `manifest["model"]["configuration"]`, and
+rebuilds nested settings (`MCMCSettings`, `QuadratureSettings`, tuples). The
+constructor's validation still applies.
+
+```text
+adapters.MODEL_TYPES -> dict[str, type]            # keyed by each adapter's name
+adapters.EVIDENCE_MODEL_NAMES -> tuple[str, ...]   # adapters with evidence providers
+adapters.build_model(name, configuration) -> adapter
+adapters.build_scenarios(reference, overrides) -> dict[str, adapter]
+```
+
+`build_scenarios` merges each named override dictionary into the reference
+configuration and restores it, so unchanged settings, including MCMC and
+quadrature settings, are retained. Scripts that take `--model` and `--config`
+use this catalog. The runner and evidence workflows never consult it; they
+accept any object that satisfies the `Forecaster` or `EvidenceProvider`
+contract. Register a new adapter in `adapters.py` only to construct it by name
+from scripts.
+
 ## Naming, errors, and limits
 
 Dataset/tag names are case-sensitive: start with an ASCII letter/digit, followed
@@ -683,7 +710,7 @@ security sandbox. [Tests](../../tests/README.md) map claims to supporting eviden
 
 ## Simulation calibration
 
-`calibration.run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95) -> Path` uses provider `calibration_draw(count, generator)`, `calibration_fit(request, truth, level)` and `calibration_parameters`. `plot_calibration(directory) -> Path` reads saved records. The CDF-based workflow runs explicitly outside historical experiments. See [semantics and failure rules](../../docs/calibration.md).
+`calibration.run_calibration(*, model, observation_count, output_directory, trials=200, seed=0, interval_level=.95) -> Path` uses provider `calibration_draw(count, generator)`, `calibration_fit(request, truth, level)` and `calibration_parameters`. `get_evidence_provider(model, "calibration")` raises `ValueError` unless `calibration_parameters` is a nonempty tuple of unique nonblank names. `plot_calibration(directory) -> Path` reads saved records. The CDF-based workflow runs explicitly outside historical experiments. See [semantics and failure rules](../../docs/calibration.md).
 
 ## Joint local-level variances
 

@@ -132,20 +132,16 @@ audit criteria fail, retaining the exact candidate for inspection.
 not persist files. The runner calls `fit` and saves evidence for adapters
 with `supports_fit_evidence=True`, rejecting failed candidates.
 
-Reconstruct nested settings from a saved manifest explicitly:
+Rebuild the model, including any nested sampler settings, from a saved manifest:
 
 ```python
-configuration = dict(manifest["model"]["configuration"])
-sampler_configuration = configuration.pop("mcmc")
-model = NormalMean(**configuration, mcmc=(
-    MCMCSettings(**sampler_configuration) if sampler_configuration is not None else None
-))
+model = NormalMean.from_configuration(manifest["model"]["configuration"])
 ```
 
 Restore the permanent input, `ExperimentSpec.from_dict(manifest["experiment"])`,
 interval levels, and matching code/environment. Invoke `run_backtest` in a new
 directory. Numerical files and fit evidence replay; run timestamps differ.
-No automatic restoration is supplied.
+Replay is a caller action; no run is restored automatically.
 
 ## Sampler and reproducibility
 

@@ -14,6 +14,7 @@ from pathlib import Path
 import random
 from statistics import StatisticsError, correlation, mean
 
+from model_pipelining.adapters import build_scenarios
 from model_pipelining.backtest import run_backtest
 from model_pipelining.calibration import run_calibration, plot_calibration
 from model_pipelining.distribution_scoring import read_saved_distribution_scores
@@ -62,11 +63,8 @@ def models():
     result = {}
     for name, (kind, filename) in MODEL_CONFIGS.items():
         config = read_json(ROOT / "configs" / filename)
-        restore = getattr(kind, "from_configuration", lambda value: kind(**value))
-        reference = restore(config["reference"])
-        alternatives = {label: restore({**reference.configuration, **overrides})
-                        for label, overrides in config["scenarios"].items()}
-        result[name] = (reference, alternatives)
+        reference = kind.from_configuration(config["reference"])
+        result[name] = (reference, build_scenarios(reference, config["scenarios"]))
     return result
 
 

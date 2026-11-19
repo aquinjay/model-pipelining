@@ -94,6 +94,15 @@ class NormalMeanVariance:
     def configuration(self) -> dict:
         return asdict(self)
 
+    @classmethod
+    def from_configuration(cls, configuration):
+        """Rebuild a model from its saved JSON configuration, including MCMC settings."""
+        parameters = dict(configuration)
+        if parameters.get("mcmc") is not None:
+            from model_pipelining.sampling import MCMCSettings
+            parameters["mcmc"] = MCMCSettings(**parameters["mcmc"])
+        return cls(**parameters)
+
     @property
     def implementation_files(self) -> tuple[Path, ...]:
         return tuple(Path(__file__).with_name(name) for name in

@@ -83,9 +83,14 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
         raise ValueError("Malformed evidence workflow capabilities")
     if workflow == "sequential_checks" and not callable(getattr(provider, "predictive", None)):
         raise ValueError("Model does not supply sequential predictive distributions")
-    if workflow == "calibration" and any(not callable(getattr(provider, name, None))
-                                        for name in ("calibration_draw", "calibration_fit")):
-        raise ValueError("Model does not supply calibration calculations")
+    if workflow == "calibration":
+        if any(not callable(getattr(provider, name, None)) for name in ("calibration_draw", "calibration_fit")):
+            raise ValueError("Model does not supply calibration calculations")
+        parameters = getattr(provider, "calibration_parameters", None)
+        if (not isinstance(parameters, tuple) or not parameters
+                or any(not isinstance(name, str) or not name.strip() for name in parameters)
+                or len(set(parameters)) != len(parameters)):
+            raise ValueError("Calibration needs a tuple of unique unknown parameter names")
     if (not isinstance(metadata.implementation_files, tuple)
             or any(not isinstance(path, Path) for path in metadata.implementation_files)
             or not isinstance(metadata.predictive_scope, dict) or not isinstance(metadata.influence_scope, dict)):

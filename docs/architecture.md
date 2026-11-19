@@ -84,6 +84,13 @@ and verifies matched origins and eligible dates before pairing the saved
 forecasts. Each series has its own snapshot and history identity. The report
 checks order and dependent errors without extending the shared result schema.
 
+Every repository adapter rebuilds itself from its saved JSON `configuration`
+with `from_configuration`. [adapters.py](../src/model_pipelining/adapters.py)
+maps adapter names to classes so scripts that take `--model` and `--config`
+construct models and prior scenarios in one place. The catalog serves scripts
+only; the runner and evidence workflows still accept any object that satisfies
+the shared contracts.
+
 Capabilities make supported outputs required at the requested levels. Shared
 checks enforce complete, finite, structurally valid outputs. Highest-density
 sets preserve disconnected segments and nesting across masses, but their

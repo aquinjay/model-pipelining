@@ -101,7 +101,8 @@ See [the evidence guide](../docs/evidence.md) for a complete command and statuse
 local-level settings and named `scenarios` with overrides of that reference.
 Each scenario inherits every unchanged reference setting. Omitted reference
 settings use the adapter defaults. The command saves every expanded configuration
-in `scenario_summaries.json`; retain those values for replay. Names must be
+in `scenario_summaries.json`; retain those values for replay and rebuild each
+with `LocalLevel.from_configuration`. Names must be
 nonblank and cannot be `reference`. Settings are illustrative caller choices,
 not a tuning grid or a rule that prior influence should be small.
 
