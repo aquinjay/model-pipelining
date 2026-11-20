@@ -1,0 +1,125 @@
+{
+  "run": "runs/noaa-temperature-pair-verified-20261119",
+  "python": "3.12.16",
+  "design": {
+    "maximum_study": "runs/noaa-2025-frozen-20261119",
+    "maximum_snapshot": "23563d191b9e09f7436635bd78502cd0c2b72aa6b7be10aa13ec54d9b5747672",
+    "minimum_snapshot": "ddf3e17aba28a6a049e474200977df80a2b6ae0cf618eff3a9b8b20b187f1e5b",
+    "source_snapshot": "9e35bacaf467e631dda894a4fba44f7a2cd4ce30fc6b4ef3089b3bfd11392677",
+    "source_url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USW00094728&startDate=2023-01-01&endDate=2025-12-31&dataTypes=TMIN,TMAX&units=metric&includeAttributes=true&format=csv",
+    "same_archive_maximum_values": 1096,
+    "archive_calendar_days": 1096,
+    "observed_crossings_in_archive": 0,
+    "minimum_experiment": {
+      "format_version": 2,
+      "task": {
+        "name": "central-park-daily-tmin",
+        "target_description": "Next dated observation of daily minimum temperature at Central Park",
+        "source_description": "NOAA GHCN-Daily archive request for USW00094728, using date labels and simulated availability",
+        "timestamp_column": "timestamp",
+        "target_column": "value",
+        "units": "degrees Celsius",
+        "calendar": "daily_utc",
+        "missing_policy": "reject",
+        "horizon_days": 1,
+        "minimum_history": 365,
+        "issuance_delay_seconds": 0,
+        "availability_column": null,
+        "revision_policy": "reject",
+        "actual_policy": "latest_in_snapshot"
+      },
+      "evaluation": {
+        "role": "final",
+        "final_start": "2025-01-01T00:00:00+00:00",
+        "final_end": "2026-01-01T00:00:00+00:00",
+        "benchmarks": [
+          "last-value"
+        ]
+      },
+      "evidence": {
+        "required_workflows": [],
+        "required_fit_checks": [],
+        "replications": 1000,
+        "seed": 0,
+        "interval_level": 0.95
+      }
+    },
+    "model": {
+      "intercept": true,
+      "annual_period_days": 365.2425,
+      "phase_origin": "2023-01-01",
+      "lag_days": 1
+    },
+    "script_sha256": "8347729d3565e74f7e0f85e99e92599335eccc43a317c94ab71519b50a6c17a2"
+  },
+  "results": {
+    "annual-plus-lag": {
+      "cases": 365,
+      "crossings": 0,
+      "observed_crossings": 0,
+      "tightest_predicted_range": {
+        "date": "2025-12-24",
+        "celsius": 4.200687001899192
+      },
+      "minimum": {
+        "mae": 2.0499032329384663,
+        "rmse": 2.6115786517443476,
+        "bias": 0.3345746565996394
+      },
+      "maximum": {
+        "mae": 2.945279937801737,
+        "rmse": 3.844539186531258,
+        "bias": 0.42257264403081846
+      },
+      "daily_range": {
+        "mae": 2.2633435028762356,
+        "rmse": 3.061502644438098,
+        "bias": 0.08799798743117891
+      },
+      "paired_error_correlation": 0.6034638007852656
+    },
+    "last-value": {
+      "cases": 365,
+      "crossings": 0,
+      "observed_crossings": 0,
+      "tightest_predicted_range": {
+        "date": "2025-06-10",
+        "celsius": 1.1000000000000014
+      },
+      "minimum": {
+        "mae": 2.1515068493150684,
+        "rmse": 2.8413338561654067,
+        "bias": 0.026027397260273942
+      },
+      "maximum": {
+        "mae": 3.213972602739726,
+        "rmse": 4.340888741777788,
+        "bias": 0.030410958904109563
+      },
+      "daily_range": {
+        "mae": 2.655342465753425,
+        "rmse": 3.639825375910675,
+        "bias": 0.004383561643835652
+      },
+      "paired_error_correlation": 0.5540613469628684
+    }
+  },
+  "audit": {
+    "cases": 365,
+    "matching_origins_and_eligible_dates": true,
+    "archive_maximum_unchanged": true,
+    "independently_recomputed": [
+      "point crossings",
+      "range MAE",
+      "paired error correlation"
+    ],
+    "byte_identical_replay_files": [
+      "matched-extrema.csv",
+      "summary.json",
+      "minimum/predictions.csv",
+      "minimum/benchmark_predictions.csv",
+      "minimum/scores.json"
+    ],
+    "targeted_tests_passed": 86
+  }
+}

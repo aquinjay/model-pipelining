@@ -10,9 +10,21 @@ The [research checkpoint](https://github.com/aquinjay/model-pipelining/pull/7)
 is merged. The first concrete public task forecasts next-day maximum
 temperature at Central Park. On Python 3.12.16, the Gaussian model and
 last-value benchmark completed all 366 matched development cases with four
-direct packages. The next workplace check is package approval and platform
-reproduction. Real-time use also needs publication dates and vintages. See the
-[profile, task, and results](python312-public-forecast.md).
+direct packages. Annual seasonality plus one lag improved on the 2024 dates and
+beat both controls on overall MAE and RMSE across the 365 matched 2025 dates.
+The later evaluation used the frozen model and scoring settings.
+Real-time use needs publication dates and vintages. See the
+[profile](python312-public-forecast.md), [seasonal comparison](noaa-seasonality.md),
+and [later-year evaluation](noaa-later-period.md).
+
+The [temperature pair study](noaa-temperature-pair.md) matches separate minimum
+and maximum forecasts at the same 365 origins. The seasonal pair had zero
+crossed point forecasts and lower daily-range error than persistence. Shared
+errors motivate a joint distribution for a task that needs probabilities about
+the range. The study uses the scalar runner and reports the pair after fitting.
+The [next experiment](next-session.md#next-work) compares independent and
+date-matched residual pairs for a range probability on later dates. It uses
+the same point forecasts and freezes the 2025 calibration pairs before scoring.
 
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it

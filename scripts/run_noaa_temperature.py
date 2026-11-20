@@ -26,8 +26,10 @@ SOURCE_URL = (
 )
 
 
-def daily_maxima(source):
+def daily_maxima(source, *, start=START, end=END):
     """Validate the requested station, quality flags and full daily calendar."""
+    if start > end:
+        raise ValueError("NOAA calendar start must not follow its end")
     reader = csv.DictReader(io.StringIO(source.decode("utf-8-sig")))
     columns = {"STATION", "DATE", "TMAX", "TMAX_ATTRIBUTES"}
     if reader.fieldnames is None or not columns.issubset(reader.fieldnames):
@@ -51,9 +53,9 @@ def daily_maxima(source):
         if day in values:
             raise ValueError(f"Duplicate NOAA date {day}")
         values[day] = value
-    expected = [START + timedelta(days=index) for index in range((END - START).days + 1)]
+    expected = [start + timedelta(days=index) for index in range((end - start).days + 1)]
     if sorted(values) != expected:
-        raise ValueError(f"Expected a complete NOAA daily calendar from {START} to {END}")
+        raise ValueError(f"Expected a complete NOAA daily calendar from {start} to {end}")
     return [(f"{day}T00:00:00Z", values[day]) for day in expected]
 
 

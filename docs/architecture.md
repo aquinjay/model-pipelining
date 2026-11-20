@@ -79,6 +79,11 @@ now runs the scalar Gaussian CSV workflow on Linux. The full research environmen
 is pinned separately. The weekly harmonic and NOAA examples exercise the same
 scalar contract. See the [Python 3.12 verification](python312-public-forecast.md).
 
+The [temperature pair study](noaa-temperature-pair.md) runs two scalar tasks
+and verifies matched origins and eligible dates before pairing the saved
+forecasts. Each series has its own snapshot and history identity. The report
+checks order and dependent errors without extending the shared result schema.
+
 Capabilities make supported outputs required at the requested levels. Shared
 checks enforce complete, finite, structurally valid outputs. Highest-density
 sets preserve disconnected segments and nesting across masses, but their

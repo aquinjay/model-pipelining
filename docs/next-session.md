@@ -5,11 +5,26 @@ Updated: 2026-11-19. Start here when resuming the modeling work, then consult th
 
 ## Where we left off
 
-The research checkpoint was merged in [PR #7](https://github.com/aquinjay/model-pipelining/pull/7)
-as `b62b70f` after push and PR CI passed. The Python 3.12 follow-up verifies the
-Gaussian CSV workflow on Python 3.12.16 and runs the first public case using
-NOAA Central Park daily maximum temperatures. All 366 forecasts and benchmark
-cases completed. See the [verified setup and results](python312-public-forecast.md).
+The research checkpoint merged in [PR #7](https://github.com/aquinjay/model-pipelining/pull/7)
+as `b62b70f`. [PR #8](https://github.com/aquinjay/model-pipelining/pull/8) merged
+the Python 3.12 profile and 366-case public NOAA forecast as `f7aec5a`. The
+seasonal follow-up selected an annual curve plus one temperature lag on the
+2024 development dates. With the settings frozen before the 2025 download,
+the model beat both controls on the 365 later dates. Its MAE was 2.945 °C
+versus 3.214 °C for persistence, and its mean forecast error was +0.423 °C.
+See the [verified setup](python312-public-forecast.md), [development study](noaa-seasonality.md),
+and [later-year results](noaa-later-period.md).
+The [temperature pair study](noaa-temperature-pair.md) then matched a separate
+minimum-temperature fit with that frozen maximum run. Both model families
+had zero crossed point forecasts over 365 dates. Range MAE was 2.263 °C for
+the seasonal pair and 2.655 °C for last-value. The seasonal pair's error
+correlation was 0.603.
+
+The `feature/noaa-temperature-pair` branch records the paired study and
+handoff on top of `e385248`, the commit for the 2024 seasonal comparison and
+frozen 2025 maximum evaluation. The branch starts from `main` at `f7aec5a`.
+The paired study passed 86 targeted tests on Python 3.12 and replayed five
+saved files byte for byte. See the [paired result and audit](artifacts/noaa-extrema-summary.json).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
@@ -178,16 +193,36 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
-1. Compare a small seasonal model on the same Central Park development dates.
-   The last-value benchmark had slightly lower point errors than the Gaussian
-   local-level model. Keep the shared runner and the target calendar fixed.
-2. Use documented release timing and vintages before an operational claim. The
-   frozen archive replay simulates immediate availability. Reproduce the Python
-   3.12 profile on the workplace platform later, after the approved packages
-   are confirmed.
-3. Revisit rare-jump integration if the task needs it. Use the saved timings and
-   cross-checks to assess the cost, then specify the required predictive outputs
-   and fresh-path criticism, prior comparisons, and calibration.
+Use the saved minimum and maximum forecasts as the point baseline. The next
+bounded experiment asks whether accounting for correlated errors improves the
+probability forecast that tomorrow's daily range is at least 10 °C. This is
+a proposed development question. Confirm the threshold, target dates, model
+settings, and scoring rule before retrieving the later evaluation values.
+
+1. Use `matched-extrema.csv` from the 2025 run as the calibration cohort. For
+   each date, take actual minus forecast for both temperatures. Freeze these
+   pairs while evaluating a later cohort. Keep the annual-plus-lag forecasts
+   and refit their coefficients only on eligible expanding histories.
+2. Compare two forecasts of the range from the same residual pools. For the
+   independent baseline, pair every minimum residual with every maximum
+   residual. For the dependent forecast, use only residuals from the same
+   date. Add them to the corresponding point forecasts and take maximum
+   minus minimum. Using these finite sets gives the two event probabilities
+   without a random sampling step.
+3. Choose a contiguous later evaluation period outside 2025 and check its
+   archive dates and quality flags after freezing the design. Verify matching
+   origins and cutoffs before scoring. Compare paired Brier scores on the
+   same dates, report event counts and calibration descriptively, and retain
+   the probability of negative ranges for both approaches. Keep any crossed
+   draws visible in the study. Use simulated date-label availability until
+   historical release times and vintages are available.
+4. Keep the probability comparison in a small study script that reads saved
+   scalar forecasts. If the later evidence supports a reusable joint output,
+   use that evidence to decide what the shared runner needs to store or score.
+
+The observed warm bias and quiet-day errors remain separate model questions.
+Workplace testing is deferred. Revisit rare-jump integration when a concrete
+task needs it, using the saved accuracy and runtime checks to bound the scope.
 
 ## Independent moment and density checkpoint
 
@@ -251,6 +286,9 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/noaa-temperature-pair-verified-20261119/` | NOAA extrema archive, normalized minimum snapshot, matched point forecasts, error and range diagnostics, and the paired chart |
+| `runs/noaa-2025-frozen-20261119/` | Plan saved before downloading 2025, exact 2023–2024 history, 2025 snapshots, matched forecasts, and the later-year audit inputs |
+| `runs/noaa-seasonality-verified-20261119/` | Baseline error diagnostics, matched forecasts and reports for three regressions, and their aggregate and grouped point scores |
 | `runs/noaa-central-park-20261119/verified-py312/` | Public NOAA raw and normalized snapshots, 366 scored forecasts, benchmark, chart, and design |
 | `runs/innovation-moment-check-verified-20261119/` | Frozen controls, independent Gibbs budgets on abrupt-42, grid timing and insufficient-budget result |
 | `runs/innovation-moment-control-refinement-20261119/` | Independent longer short-abrupt control against the same oracle and criteria |
@@ -278,15 +316,23 @@ model choice.
 
 ## How to resume
 
-Read this note and the linked study guides, then inspect the working tree and
-use the retained evidence for the pilot. Run a new experiment, assemble a review,
-or run a large calibration study explicitly when needed. Configured CI runs
-automatically on branch pushes and pull requests.
+Read this note and inspect the working tree. The immediate inputs for the
+range experiment are `matched-extrema.csv` and `design.json` in
+`runs/noaa-temperature-pair-verified-20261119/`. Keep the frozen maximum run
+under `runs/noaa-2025-frozen-20261119/`. The [pair study guide](noaa-temperature-pair.md)
+explains how to reproduce the files if the local run directories are missing.
+Run new experiments explicitly. Configured CI runs automatically on branch
+pushes and pull requests.
 
 ```bash
 git status --short --branch
 PYTHONPATH=src .venv/bin/python scripts/check_documentation.py
 ```
+
+The verified local Python 3.12 interpreter is
+`runs/workplace-py312-20261119/profile-venv/bin/python`. Use the
+[pinned profile](python312-public-forecast.md#set-up-the-verified-profile)
+to recreate it when needed.
 
 For future changes, update the affected docs and run the relevant checks. Use
 the [test guide](../tests/README.md) and [CI guide](continuous-integration.md) for

@@ -93,3 +93,6 @@ The profile also passed 80 targeted tests. The forecast and benchmark CSVs,
 scores, and normalized NOAA input replayed byte for byte in a second clean
 Python 3.12 environment. Run the profile on the workplace platform with
 its approved packages to establish compatibility there.
+
+The [seasonal follow-up](noaa-seasonality.md) uses this output directory as
+its source, keeping the same 366 cases and original benchmark.
