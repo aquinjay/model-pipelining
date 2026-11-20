@@ -229,11 +229,14 @@ with 64 ranges of at least 10 °C, independent pairing had a mean Brier score of
 negative-range probability from 5.01% to 0.91%. The [tracked audit](artifacts/noaa-range-probability-summary.json)
 records direct recomputation and byte-for-byte replay.
 
-Keep the comparison at the study level. A reusable joint forecast output
-needs a concrete downstream requirement and evidence beyond this event and
-cohort. The observed event rate rose from 22.5% in the full 2025 calibration
-year to 35.4% in the first half of 2026. The behavior of the residual
-distribution across seasons remains an open modeling question.
+The [seasonal follow-up](noaa-range-probability.md#seasonal-calibration-follow-up)
+found that April and May accounted for about 78% of excess same-day Brier loss.
+Season matching narrowed the gap on saved dates. In the frozen July 1–10
+pilot, both full-year methods scored better than their season-matched
+counterparts. The [curated summary](artifacts/noaa-range-seasonal-summary.json)
+retains the diagnostic and replay evidence. The next evaluation uses the
+already frozen July 11–December 31 plan once the archive is complete. Keep
+event scoring at the study level.
 
 The observed warm bias and quiet-day errors remain separate model questions.
 Workplace testing is deferred. Revisit rare-jump integration when a concrete
@@ -301,6 +304,8 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/noaa-range-seasonal-2026-july-pilot-plan/` and `runs/noaa-range-seasonal-2026-july-pilot/` | Frozen seasonal method, preserved July archive, four matched forecasts and independent audit |
+| `runs/noaa-range-seasonal-2026-h2-plan/` | Frozen 174-date seasonal evaluation design and copied training inputs |
 | `runs/noaa-range-2026-h1-plan/` and `runs/noaa-range-2026-h1/` | Frozen 2025 inputs and design, preserved 2026 archive, matched scalar runs, paired range probabilities and scores, and replay audit |
 | `runs/noaa-temperature-pair-verified-20261119/` | NOAA extrema archive, normalized minimum snapshot, matched point forecasts, error and range diagnostics, and the paired chart |
 | `runs/noaa-2025-frozen-20261119/` | Plan saved before downloading 2025, exact 2023–2024 history, 2025 snapshots, matched forecasts, and the later-year audit inputs |

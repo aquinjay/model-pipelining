@@ -25,6 +25,9 @@ The [range-probability study](../docs/noaa-range-probability.md#freeze-and-evalu
 takes explicit inclusive evaluation dates, a Celsius threshold and Brier
 scoring. The freeze command pins the 2025 calibration data and the
 annual-plus-lag settings before the caller acquires the later archive.
+The [seasonal follow-up](../docs/noaa-range-probability.md#seasonal-calibration-follow-up)
+inherits those settings and freezes fixed three-month residual pools and
+explicit dates before the caller acquires the new archive.
 
 The [innovation moment check](../docs/innovation-moment-check.md) inherits the
 observations, model and query grids from a completed state-grid study. The

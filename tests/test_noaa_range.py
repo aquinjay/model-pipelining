@@ -15,6 +15,7 @@ from model_pipelining.backtest import run_backtest
 from model_pipelining.experiments import EvaluationPlan, ExperimentSpec, ForecastTask
 from model_pipelining.snapshots import register_snapshot
 from model_pipelining.temperature_regression import TemperatureRegression
+from scripts import study_noaa_range_seasons as seasonal
 from scripts.study_noaa_range import (
     ARCHIVE_START, CALIBRATION_START, HISTORY_START, STATION, _case_probabilities,
     _csv_rows, _dates, _midnight, _residual_differences, evaluate, freeze,
@@ -130,3 +131,59 @@ class NoaaRangeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "frozen input changed"):
                 evaluate(study, root / "unread.csv", root / "tampered")
             self.assertFalse((root / "tampered").exists())
+
+    def test_season_matching_uses_only_the_targets_calendar_season(self):
+        target = date(2026, 7, 1)
+        calibration_dates = [date(2025, month, 1) for month in (1, 4, 7, 10)]
+        calibration = {
+            "TMIN": [(Decimal(value), Decimal(0)) for value in (0, 0, 0, 0)],
+            "TMAX": [(Decimal(value), Decimal(0)) for value in (12, 12, 0, 12)],
+        }
+        saved = dict(date=target.isoformat(), actual_range_celsius="10", predicted_range_celsius="8",
+                     event=1, issued_at="2026-06-30T00:00:00+00:00", training_cutoff="2026-06-30T00:00:00+00:00")
+        for method in ("same_day", "independent"):
+            saved.update({f"{method}_probability": ".75", f"{method}_negative_range_probability": "0",
+                          f"{method}_brier": ".0625"})
+        result, = seasonal._score([target], [saved], calibration_dates, calibration, Decimal(10))
+        self.assertEqual(result["season"], "JJA")
+        self.assertEqual(result["same_day_probability"], .75)
+        self.assertEqual(result["seasonal_same_day_probability"], 0.)
+        self.assertEqual(result["seasonal_independent_probability"], 0.)
+
+    def test_seasonal_pilot_keeps_frozen_training_archive_and_replays(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            pair, maximum = self.calibration_fixture(root)
+            original = root / "original"
+            freeze(pair, maximum, original, start=date(2026, 1, 1), end=date(2026, 1, 3), threshold=10, score="brier")
+            source = root / "original.csv"
+            self.later_fixture(source, "11.2")
+            development = root / "development"
+            evaluate(original, source, development)
+            diagnostic = seasonal.diagnose(original, development, root / "diagnostic.json")
+            self.assertEqual(json.loads(diagnostic.read_bytes())["months"]["01"]["evaluation"]["cases"], 3)
+
+            study = root / "seasonal"
+            with self.assertRaisesRegex(ValueError, "strictly after"):
+                seasonal.freeze(original, development, study, start=date(2026, 1, 3), end=date(2026, 1, 4))
+            plan = seasonal.freeze(original, development, study, start=date(2026, 1, 4), end=date(2026, 1, 4))
+            self.assertIn("startDate=2026-01-04", json.loads(plan.read_bytes())["source_url"])
+            source = root / "fresh.csv"
+            source.write_text('STATION,DATE,TMIN,TMIN_ATTRIBUTES,TMAX,TMAX_ATTRIBUTES\n'
+                              f'{STATION},2026-01-04,6.2,",,W",16.2,",,W"\n')
+            output = root / "pilot"
+            summary = seasonal.evaluate(study, source, output)
+            result = json.loads(summary.read_bytes())
+            self.assertEqual(result["cases"], 1)
+            self.assertEqual(result["observed_events"], 1)
+            self.assertEqual(result["seasonal_pool_sizes"]["DJF"], 90)
+            self.assertEqual((study / "development-archive.csv").read_bytes(), (development / "noaa-later-source.csv").read_bytes())
+            self.assertEqual((output / "fresh-archive.csv").read_bytes(), source.read_bytes())
+            self.assertEqual(_csv_rows(output / "annual/tmin/predictions.csv")[0]["training_count"], "1099")
+            replay = seasonal.evaluate(study, source, root / "replay")
+            self.assertEqual(summary.read_bytes(), replay.read_bytes())
+            self.assertEqual((output / "matched-range.csv").read_bytes(), (replay.parent / "matched-range.csv").read_bytes())
+            with (study / "development-archive.csv").open("ab") as stream:
+                stream.write(b"\n")
+            with self.assertRaisesRegex(ValueError, "development archive changed"):
+                seasonal.evaluate(study, root / "unread.csv", root / "tampered")

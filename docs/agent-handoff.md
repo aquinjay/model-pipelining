@@ -148,3 +148,9 @@ independent pairing on Brier score, while same-day pairing assigns less
 probability to negative ranges. The [checkpoint](next-session.md#next-work)
 records the outcome and the archived inputs. Freeze a new design before
 retrieving observations for a follow-up evaluation.
+
+The [seasonal follow-up](noaa-range-probability.md#seasonal-calibration-follow-up)
+diagnosed the April–May loss gap on saved dates and ran a frozen ten-day July
+pilot. Season matching reduced negative-range probability and increased Brier
+loss for both pairing methods in the pilot. A separate July 11–December 31
+plan was frozen before retrieval and awaits its complete archive.

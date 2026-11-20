@@ -932,3 +932,13 @@ pairing scored 0.23935. Mean negative-range probability fell from 5.01% to
 0.91% with same-day pairing. The evidence supports keeping this comparison at
 the study level. See the [result and audit](noaa-range-probability.md#januaryjune-2026-results).
 
+## Evaluate seasonal residual pools alongside the full-year controls
+
+Use 2025 residuals from the target’s meteorological season as a study-level
+variant. Compare both pairing methods within each pool choice on identical
+point forecasts, with paired Brier scores and negative-range probability.
+Preserve the verified January–June archive as eligible training history.
+The ten-day July pilot found worse Brier scores with seasonal calibration
+for both pairing methods. Retain the full-year methods and the frozen 174-date
+follow-up design. See the [diagnostic and pilot](noaa-range-probability.md#seasonal-calibration-follow-up).
+

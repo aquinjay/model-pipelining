@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **481 tests**. They use temporary fixtures/stores rather than
+There are currently **483 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -60,7 +60,7 @@ missing package fail instead, as the research CI job does.
 | [test_noaa_seasonality.py](test_noaa_seasonality.py) | 4 | Known annual-plus-lag prediction, one-day horizon, saved case validation, configuration restoration, and parity with frozen forecasts and summaries |
 | [test_noaa_later_period.py](test_noaa_later_period.py) | 2 | Frozen final date boundaries, exact history preservation, and rejection of changed inputs before reading evaluation data |
 | [test_noaa_extrema.py](test_noaa_extrema.py) | 2 | Ordered-range scoring with a deliberately crossed pair and rejection of mismatched eligible dates |
-| [test_noaa_range.py](test_noaa_range.py) | 2 | Finite residual pair counts, ties and negative ranges, frozen calibration and source checks, paired Brier scoring, replay and future actual isolation |
+| [test_noaa_range.py](test_noaa_range.py) | 4 | Finite residual pair counts, ties and negative ranges, paired Brier scoring, season selection, frozen archive reuse, replay and future actual isolation |
 
 The [Python 3.12 profile](../docs/python312-public-forecast.md) passed 80 targeted
 tests covering the Gaussian local-level adapter, backtests, experiment timing,
