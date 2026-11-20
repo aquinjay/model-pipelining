@@ -883,3 +883,16 @@ them changes, so moving code out of them would block replaying the frozen
 evaluation. Move them into the package when the next NOAA experiment freezes its
 own plan. That plan can then pin the package modules.
 
+## Check the Python 3.12 workplace profile in CI — 2026-11-19
+
+The 3.12 profile had been verified only by hand with targeted tests. CI now runs
+a second job that installs CPython 3.12.16 with exactly the pinned
+`requirements-python312.txt` packages and runs the whole suite. Tests that need
+the research-only packages `emcee`, `arviz` or `openpyxl` use
+`tests/optional_dependencies.requires` and are skipped there. The job asserts
+that those packages are absent, so the skips are the intended ones. The research
+job sets `REQUIRE_OPTIONAL_TEST_DEPENDENCIES=1`, which turns any such skip into
+a failure, so no test silently disappears from the full environment. The cost
+is that shared code must keep running on Python 3.12. A dependency change also
+needs both `uv.lock` and `requirements-python312.txt` updated.
+

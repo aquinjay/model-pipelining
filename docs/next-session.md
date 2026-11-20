@@ -45,6 +45,10 @@ adapter into the package. When the range experiment freezes its plan, first move
 `TemperatureRegression` and the NOAA helpers into the package so the new plan
 pins those modules; see the
 [decision](decisions.md#move-the-weekly-harmonic-adapter-into-the-package-keep-frozen-noaa-scripts-unchanged--2026-11-19).
+It merged through [PR #12](https://github.com/aquinjay/model-pipelining/pull/12)
+(`5162d72`). The `feature/python312-ci` branch adds a CI job that runs the suite on
+the Python 3.12 workplace profile; see the
+[decision](decisions.md#check-the-python-312-workplace-profile-in-ci--2026-11-19).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved

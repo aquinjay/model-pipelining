@@ -1,12 +1,15 @@
 # Repository checks in GitHub Actions
 
-[The workflow](../.github/workflows/ci.yml) defines one Ubuntu 24.04 job named
-`Python tests and documentation`. Once pushed, branch pushes and pull requests
-start it automatically; `workflow_dispatch` also permits an explicit manual run.
+[The workflow](../.github/workflows/ci.yml) defines two Ubuntu 24.04 jobs that run
+in parallel: `Python tests and documentation` on the pinned research
+environment, and `Python 3.12 workplace profile`. Once pushed, branch pushes and
+pull requests start both automatically; `workflow_dispatch` also permits an explicit manual run.
 All branches are included so feature branches receive the same checks as main.
 A newer run for the same branch/pull request cancels an obsolete in-progress run.
 
 ## What runs automatically
+
+The research job (`Python tests and documentation`):
 
 1. Check out the requested revision with read-only repository permission and
    without persisting Git credentials. Third-party actions use full commit pins.
@@ -20,14 +23,32 @@ A newer run for the same branch/pull request cancels an obsolete in-progress run
    fenced examples, and execute the forecasting walkthrough in temporary storage.
 5. Run the complete `unittest` suite, including independent numerical references,
    information boundaries, failure cases, saved-result replay and CLI tests.
+   `REQUIRE_OPTIONAL_TEST_DEPENDENCIES=1` turns any missing optional test
+   package into a failure, so this job never skips a test.
 6. Require that checks leave tracked files unchanged.
+
+The workplace job (`Python 3.12 workplace profile`):
+
+1. Check out the revision and install uv 0.13.7 as above.
+2. Install CPython 3.12.16 and create a fresh environment containing exactly
+   the packages pinned in `requirements-python312.txt` (`--no-deps`), then check
+   their compatibility.
+3. Verify the interpreter patch and that the research-only packages `emcee`,
+   `arviz` and `openpyxl` are absent.
+4. Run the same `unittest` discovery. Tests that need those packages (MCMC
+   audits and XLSX reading) are reported as skipped; every other test must pass.
+5. Require that checks leave tracked files unchanged.
+
+The workplace job does not run the documentation walkthrough or the lock and
+export checks; the research job covers them.
 
 Writable Matplotlib, ArviZ and uv caches live under the runner's temporary
 folder. The uv download cache is reused by lock/interpreter identity; the virtual
 environment is synchronized on each run. Tests and the walkthrough create their
 own local fixtures/stores. GitHub retains the ordinary job logs. The timeout is
-15 minutes. The defined runtime is Linux x86-64/CPython 3.14; this is not evidence
-of compatibility on an untested work-machine runtime.
+15 minutes per job. The defined runtimes are Linux x86-64 with CPython 3.14 and
+3.12.16; this is not evidence of compatibility on an untested work-machine
+platform.
 
 ## Run the same checks locally
 
@@ -38,6 +59,15 @@ uv sync --locked --all-groups
 uv pip check --python .venv/bin/python
 PYTHONPATH=src uv run --locked --no-sync python scripts/check_documentation.py --walkthrough
 PYTHONPATH=src uv run --locked --no-sync python -m unittest discover -s tests -v
+```
+
+To repeat the workplace job with uv:
+
+```bash
+uv python install 3.12.16
+uv venv --python 3.12.16 runs/python312-ci-env
+uv pip install --python runs/python312-ci-env/bin/python --no-deps -r requirements-python312.txt
+PYTHONPATH=src runs/python312-ci-env/bin/python -m unittest discover -s tests -v
 ```
 
 Use the [documented writable cache settings](parameter-uncertainty.md#run-exact-forecasts-or-request-an-audit)
@@ -63,8 +93,9 @@ nonzero process status.
 
 ## Scientific evidence and review
 
-The Python 3.12 compatibility check uses the separate CSV profile and a caller-
-acquired data file. The 3.14 workflow continues to check the full research lock
+The workplace job checks code compatibility with the Python 3.12 profile on
+every push. The public NOAA forecast itself still runs explicitly with a
+caller-acquired data file. The research job continues to check the full lock
 and suite. See the [explicit 3.12 setup and run](python312-public-forecast.md).
 The [2025 model comparison](noaa-later-period.md) also runs explicitly with a
 caller-supplied archive. CI verifies the freeze and input guards with local

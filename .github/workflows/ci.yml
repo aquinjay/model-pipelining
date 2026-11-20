@@ -24,6 +24,7 @@ jobs:
     env:
       PYTHONPATH: src
       MPLBACKEND: Agg
+      REQUIRE_OPTIONAL_TEST_DEPENDENCIES: '1'
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,5 +69,50 @@ jobs:
         run: uv run --locked --no-sync python scripts/check_documentation.py --walkthrough
       - name: Run behavioral and numerical tests
         run: uv run --locked --no-sync python -m unittest discover -s tests -v
+      - name: Ensure checks leave tracked files unchanged
+        run: git diff --exit-code
+
+  workplace-python312:
+    name: Python 3.12 workplace profile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONPATH: src
+      MPLBACKEND: Agg
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use writable temporary caches
+        run: |
+          printf 'MPLCONFIGDIR=%s\nXDG_CACHE_HOME=%s\nUV_CACHE_DIR=%s\n' "$RUNNER_TEMP/matplotlib" "$RUNNER_TEMP/cache" "$RUNNER_TEMP/uv-cache" >> "$GITHUB_ENV"
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: true
+          cache-dependency-glob: requirements-python312.txt
+      - name: Install CPython 3.12.16 and exactly the pinned profile
+        run: |
+          uv python install 3.12.16
+          uv venv --python 3.12.16 "$RUNNER_TEMP/py312"
+          uv pip install --python "$RUNNER_TEMP/py312/bin/python" --no-deps -r requirements-python312.txt
+          uv pip check --python "$RUNNER_TEMP/py312/bin/python"
+      - name: Verify interpreter and omitted research packages
+        run: |
+          "$RUNNER_TEMP/py312/bin/python" - <<'PY'
+          import importlib.util
+          import sys
+          assert sys.version_info[:3] == (3, 12, 16), sys.version_info
+          present = [name for name in ("emcee", "arviz", "openpyxl") if importlib.util.find_spec(name)]
+          assert not present, f"The workplace profile should not include {present}"
+          print(sys.version, sys.executable)
+          PY
+      - name: Run tests supported by the profile
+        run: '"$RUNNER_TEMP/py312/bin/python" -m unittest discover -s tests -v'
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code

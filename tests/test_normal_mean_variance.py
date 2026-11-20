@@ -11,7 +11,6 @@ import sys
 import unittest
 from unittest.mock import patch
 
-import emcee
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import ndtr
@@ -23,7 +22,10 @@ from model_pipelining.normal_mean_variance import NormalMeanVariance
 from model_pipelining.reporting import compare_runs, plot_fit, plot_run
 from model_pipelining.sampling import MCMCSettings
 from model_pipelining.snapshots import register_snapshot
+from optional_dependencies import SAMPLER_PACKAGES, optional_module, requires
 from test_normal_mean import FitPipelineFixtures, request
+
+emcee = optional_module("emcee")
 
 
 class NormalMeanVarianceTests(unittest.TestCase):
@@ -155,6 +157,7 @@ class NormalMeanVarianceTests(unittest.TestCase):
             NormalMeanVariance(prior_mean_precision=5e-324).posterior(request())
 
 
+@requires(*SAMPLER_PACKAGES)
 class JointSamplerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -271,6 +274,7 @@ class JointPipelineTests(FitPipelineFixtures, unittest.TestCase):
             self.assertTrue(plot_run(first).is_file())
             self.assertTrue(compare_runs(first, second, output_directory=self.root / "comparison").is_dir())
 
+    @requires(*SAMPLER_PACKAGES)
     def test_future_values_cannot_change_earlier_joint_fits_or_chains(self):
         model = NormalMeanVariance(mcmc=MCMCSettings(chains=2, warmup=10, draws=20))
         first = self.run_model("first", self.register(), model)
@@ -284,6 +288,7 @@ class JointPipelineTests(FitPipelineFixtures, unittest.TestCase):
                 self.assertEqual((first / f"fits/000001/{filename}").read_bytes(),
                                  (second / f"fits/000001/{filename}").read_bytes())
 
+    @requires(*SAMPLER_PACKAGES)
     def test_joint_audit_replay_and_saved_trace_without_fitting(self):
         snapshot = self.register((1, 3, 5))
         model = NormalMeanVariance(mcmc=MCMCSettings(warmup=1500, draws=6000, proposal_scale=1.7))
@@ -303,6 +308,7 @@ class JointPipelineTests(FitPipelineFixtures, unittest.TestCase):
         with self.assertRaises(FileExistsError):
             plot_fit(first, origin_index=1)
 
+    @requires(*SAMPLER_PACKAGES)
     def test_failed_joint_audit_is_saved_and_fails_run(self):
         model = NormalMeanVariance(mcmc=MCMCSettings(chains=2, warmup=0, draws=20, proposal_scale=1e-12))
         run = self.run_model("failed", model=model)
@@ -328,6 +334,7 @@ class JointPipelineTests(FitPipelineFixtures, unittest.TestCase):
         self.assertEqual(self.read_json(run, "manifest.json")["status"], "completed")
         self.assertEqual(self.read_json(run, "fits/000002/fit.json")["identity"]["training_count"], 2)
 
+    @requires(*SAMPLER_PACKAGES)
     def test_cli_exact_audit_and_incompatible_flags(self):
         snapshot = self.register((1, 3, 5))
         for name, flags in (("exact", ["--prior-mean", "1", "--prior-mean-precision", "2", "--prior-shape", "3", "--prior-scale", "4"]),

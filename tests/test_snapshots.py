@@ -10,7 +10,6 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from openpyxl import Workbook
 
 from model_pipelining.ingest import ingest_local_file, read_local_table
 from model_pipelining.snapshots import (
@@ -19,6 +18,7 @@ from model_pipelining.snapshots import (
     register_snapshot,
     retrieve_snapshot,
 )
+from optional_dependencies import requires
 
 
 class SnapshotTests(unittest.TestCase):
@@ -273,7 +273,10 @@ class SnapshotTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self.retrieve_preserved_file("0" * 64)
 
+    @requires("openpyxl")
     def test_preserved_xlsx_keeps_worksheets_readable(self):
+        from openpyxl import Workbook
+
         source = self.test_directory / "sales.xlsx"
         workbook = Workbook()
         workbook.active.title = "Sales"

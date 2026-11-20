@@ -7,14 +7,17 @@ import random
 import unittest
 from unittest.mock import patch
 
-import emcee
 import numpy as np
 
 from model_pipelining.normal_mean import NormalMean
 from model_pipelining.sampling import MCMCSettings, diagnostic_summary, _chain_seeds
+from optional_dependencies import SAMPLER_PACKAGES, optional_module, requires
 from test_normal_mean import request, FitPipelineFixtures
 
+emcee = optional_module("emcee")
 
+
+@requires(*SAMPLER_PACKAGES)
 class SamplingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -140,6 +143,7 @@ class SamplingTests(unittest.TestCase):
                 MCMCSettings(**options)
 
 
+@requires(*SAMPLER_PACKAGES)
 class SamplerPipelineTests(FitPipelineFixtures, unittest.TestCase):
     def test_sampler_replay_persists_all_evidence_and_trace_is_saved_only(self):
         snapshot = self.register((1, 3, 5))
