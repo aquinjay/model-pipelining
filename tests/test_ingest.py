@@ -6,10 +6,10 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from openpyxl import Workbook
 from pandas.testing import assert_frame_equal
 
 from model_pipelining.ingest import ingest_local_file, read_local_table
+from optional_dependencies import requires
 
 
 class LocalIngestTests(unittest.TestCase):
@@ -98,8 +98,11 @@ class LocalIngestTests(unittest.TestCase):
         self.assertEqual(table["value"].tolist(), [10, 11])
 
 
+@requires("openpyxl")
 class LocalTableTests(unittest.TestCase):
     def setUp(self):
+        from openpyxl import Workbook
+
         self.directory = TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)

@@ -89,7 +89,10 @@ and had a mean width of 15.68 °C. These measurements describe one development
 history under simulated availability. The [curated summary](artifacts/python312-noaa-summary.json)
 records snapshot IDs, settings, and the verification environment.
 
-The profile also passed 80 targeted tests. The forecast and benchmark CSVs,
+The profile also passed 80 targeted tests. Since then, the CI workplace job runs
+the whole suite on this profile for every push and pull request, skipping only
+the MCMC and XLSX tests that need packages the profile omits; see the
+[CI guide](continuous-integration.md#what-runs-automatically). The forecast and benchmark CSVs,
 scores, and normalized NOAA input replayed byte for byte in a second clean
 Python 3.12 environment. Run the profile on the workplace platform with
 its approved packages to establish compatibility there.

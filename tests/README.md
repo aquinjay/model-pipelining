@@ -14,6 +14,12 @@ numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
 restricted home, use the [writable cache setup](../docs/parameter-uncertainty.md#run-exact-forecasts-or-request-an-audit)
 before running sampler tests.
 
+The [Python 3.12 workplace profile](../docs/python312-public-forecast.md) omits
+`emcee`, `arviz` and `openpyxl`. Tests that need them are decorated with
+`requires(...)` from [optional_dependencies.py](optional_dependencies.py) and are
+skipped in that profile. Set `REQUIRE_OPTIONAL_TEST_DEPENDENCIES=1` to make a
+missing package fail instead, as the research CI job does.
+
 ## Test map
 | File | Count | Main evidence |
 |---|---:|---|

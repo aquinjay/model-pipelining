@@ -20,6 +20,7 @@ from model_pipelining.models import Forecast, ForecastRequest, Observation
 from model_pipelining.normal_mean import NormalMean
 from model_pipelining.reporting import compare_runs, plot_fit, plot_run
 from model_pipelining.sampling import MCMCSettings
+from optional_dependencies import SAMPLER_PACKAGES, requires
 from model_pipelining.snapshots import register_snapshot
 
 
@@ -260,6 +261,7 @@ class FitPipelineTests(FitPipelineFixtures, unittest.TestCase):
         self.assertEqual(self.read_json(run, "manifest.json")["status"], "completed")
         self.assertEqual(self.read_json(run, "fits/000002/fit.json")["identity"]["training_count"], 2)
 
+    @requires(*SAMPLER_PACKAGES)
     def test_cli_exact_and_configured_mcmc_with_explicit_final_and_trace(self):
         snapshot = self.register()
         spec = ExperimentSpec(task=ForecastTask(minimum_history=2),
