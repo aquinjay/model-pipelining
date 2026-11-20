@@ -157,13 +157,16 @@ No new model, sampler, application or automatic human decision is introduced.
 
 | Area | Implemented | Detailed reference |
 |---|---|---|
-| Environment | CPython 3.14, development pin 3.14.10, uv lock and pip export, unittest | [Setup](../README.md#development-environment) |
+| Environment | Research environment on CPython 3.14 (pin 3.14.10, uv lock and pip export); separate Python 3.12.16 workplace profile with four direct packages for CSV Gaussian workflows; unittest | [Setup](../README.md#development-environment), [3.12 profile](python312-public-forecast.md) |
+| Continuous integration | Two parallel jobs on every push and pull request: full research suite with documentation walkthrough and lock checks, and the whole suite on the 3.12 profile with MCMC/XLSX tests skipped | [CI guide](continuous-integration.md) |
 | Synthetic sources | Two seeded baseline 200-day series and a shared-noise gradual-change review fixture | [Data](../data/README.md), [development study](model-review-study.md) |
+| Public data studies | NOAA Central Park daily temperature: preserved archive, 2024 seasonality comparison, 2025 evaluation with settings frozen before download, matched minimum/maximum forecasts; availability simulated from archive date labels | [Seasonality](noaa-seasonality.md), [2025 evaluation](noaa-later-period.md), [temperature pair](noaa-temperature-pair.md) |
 | Ingestion | Local copy receipts and CSV/XLSX table reading | [Ingestion](ingestion.md) |
 | Preservation | One-file SHA-256 snapshots, verified retrieval, repeat registration events, optional receipt context | [Snapshots](snapshots.md) |
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
 | Execution | Daily model-independent experiments, release-aware expanding histories, one fixed positive-day horizon per run; defaults preserve the original next-day task | [Experiments](experiments.md) |
-| Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering | [Model guide](local-level.md) |
+| Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering; weekly harmonic regression point adapter; seasonal temperature regression inside the NOAA study scripts | [Model guide](local-level.md), [harmonic example](reading-guide.md#run-the-weekly-harmonic-example) |
+| Adapter construction | `from_configuration` on every repository adapter; script catalog `build_model`/`build_scenarios`; benchmark and workflow names defined once; one JSON/CSV writer module | [Rebuilding adapters](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings), [shared names](../src/model_pipelining/README.md#shared-names-and-artifact-writers) |
 | Parameter learning | Unknown constant Gaussian mean with known or learned observation variance; exact normal/Student-t predictions, optional independent-chain audits and saved fit evidence | [Parameter uncertainty](parameter-uncertainty.md), [joint model](normal-mean-variance.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
@@ -173,13 +176,17 @@ No new model, sampler, application or automatic human decision is introduced.
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
 | Dynamic parameter learning | Learned observation variance, fixed or categorical evolution variance, checked quadrature/mixture forecasts and dynamic evidence | [Scalar model](local-level-variance.md), [joint model](joint-variance.md) |
 | Innovation reference | Fixed small/large transition variances and probability, all-sequence integration through eight observations, independent conditioning/integration checks | [Bounded reference](innovation-reference.md) |
+| Innovation studies | Longer-history particle filter (precision unresolved), conservative probability bounds, state-grid bounds meeting the probability criteria on all 17 cases, independent Gibbs moment check; none is connected to the runner | [Particles](innovation-particles.md), [bounds](innovation-probability-bounds.md), [state grid](innovation-lattice.md), [Gibbs check](innovation-moment-check.md) |
 | Evidence requirements | Provider-based calculations, caller-required fit names/workflows, explicit pinned-history execution and failure receipts | [Experiment evidence](evidence.md) |
 | Task/evaluation contracts | Version-2 task/evaluation/evidence specs (version 1 readable); manifest version 3, target roles, saved case exclusions, selected-history hashes, explicit actual vintage, required benchmarks | [Experiments](experiments.md) |
 
 ## Verification at this checkpoint
 
-The merged checkpoint passed 391 tests. The short-history reference checkpoint
-passed 415 tests, and the latest local checkpoint passed 449.
+As of [PR #13](https://github.com/aquinjay/model-pipelining/pull/13) (`fc59e0b`),
+the suite has 475 tests. All pass on Python 3.14.10 with nothing skipped. The
+same 475 run on the Python 3.12.16 profile, where 31 MCMC and XLSX tests are
+skipped and the rest pass. CI runs both on every push. Earlier checkpoints
+passed 391, 415 and 449 tests.
 [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future

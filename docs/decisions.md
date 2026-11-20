@@ -14,13 +14,15 @@ for current behavior and review priorities.
 
 - Preserve one local file per snapshot, identified by dataset plus SHA-256.
 - Keep acquisition, registration, tag assignment, and execution separate calls.
-- Run point models, Bayesian local-level adapters with fixed or learned observation variance, or constant-mean Gaussian adapters with known or learned observation variance through shared daily experiments, with adapter-specific timing limits.
+- Run point models, Bayesian local-level adapters with fixed or learned observation variance, constant-mean Gaussian adapters with known or learned observation variance, or the weekly harmonic regression adapter through shared daily experiments, with adapter-specific timing limits. Every repository adapter rebuilds from its saved configuration; scripts construct models through one catalog that the runner never consults.
 - Save a predictive mean and each declared observation-uncertainty kind. Prefer highest-density prediction regions in reporting.
 - Keep failed cases visible, human interpretation separate, and data/run evidence local.
 - Treat prior/noise sensitivity as descriptive influence evidence; strong influence does not fail computation. Save explicit local-level diagnostics separately from backtest results.
 - Declare target/timing, release/revision selection, benchmarks, and evaluation roles in versioned experiment specs; defer application selection. Unknown-mean parameter integration and optional independent-chain MCMC audits are implemented.
 - Use model-supplied evidence calculations and experiment-owned fit names/separate workflow requirements; execute separate evidence explicitly and retain failed or unavailable requirements.
-- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ; installable packaging, arbitrary-stage checks, and release automation remain open.
+- Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ for research. Keep a separate Python 3.12.16 workplace profile (pandas, NumPy, SciPy, matplotlib) for CSV Gaussian workflows. CI checks both on every push. Installable packaging, arbitrary-stage checks, and release automation remain open.
+- Use public NOAA daily data with availability simulated from archive date labels. Freeze model and scoring settings before downloading evaluation data, and leave frozen study scripts unchanged so their plans can replay.
+- Define benchmark and workflow names once, and write saved JSON/CSV through one writer module.
 
 ## How to read earlier entries
 
