@@ -9,8 +9,8 @@ from pathlib import Path
 import platform
 
 
-from model_pipelining.evidence import (get_evidence_provider, source_hashes,
-    saved_presentation, _write_csv, _write_json)
+from model_pipelining.artifacts import write_csv, write_json
+from model_pipelining.evidence import get_evidence_provider, saved_presentation, source_hashes
 from model_pipelining.experiments import (ExperimentSpec, ForecastCase,
     select_history_as_of, select_development_history as _select_development_history)
 from model_pipelining.models import Forecaster
@@ -116,12 +116,12 @@ def run_prior_influence(*, dataset: str, reference: Forecaster,
         },
         "environment": {"python": platform.python_version(), "numpy": version("numpy"), "scipy": version("scipy")},
         "source_sha256": source_hashes(*(Path(__file__).with_name(name) for name in
-            ("prior_influence.py", "evidence.py", "experiments.py", "ingest.py", "models.py", "uncertainty.py")),
+            ("prior_influence.py", "evidence.py", "experiments.py", "ingest.py", "models.py", "uncertainty.py", "artifacts.py")),
             *metadata.implementation_files),
     }
-    _write_json(output / "prior_influence.json", manifest)
-    _write_csv(output / "learning_schedule.csv", ("issued_at", "period_end", "history_count", "selection"), schedule)
-    _write_csv(output / "selected_histories.csv", ("update_index", "timestamp", "available_at", "value"),
+    write_json(output / "prior_influence.json", manifest)
+    write_csv(output / "learning_schedule.csv", ("issued_at", "period_end", "history_count", "selection"), schedule)
+    write_csv(output / "selected_histories.csv", ("update_index", "timestamp", "available_at", "value"),
                ({"update_index": update, "timestamp": item.timestamp.isoformat(),
                  "available_at": item.available_at.isoformat(), "value": item.value}
                 for update, case in enumerate(cases, start=1) for item in case.versions))
@@ -173,16 +173,16 @@ def run_prior_influence(*, dataset: str, reference: Forecaster,
                           "maximum_absolute_differences": {key: max((abs(row[f"{key}_difference"]) for row in rows if row[f"{key}_difference"] is not None), default=None)
                                                            for key in _DIFFERENCES}})
         paths.extend(rows)
-    _write_csv(output / "learning_paths.csv", _FIELDS, paths)
-    _write_json(output / "configuration_summaries.json", summaries)
+    write_csv(output / "learning_paths.csv", _FIELDS, paths)
+    write_json(output / "configuration_summaries.json", summaries)
     if metadata.integration_checks:
-        _write_json(output/"integration_checks.json", integration_checks)
+        write_json(output/"integration_checks.json", integration_checks)
     passed = all(summary["status"] == "completed" for summary in summaries)
-    _write_json(output / "checks.json", [
+    write_json(output / "checks.json", [
         {"name": "development_history_selection", "required": True, "status": "passed"},
         {"name": "all_requested_prior_and_posterior_updates", "required": True, "status": "passed" if passed else "failed"},
     ])
-    _write_json(output / "review.json", {
+    write_json(output / "review.json", {
         "status": "pending", "decision": None,
         "questions": ["How do mean location/precision and variance shape/scale alter learning and prediction?",
                       "Are observed differences meaningful in the target units and at relevant sample sizes?",
@@ -195,7 +195,7 @@ def run_prior_influence(*, dataset: str, reference: Forecaster,
     manifest.update(status="completed" if passed else "failed", finished_at=datetime.now(UTC).isoformat(),
                     completed_configurations=sum(summary["status"] == "completed" for summary in summaries),
                     failed_configurations=sum(summary["status"] == "failed" for summary in summaries))
-    (output / "prior_influence.json").write_text(json.dumps(manifest, indent=2, allow_nan=False)+"\n", encoding="utf-8")
+    write_json(output / "prior_influence.json", manifest, overwrite=True)
     return output
 
 

@@ -37,7 +37,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [inference.py](inference.py) | Optional fitted-forecast/evidence records and runner-owned persistence |
 | [sampling.py](sampling.py) | Independent emcee Metropolis chains, ArviZ diagnostics, exact-reference audits |
 | [sampling_variance.py](sampling_variance.py) | Joint two-coordinate audit with Jacobian and moment-aware diagnostics |
-| [evidence.py](evidence.py) | Provider protocol/metadata, replication records, structural validation and artifact helpers |
+| [evidence.py](evidence.py) | Provider protocol/metadata, replication records and structural validation |
 | [evidence_normal.py](evidence_normal.py) | Exact conjugate simulation and prior/parameter/predictive summaries |
 | [evidence_local_level.py](evidence_local_level.py) | Numerical local-level evidence, joint initial-state draws and fresh state paths |
 | [evidence_workflows.py](evidence_workflows.py) | Explicit experiment-owned workflow execution, required outcomes and saved-only child plotting |
@@ -49,6 +49,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
+| [artifacts.py](artifacts.py) | Shared JSON/CSV writers for saved manifests, checks and tables |
 | [adapters.py](adapters.py) | Name-to-class catalog that scripts use to rebuild adapters from saved settings |
 
 ## Terms and record boundaries
@@ -266,6 +267,7 @@ ExperimentSpec.to_dict() -> dict
 ExperimentSpec.from_dict(value) -> ExperimentSpec
 ExperimentSpec.load(path) -> ExperimentSpec
 read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, ...]
+read_observations(path: Path) -> tuple[Observation, ...]
 select_history_as_of(versions, *, issued_at, period_end=None) -> tuple[ObservationVersion, ...]
 plan_cases(versions, experiment) -> (tuple[ForecastCase, ...], list[dict])
 select_actuals(versions, task) -> dict[str, ObservationVersion]
@@ -282,7 +284,9 @@ No function fetches data, executes a model, or automatically starts final evalua
 
 The parsing/planning functions support inspection without executing a run.
 `read_task_data` validates the ordered daily CSV and release table;
-`ObservationVersion` holds `timestamp`, `value`, and `available_at`. Pass its
+`ObservationVersion` holds `timestamp`, `value`, and `available_at`.
+`read_observations` reads the default immediate, unrevised task as plain
+`Observation` records; local-level diagnostics use it. Pass its
 validated records to `plan_cases`. A `ForecastCase` holds `origin_index`,
 `issued_at`, `target_time`, and selected `versions`; `.history` returns immutable
 model observations and `.history_sha256` hashes timestamp/value/release triples.
@@ -687,6 +691,35 @@ use this catalog. The runner and evidence workflows never consult it; they
 accept any object that satisfies the `Forecaster` or `EvidenceProvider`
 contract. Register a new adapter in `adapters.py` only to construct it by name
 from scripts.
+
+## Shared names and artifact writers
+
+Each name list has one definition:
+
+```text
+models.BENCHMARK_MODELS -> {"training-mean": TrainingMean, "last-value": LastValue}
+experiments.EVIDENCE_WORKFLOWS -> ("predictive_checks", "prior_influence", "sequential_checks")
+evidence.PROVIDER_WORKFLOWS -> EVIDENCE_WORKFLOWS + ("calibration",)
+evidence_workflows.WORKFLOW_MANIFESTS -> {workflow: "<workflow>.json"}
+evidence_workflows.REQUIRED_WORKFLOW_CHECKS -> {workflow: required check names}
+predictive_checks.tail_summary(count, total) -> dict
+```
+
+`EvaluationPlan.benchmarks`, `EvidencePlan.required_workflows` and provider
+metadata are validated against these tables, and the runner builds benchmark
+models from `BENCHMARK_MODELS`.
+
+```text
+artifacts.write_json(path, value, *, overwrite=False) -> None
+artifacts.write_csv(path, fields, rows) -> None
+```
+
+Both write UTF-8. `write_json` saves indented, finite JSON with a trailing
+newline. It serializes before opening the file, so a rejected value leaves no
+file behind. New files are created exclusively; workflows pass
+`overwrite=True` only to replace their own manifest when they finish.
+`write_csv` creates a new file with the given header order. Run and evidence
+manifests list `artifacts.py` among their source hashes.
 
 ## Naming, errors, and limits
 

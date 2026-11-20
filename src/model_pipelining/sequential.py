@@ -8,7 +8,8 @@ from statistics import correlation, StatisticsError
 
 from scipy.stats import t
 
-from model_pipelining.evidence import get_evidence_provider, source_hashes, _write_json, _write_csv
+from model_pipelining.artifacts import write_csv, write_json
+from model_pipelining.evidence import get_evidence_provider, source_hashes
 from model_pipelining.experiments import plan_cases, select_development_history, select_actuals
 from model_pipelining.mixtures import NormalMixture
 from model_pipelining.models import ForecastRequest
@@ -73,9 +74,10 @@ def run_sequential_checks(*, dataset, model, issued_at, output_directory, snapsh
         "family": provider.metadata.family, "status": "running", "context": context,
         "configuration": model.configuration, "started_at": datetime.now(UTC).isoformat(),
         "source_sha256": source_hashes(Path(__file__), Path(__file__).with_name("experiments.py"),
-            Path(__file__).with_name("evidence.py"), *provider.metadata.implementation_files),
+            Path(__file__).with_name("evidence.py"), Path(__file__).with_name("artifacts.py"),
+            *provider.metadata.implementation_files),
         "scope": "Pre-target frozen predictive laws; as-of histories and cutoff-eligible scoring releases; descriptive development evidence"}
-    _write_json(output/"sequential_checks.json", manifest)
+    write_json(output/"sequential_checks.json", manifest)
     predictions = []
     for case in cases:
         record = {"origin_index": case.origin_index, "issued_at": case.issued_at.isoformat(),
@@ -94,7 +96,7 @@ def run_sequential_checks(*, dataset, model, issued_at, output_directory, snapsh
         except (ValueError, OverflowError, FloatingPointError) as error:
             record.update(error=f"{type(error).__name__}: {error}", inference_failure=getattr(error, "evidence", None))
         predictions.append(record)
-    _write_json(output/"predictive_distributions.json", predictions)
+    write_json(output/"predictive_distributions.json", predictions)
     # This happens only after all predictive distributions have been written.
     actuals = select_actuals(tuple(item for item in versions if item.available_at <= end_case.issued_at), spec.task)
     rows = []
@@ -122,18 +124,18 @@ def run_sequential_checks(*, dataset, model, issued_at, output_directory, snapsh
             except (KeyError, ValueError, OverflowError) as error:
                 row.update(status="failed", error=f"{type(error).__name__}: {error}")
         rows.append(row)
-    _write_csv(output/"sequential.csv", tuple(rows[0]), rows)
-    _write_json(output/"summary.json", summarize_sequential(rows))
+    write_csv(output/"sequential.csv", tuple(rows[0]), rows)
+    write_json(output/"summary.json", summarize_sequential(rows))
     passed = all(row["status"] == "passed" for row in rows)
-    _write_json(output/"checks.json", [{"name": "all_sequential_predictions_and_scores", "required": True,
+    write_json(output/"checks.json", [{"name": "all_sequential_predictions_and_scores", "required": True,
                                        "status": "passed" if passed else "failed"}])
-    _write_json(output/"review.json", {"status": "pending", "decision": None,
+    write_json(output/"review.json", {"status": "pending", "decision": None,
         "questions": ["When do forecasts show bias, tail surprises or residual dependence?"],
         "limitations": ["Standardizing a mixture does not make its errors Gaussian",
                         "PIT uses the full predictive CDF, including parameter uncertainty",
                         "Multi-step overlapping errors can be dependent even under the model"]})
     manifest.update(status="completed" if passed else "failed", finished_at=datetime.now(UTC).isoformat())
-    (output/"sequential_checks.json").write_text(json.dumps(manifest, indent=2, allow_nan=False)+"\n")
+    write_json(output/"sequential_checks.json", manifest, overwrite=True)
     return output
 
 

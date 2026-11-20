@@ -146,12 +146,12 @@ class DiscrepancyTests(unittest.TestCase):
             pc.dataset_statistics((1e308, -1e308))
 
     def test_tail_precision_reports_zero_count_uncertainty(self):
-        result = pc._tail_summary(0, 100)
+        result = pc.tail_summary(0, 100)
         self.assertEqual(result["fraction"], 0)
         self.assertEqual(result["mcse"], 0)
         self.assertGreater(result["wilson_95"][1], 0.03)
-        self.assertIsNone(pc._tail_summary(0, 0)["fraction"])
-        middle = pc._tail_summary(50, 100)
+        self.assertIsNone(pc.tail_summary(0, 0)["fraction"])
+        middle = pc.tail_summary(50, 100)
         self.assertAlmostEqual(middle["mcse"], 0.05)
         self.assertLess(middle["wilson_95"][0], 0.5)
         self.assertGreater(middle["wilson_95"][1], 0.5)
@@ -378,12 +378,12 @@ class PredictiveWorkflowTests(unittest.TestCase):
             pc.plot_predictive_checks(output)
 
     def test_persistence_failure_propagates_and_leaves_running_manifest(self):
-        original = pc._write_csv
+        original = pc.write_csv
         def fail(path, fields, rows):
             if path.name == "replicated.csv":
                 raise OSError("disk failure")
             return original(path, fields, rows)
-        with patch.object(pc, "_write_csv", side_effect=fail), self.assertRaisesRegex(OSError, "disk failure"):
+        with patch.object(pc, "write_csv", side_effect=fail), self.assertRaisesRegex(OSError, "disk failure"):
             self.run_checks()
         self.assertEqual(self.read_json(self.root / "checks", "predictive_checks.json")["status"], "running")
 

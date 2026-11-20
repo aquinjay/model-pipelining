@@ -9,8 +9,8 @@ import math
 import os
 from pathlib import Path
 
-from model_pipelining.evidence import _write_json
-from model_pipelining.evidence_workflows import _MANIFESTS, _REQUIRED_CHECKS
+from model_pipelining.artifacts import write_json
+from model_pipelining.evidence_workflows import REQUIRED_WORKFLOW_CHECKS, WORKFLOW_MANIFESTS
 from model_pipelining.experiments import ExperimentSpec, ForecastCase, ObservationVersion
 from model_pipelining.inference import assess_checks
 from model_pipelining.distribution_scoring import read_saved_distribution_scores
@@ -177,19 +177,19 @@ def _evidence(directory, manifest, forecast, specification):
     results, versions = {}, [manifest]
     for row in outcomes:
         name = row["name"]
-        if name not in _MANIFESTS or row.get("directory") != name or row.get("manifest") != _MANIFESTS[name]:
+        if name not in WORKFLOW_MANIFESTS or row.get("directory") != name or row.get("manifest") != WORKFLOW_MANIFESTS[name]:
             raise ValueError("Invalid evidence workflow artifact link")
         child_directory = _inside(directory, row["directory"])
         if not child_directory.exists():
             results[name] = {"status": "failed", "error": row.get("error") or "Child evidence is missing"}
             continue
         receipts = row.get("artifact_sha256")
-        if not isinstance(receipts, dict) or set(receipts) != {_MANIFESTS[name], "checks.json"}:
+        if not isinstance(receipts, dict) or set(receipts) != {WORKFLOW_MANIFESTS[name], "checks.json"}:
             raise ValueError("Missing child manifest/check receipts")
         for filename, expected in receipts.items():
             if _digest(_inside(child_directory, filename)) != expected:
                 raise ValueError("Child evidence receipt mismatch")
-        child = _json(child_directory / _MANIFESTS[name])
+        child = _json(child_directory / WORKFLOW_MANIFESTS[name])
         versions.append(child)
         if child.get("format_version") != 1:
             raise ValueError("Unexpected child evidence format version")
@@ -207,7 +207,7 @@ def _evidence(directory, manifest, forecast, specification):
             raise ValueError("Predictive simulation settings mismatch")
         if name == "prior_influence" and child.get("interval_level") != plan["interval_level"]:
             raise ValueError("Prior-comparison interval setting mismatch")
-        passed, requirements = _checks(child_directory, _REQUIRED_CHECKS[name])
+        passed, requirements = _checks(child_directory, REQUIRED_WORKFLOW_CHECKS[name])
         results[name] = {"status": "passed" if passed and child.get("status") == "completed" and row.get("status") == "passed" else "failed",
                          "check_requirements": requirements, "cutoff": child["context"]["issued_at"]}
     return results, versions, bundle_passed and manifest["status"] == "completed" and all(
@@ -362,9 +362,9 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
                   "Input release claims and model calculations are not rerun or independently authenticated",
                   "Only declared versions are compared; older bundle/sequential formats omit environment versions",
                   "Development evidence and calibration retain their own scopes; final-role selection is not proof of untouched data"]}
-    _write_json(output / "report.json", report)
-    _write_json(output / "checks.json", checks)
-    _write_json(output / "review.json", {"status": "pending", "decision": None, "notes": None,
+    write_json(output / "report.json", report)
+    write_json(output / "checks.json", checks)
+    write_json(output / "review.json", {"status": "pending", "decision": None, "notes": None,
                                        "questions": ["Are the stated assumptions and evidence sufficient for the intended use?"]})
     lines = ["# Experiment review", "", f"Computational readiness: **{status}**. Human review: **pending**.", "",
              f"Model: `{forecast['model']['name']}`", f"Dataset: `{forecast['input']['dataset']}`",

@@ -181,15 +181,15 @@ class BacktestTests(unittest.TestCase):
         from model_pipelining import backtest
 
         snapshot = self.snapshot()
-        original_write = backtest._write_csv
+        original_write = backtest.write_csv
 
-        def inspect_write(path, rows):
+        def inspect_write(path, fields, rows):
             if path.name == "evaluation.csv":
                 with (path.parent / "predictions.csv").open(encoding="utf-8") as stream:
                     self.assertEqual(len(list(csv.DictReader(stream))), 3)
-            return original_write(path, rows)
+            return original_write(path, fields, rows)
 
-        with patch.object(backtest, "_write_csv", side_effect=inspect_write):
+        with patch.object(backtest, "write_csv", side_effect=inspect_write):
             self.run_snapshot(snapshot)
 
     def test_finite_large_errors_can_be_aggregated_without_overflow(self):

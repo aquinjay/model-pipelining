@@ -250,7 +250,7 @@ class EvidenceWorkflowTests(unittest.TestCase):
         with patch.object(ew, 'run_predictive_checks', side_effect=move_tag):
             output = self.run_evidence(snapshot_id=None, tag='current')
         for workflow in self.evidence_spec().evidence.required_workflows:
-            filename = ew._MANIFESTS[workflow]
+            filename = ew.WORKFLOW_MANIFESTS[workflow]
             self.assertEqual(self.read_json(output/workflow, filename)['context']['input']['snapshot_id'],
                              self.snapshot.snapshot_id)
         self.assertEqual(self.read_json(output, 'evidence.json')['context']['input']['selected_tag'], 'current')
@@ -296,7 +296,7 @@ class EvidenceWorkflowTests(unittest.TestCase):
             scenario = replace(model, **({'prior_mean': 10} if isinstance(model, NormalMeanVariance) else {'initial_mean': 10}))
             output = self.run_evidence(name=model.name, model=model, scenarios={'shift': scenario})
             for workflow in self.evidence_spec().evidence.required_workflows:
-                filename = ew._MANIFESTS[workflow]
+                filename = ew.WORKFLOW_MANIFESTS[workflow]
                 manifest = self.read_json(output/workflow, filename)
                 manifest.pop('presentation')
                 manifest.pop('family')

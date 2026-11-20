@@ -26,12 +26,19 @@ frozen 2025 maximum evaluation. The branch starts from `main` at `f7aec5a`.
 The paired study passed 86 targeted tests on Python 3.12 and replayed five
 saved files byte for byte. See the [paired result and audit](artifacts/noaa-extrema-summary.json).
 
-The `feature/model-configuration-restore` branch starts from that branch. It
+The `feature/model-configuration-restore` branch started from the NOAA branch. It
 fixes restoring saved MCMC settings for the constant-mean models and gives every
 adapter `from_configuration`. Scripts now build models and prior scenarios
 through one catalog, and calibration rejects malformed parameter names when it
 selects the provider. Forecast outputs and saved formats are unchanged. See the
 [decision](decisions.md#rebuild-adapters-from-saved-settings-through-one-catalog--2026-11-19).
+
+Both branches merged through [PR #9](https://github.com/aquinjay/model-pipelining/pull/9)
+(`65035a1`) and [PR #10](https://github.com/aquinjay/model-pipelining/pull/10)
+(`6dd958b`). The `feature/shared-names-and-helpers` branch then defines
+benchmark and workflow names once and writes saved JSON/CSV through
+`artifacts.py`; see the
+[decision](decisions.md#define-shared-names-once-and-write-artifacts-through-one-module--2026-11-19).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
