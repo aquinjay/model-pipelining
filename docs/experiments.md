@@ -137,6 +137,8 @@ final run, approval, or release gate.
 `benchmarks=("training-mean", "last-value")` declares required point forecasts:
 average the eligible history, or persist its latest value. The default is no
 additional benchmarks, preserving the earlier example's execution choices.
+In JSON, supply a list of unique supported names. An invalid entry raises
+`ValueError` with the accepted names when the experiment is loaded.
 
 Every declared benchmark receives exactly the primary model's selected history,
 issuance, and target. Its predictions are frozen before scoring against the same

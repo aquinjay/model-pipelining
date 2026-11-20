@@ -85,7 +85,7 @@ class EvaluationPlan:
         if self.role == "final" and self.final_start is None:
             raise ValueError("Final evaluation requires explicit start and end boundaries")
         if (not isinstance(self.benchmarks, tuple)
-                or any(name not in BENCHMARK_MODELS for name in self.benchmarks)
+                or any(not isinstance(name, str) or name not in BENCHMARK_MODELS for name in self.benchmarks)
                 or len(set(self.benchmarks)) != len(self.benchmarks)):
             raise ValueError(f"benchmarks must be a tuple of unique {'/'.join(BENCHMARK_MODELS)} names")
 
