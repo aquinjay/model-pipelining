@@ -5,7 +5,6 @@ import csv
 from dataclasses import replace
 from datetime import date, datetime, timedelta
 import hashlib
-import io
 import json
 from pathlib import Path
 
@@ -13,13 +12,16 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 import numpy as np
 
+from model_pipelining import noaa, temperature_evaluation, temperature_regression
+from model_pipelining.artifacts import write_json
 from model_pipelining.backtest import run_backtest
+from model_pipelining.evidence import source_hashes
 from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.snapshots import register_snapshot, retrieve_snapshot
-from scripts.run_noaa_temperature import START, daily_maxima
-from scripts.study_noaa_seasonality import MODELS, TemperatureRegression, _evaluated, _write_json
 
 
+STATION = "USW00094728"
+ARCHIVE_START = date(2023, 1, 1)
 FIRST_TARGET = date(2025, 1, 1)
 LAST_TARGET = date(2025, 12, 31)
 SOURCE_URL = (
@@ -27,49 +29,10 @@ SOURCE_URL = (
     "dataset=daily-summaries&stations=USW00094728&startDate=2023-01-01&endDate=2025-12-31"
     "&dataTypes=TMIN,TMAX&units=metric&includeAttributes=true&format=csv"
 )
-ORIGIN_FIELDS = ("origin_index", "target_time", "issued_at", "training_cutoff",
-                 "training_start", "training_end", "training_count")
-
-
-def _archive_minimum(raw):
-    """Map the parallel NOAA fields into the existing daily temperature validator."""
-    reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")))
-    fields = ("STATION", "DATE", "TMIN", "TMIN_ATTRIBUTES")
-    if reader.fieldnames is None or not set(fields).issubset(reader.fieldnames):
-        raise ValueError("Expected NOAA TMIN and TMIN attributes")
-    output = io.StringIO()
-    writer = csv.writer(output, lineterminator="\n")
-    writer.writerow(("STATION", "DATE", "TMAX", "TMAX_ATTRIBUTES"))
-    writer.writerows([row[key] for key in fields] for row in reader)
-    try:
-        return daily_maxima(output.getvalue().encode(), start=START, end=LAST_TARGET)
-    except ValueError as error:
-        raise ValueError("Invalid NOAA minimum-temperature archive") from error
 
 
 def _values(rows):
     return {datetime.fromisoformat(timestamp).date(): value for timestamp, value in rows}
-
-
-def _origins(path, *, benchmark=False):
-    with path.open(encoding="utf-8", newline="") as stream:
-        rows = list(csv.DictReader(stream))
-    if any(row["status"] != "passed" or (benchmark and row["benchmark"] != "last-value") for row in rows):
-        raise ValueError(f"Failed or unexpected forecast case in {path}")
-    return [tuple(row[key] for key in ORIGIN_FIELDS) for row in rows]
-
-
-def _require_matched_origins(reference, counterpart, dates):
-    expected = [(day, day - timedelta(days=1)) for day in dates]
-    max_origins = _origins(reference / "predictions.csv")
-    min_origins = _origins(counterpart / "predictions.csv")
-    for run, origins in ((reference, max_origins), (counterpart, min_origins)):
-        if origins != _origins(run / "benchmark_predictions.csv", benchmark=True):
-            raise ValueError("Model and persistence benchmark origins must match")
-    if (min_origins != max_origins or
-            [(datetime.fromisoformat(row[1]).date(), datetime.fromisoformat(row[5]).date())
-             for row in max_origins] != expected):
-        raise ValueError("Minimum and maximum forecasts must use matching origins and eligible dates")
 
 
 def _paired_scores(dates, minimum_actual, maximum_actual, minimum_forecast, maximum_forecast):
@@ -121,7 +84,7 @@ def run_study(maximum_study, source, output):
     inputs = json.loads((evaluation / "inputs.json").read_bytes())
     manifest = json.loads((reference / "manifest.json").read_bytes())
     snapshot_id = inputs["normalized_snapshot_id"]
-    model = TemperatureRegression("annual-plus-lag", *MODELS["annual-plus-lag"])
+    model = temperature_regression.TemperatureRegression("annual-plus-lag")
     if (hashlib.sha256(plan_bytes).hexdigest() != inputs["plan_sha256"]
             or manifest["status"] != "completed" or manifest["experiment"] != plan["experiment"]
             or manifest["input"]["snapshot_id"] != snapshot_id
@@ -132,9 +95,10 @@ def run_study(maximum_study, source, output):
     with maximum_path.open(encoding="utf-8", newline="") as stream:
         maxima = _values((row["timestamp"], float(row["value"])) for row in csv.DictReader(stream))
     raw = source.read_bytes()
-    minimum_rows = _archive_minimum(raw)
+    minimum_rows = noaa.daily_temperatures(raw, station=STATION, start=ARCHIVE_START, end=LAST_TARGET, element="TMIN")
     minima = _values(minimum_rows)
-    new_maxima = _values(daily_maxima(raw, start=START, end=LAST_TARGET))
+    new_maxima = _values(noaa.daily_temperatures(
+        raw, station=STATION, start=ARCHIVE_START, end=LAST_TARGET, element="TMAX"))
     if maxima.keys() != minima.keys():
         raise ValueError("The maximum-temperature snapshot and minimum archive have different calendars")
     dates = [FIRST_TARGET + timedelta(days=i) for i in range((LAST_TARGET - FIRST_TARGET).days + 1)]
@@ -159,27 +123,30 @@ def run_study(maximum_study, source, output):
     receipt = register_snapshot(raw_path, dataset="noaa-central-park-extrema-raw", store=store)
     minimum = register_snapshot(minimum_path, dataset="noaa-central-park-tmin", store=store,
                                 note=f"TMIN extracted from raw snapshot {receipt.snapshot_id}")
-    _write_json(output / "design.json", dict(
+    write_json(output / "design.json", dict(
         maximum_study=str(maximum_study), maximum_snapshot=snapshot_id,
         minimum_snapshot=minimum.snapshot_id, source_snapshot=receipt.snapshot_id, source_url=SOURCE_URL,
         same_archive_maximum_values=sum(new_maxima[day] == maxima[day] for day in maxima),
         archive_calendar_days=len(maxima), observed_crossings_in_archive=sum(minima[day] > maxima[day] for day in maxima),
         minimum_experiment=experiment.to_dict(), model=model.configuration,
-        script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
+        script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        source_sha256=source_hashes(noaa.__file__, temperature_evaluation.__file__, temperature_regression.__file__)))
 
     run = run_backtest(dataset=minimum.dataset, snapshot_id=minimum.snapshot_id, store=store,
                         experiment=experiment, model=model, output_directory=output / "minimum")
-    _require_matched_origins(reference, run, dates)
+    temperature_evaluation.require_matched_origins(reference, run, dates)
     observed_min, observed_max = (np.array([values[day] for day in dates]) for values in (minima, maxima))
     forecasts = {}
     for name, file in (("annual-plus-lag", "evaluation.csv"), ("last-value", "benchmark_evaluation.csv")):
         benchmark = name == "last-value"
-        forecasts[name] = (_evaluated(run / file, dates, minima, benchmark=benchmark),
-                           _evaluated(reference / file, dates, maxima, benchmark=benchmark))
+        forecasts[name] = (
+            temperature_evaluation.read_evaluated_predictions(run / file, dates, minima, benchmark=benchmark),
+            temperature_evaluation.read_evaluated_predictions(reference / file, dates, maxima, benchmark=benchmark),
+        )
     summary = {name: _paired_scores(dates, observed_min, observed_max, *predictions)
                for name, predictions in forecasts.items()}
-    _write_json(output / "summary.json", summary)
-    with (output / "matched-extrema.csv").open("w", encoding="utf-8", newline="") as stream:
+    write_json(output / "summary.json", summary)
+    with (output / "matched-extrema.csv").open("x", encoding="utf-8", newline="") as stream:
         writer = csv.writer(stream)
         writer.writerow(["date", "actual_min", "actual_max",
                          *(f"{name}_{extreme}" for name in forecasts for extreme in ("min", "max"))])

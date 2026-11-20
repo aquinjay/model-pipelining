@@ -41,14 +41,18 @@ benchmark and workflow names once and writes saved JSON/CSV through
 [decision](decisions.md#define-shared-names-once-and-write-artifacts-through-one-module--2026-11-19).
 It merged through [PR #11](https://github.com/aquinjay/model-pipelining/pull/11)
 (`e54def4`). The `feature/harmonic-adapter-in-src` branch moves the weekly harmonic
-adapter into the package. When the range experiment freezes its plan, first move
-`TemperatureRegression` and the NOAA helpers into the package so the new plan
-pins those modules; see the
+adapter into the package. The frozen NOAA scripts stayed in place; see the
 [decision](decisions.md#move-the-weekly-harmonic-adapter-into-the-package-keep-frozen-noaa-scripts-unchanged--2026-11-19).
 It merged through [PR #12](https://github.com/aquinjay/model-pipelining/pull/12)
 (`5162d72`). The `feature/python312-ci` branch adds a CI job that runs the suite on
 the Python 3.12 workplace profile; see the
 [decision](decisions.md#check-the-python-312-workplace-profile-in-ci--2026-11-19).
+
+Benchmark validation again raises `ValueError` for malformed names. The
+temperature adapter, NOAA parser and saved-forecast helpers are now in the
+package, and the paired study records their source hashes. The frozen 2025
+maximum study replays with its original scripts. See the
+[decision](decisions.md#package-temperature-code-and-preserve-the-frozen-noaa-replay).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
@@ -217,32 +221,19 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
-Use the saved minimum and maximum forecasts as the point baseline. The next
-bounded experiment asks whether accounting for correlated errors improves the
-probability forecast that tomorrow's daily range is at least 10 °C. This is
-a proposed development question. Confirm the threshold, target dates, model
-settings, and scoring rule before retrieving the later evaluation values.
+The [range-probability study](noaa-range-probability.md#januaryjune-2026-results)
+is complete. The plan pinned the full 2025 calibration series, model settings
+and sources before retrieving January–June 2026 data. On 181 matched dates,
+with 64 ranges of at least 10 °C, independent pairing had a mean Brier score of
+0.22415 and same-day pairing had 0.23935. Same-day pairing lowered mean
+negative-range probability from 5.01% to 0.91%. The [tracked audit](artifacts/noaa-range-probability-summary.json)
+records direct recomputation and byte-for-byte replay.
 
-1. Use `matched-extrema.csv` from the 2025 run as the calibration cohort. For
-   each date, take actual minus forecast for both temperatures. Freeze these
-   pairs while evaluating a later cohort. Keep the annual-plus-lag forecasts
-   and refit their coefficients only on eligible expanding histories.
-2. Compare two forecasts of the range from the same residual pools. For the
-   independent baseline, pair every minimum residual with every maximum
-   residual. For the dependent forecast, use only residuals from the same
-   date. Add them to the corresponding point forecasts and take maximum
-   minus minimum. Using these finite sets gives the two event probabilities
-   without a random sampling step.
-3. Choose a contiguous later evaluation period outside 2025 and check its
-   archive dates and quality flags after freezing the design. Verify matching
-   origins and cutoffs before scoring. Compare paired Brier scores on the
-   same dates, report event counts and calibration descriptively, and retain
-   the probability of negative ranges for both approaches. Keep any crossed
-   draws visible in the study. Use simulated date-label availability until
-   historical release times and vintages are available.
-4. Keep the probability comparison in a small study script that reads saved
-   scalar forecasts. If the later evidence supports a reusable joint output,
-   use that evidence to decide what the shared runner needs to store or score.
+Keep the comparison at the study level. A reusable joint forecast output
+needs a concrete downstream requirement and evidence beyond this event and
+cohort. The observed event rate rose from 22.5% in the full 2025 calibration
+year to 35.4% in the first half of 2026. The behavior of the residual
+distribution across seasons remains an open modeling question.
 
 The observed warm bias and quiet-day errors remain separate model questions.
 Workplace testing is deferred. Revisit rare-jump integration when a concrete
@@ -310,6 +301,7 @@ Keep source folders with their reports and inspect their manifests before reuse.
 
 | Local path | What it contains |
 |---|---|
+| `runs/noaa-range-2026-h1-plan/` and `runs/noaa-range-2026-h1/` | Frozen 2025 inputs and design, preserved 2026 archive, matched scalar runs, paired range probabilities and scores, and replay audit |
 | `runs/noaa-temperature-pair-verified-20261119/` | NOAA extrema archive, normalized minimum snapshot, matched point forecasts, error and range diagnostics, and the paired chart |
 | `runs/noaa-2025-frozen-20261119/` | Plan saved before downloading 2025, exact 2023–2024 history, 2025 snapshots, matched forecasts, and the later-year audit inputs |
 | `runs/noaa-seasonality-verified-20261119/` | Baseline error diagnostics, matched forecasts and reports for three regressions, and their aggregate and grouped point scores |
@@ -341,9 +333,9 @@ model choice.
 ## How to resume
 
 Read the [agent handoff](agent-handoff.md) for changes since `c3fe4ff`, then
-this note, and inspect the working tree. The immediate inputs for the
-range experiment are `matched-extrema.csv` and `design.json` in
-`runs/noaa-temperature-pair-verified-20261119/`. Keep the frozen maximum run
+this note, and inspect the working tree. The
+[range study guide](noaa-range-probability.md) links the completed result and
+explains how to replay it. Keep the frozen maximum run
 under `runs/noaa-2025-frozen-20261119/`. The [pair study guide](noaa-temperature-pair.md)
 explains how to reproduce the files if the local run directories are missing.
 Run new experiments explicitly. Configured CI runs automatically on branch

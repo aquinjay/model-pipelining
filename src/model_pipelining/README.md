@@ -50,6 +50,9 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
 | [harmonic_regression.py](harmonic_regression.py) | Weekly Fourier-pair least-squares point forecasts for a second model family |
+| [temperature_regression.py](temperature_regression.py) | Scalar annual Fourier and lag regressions with restorable settings |
+| [noaa.py](noaa.py) | Validate a caller-supplied metric NOAA daily TMIN or TMAX archive |
+| [temperature_evaluation.py](temperature_evaluation.py) | Match and summarize saved scalar temperature forecasts |
 | [artifacts.py](artifacts.py) | Shared JSON/CSV writers for saved manifests, checks and tables |
 | [adapters.py](adapters.py) | Name-to-class catalog that scripts use to rebuild adapters from saved settings |
 
@@ -727,7 +730,8 @@ predictive_checks.tail_summary(count, total) -> dict
 
 `EvaluationPlan.benchmarks`, `EvidencePlan.required_workflows` and provider
 metadata are validated against these tables, and the runner builds benchmark
-models from `BENCHMARK_MODELS`.
+models from `BENCHMARK_MODELS`. Invalid benchmark entries in a saved
+experiment raise `ValueError` with the accepted names.
 
 ```text
 artifacts.write_json(path, value, *, overwrite=False) -> None
@@ -740,6 +744,52 @@ file behind. New files are created exclusively; workflows pass
 `overwrite=True` only to replace their own manifest when they finish.
 `write_csv` creates a new file with the given header order. Run and evidence
 manifests list `artifacts.py` among their source hashes.
+
+## Temperature regression and NOAA inputs
+
+`TemperatureRegression(name)` accepts `annual-only`, `lag-only`, and
+`annual-plus-lag`. It fits a point forecast from the eligible contiguous daily
+history and requires the target to be one day after its last observation.
+`TemperatureRegression.from_configuration(configuration)` rebuilds the
+variant saved in a runner manifest. The fixed annual period is 365.2425 days,
+the phase origin is 2023-01-01, and the lag is one day.
+
+```python
+from datetime import date
+from pathlib import Path
+
+from model_pipelining.noaa import daily_temperatures
+from model_pipelining.temperature_regression import TemperatureRegression
+
+source = Path("noaa-extrema.csv").read_bytes()
+minimum_rows = daily_temperatures(
+    source, station="USW00094728", start=date(2023, 1, 1), end=date(2025, 12, 31), element="TMIN"
+)
+model = TemperatureRegression("annual-plus-lag")
+restored = TemperatureRegression.from_configuration(model.configuration)
+```
+
+`daily_temperatures` accepts `TMIN` or `TMAX` and returns date-sorted
+`(timestamp, value)` pairs for the inclusive calendar. It checks station,
+completeness, duplicates, finite values and the selected element's quality
+flags. Supply metric data with attributes, then write and register normalized
+rows explicitly if the backtest needs a snapshot. The UTC labels support
+simulated availability.
+
+In [temperature_evaluation.py](temperature_evaluation.py),
+`read_evaluated_predictions(path, dates, values, *, benchmark=False)`
+returns a NumPy array ordered by the declared dates after checking status,
+dates, actuals, and finite predictions. Set `benchmark=True` to require a
+last-value row for each date. `require_matched_origins(reference, counterpart,
+dates)` checks saved model and persistence origins across both run
+directories. `temperature_error_metrics(dates, values, predictions)` returns
+a dictionary of point-error summaries by model. Supply actuals by date,
+including the day preceding each evaluated date, and prediction arrays in
+the supplied date order.
+
+The [range-probability study](../../docs/noaa-range-probability.md) uses these
+helpers to match saved scalar forecasts and computes event probabilities in
+the study script.
 
 ## Naming, errors, and limits
 

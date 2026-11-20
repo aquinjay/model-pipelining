@@ -78,8 +78,10 @@ packages before choosing an installation source. A focused Python 3.12 profile
 now runs the scalar Gaussian CSV workflow on Linux. The full research environment
 is pinned separately. The weekly harmonic adapter in
 [harmonic_regression.py](../src/model_pipelining/harmonic_regression.py) and the
-NOAA examples exercise the same scalar contract. The NOAA regression still lives
-in its study script because the frozen 2025 plan pins that script's bytes. See the [Python 3.12 verification](python312-public-forecast.md).
+packaged [temperature regression](../src/model_pipelining/temperature_regression.py)
+exercise the same scalar contract. The NOAA archive parser and saved-cohort
+checks live in their own package modules. The frozen 2025 plan continues to
+verify and run its original scripts. See the [Python 3.12 verification](python312-public-forecast.md).
 
 The [temperature pair study](noaa-temperature-pair.md) runs two scalar tasks
 and verifies matched origins and eligible dates before pairing the saved

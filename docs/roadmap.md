@@ -22,18 +22,23 @@ and maximum forecasts at the same 365 origins. The seasonal pair had zero
 crossed point forecasts and lower daily-range error than persistence. Shared
 errors motivate a joint distribution for a task that needs probabilities about
 the range. The study uses the scalar runner and reports the pair after fitting.
-The [next experiment](next-session.md#next-work) compares independent and
-date-matched residual pairs for a range probability on later dates. It uses
-the same point forecasts and freezes the 2025 calibration pairs before scoring.
+The [range-probability study](noaa-range-probability.md#januaryjune-2026-results)
+compared independent and date-matched 2025 residual pairs on 181 frozen
+January–June 2026 targets. The independent forecast had a lower Brier score
+for the 10 °C event (0.22415 versus 0.23935). Same-day pairs reduced negative
+range probability. The comparison is implemented at the study level.
 
 A maintenance change gives every repository adapter `from_configuration` and
 moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
 It fixes restoring saved MCMC settings and adds no new modeling capability.
 A follow-up defines benchmark and workflow names once and routes saved JSON/CSV
 through one [writer module](../src/model_pipelining/README.md#shared-names-and-artifact-writers).
-The weekly harmonic adapter now lives in the package; the NOAA regression stays
-in its frozen study script until the next NOAA plan is frozen. CI also runs the
-suite on the [Python 3.12 workplace profile](continuous-integration.md).
+The [temperature adapter and NOAA helpers](../src/model_pipelining/README.md#temperature-regression-and-noaa-inputs)
+join the weekly harmonic adapter in the package. The paired study uses the
+packaged modules, and the archived 2025 maximum evaluation replays with its
+original scripts. Invalid benchmark entries again raise `ValueError` with the
+allowed names. CI also runs the suite on the
+[Python 3.12 workplace profile](continuous-integration.md).
 
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it
@@ -160,12 +165,12 @@ No new model, sampler, application or automatic human decision is introduced.
 | Environment | Research environment on CPython 3.14 (pin 3.14.10, uv lock and pip export); separate Python 3.12.16 workplace profile with four direct packages for CSV Gaussian workflows; unittest | [Setup](../README.md#development-environment), [3.12 profile](python312-public-forecast.md) |
 | Continuous integration | Two parallel jobs on every push and pull request: full research suite with documentation walkthrough and lock checks, and the whole suite on the 3.12 profile with MCMC/XLSX tests skipped | [CI guide](continuous-integration.md) |
 | Synthetic sources | Two seeded baseline 200-day series and a shared-noise gradual-change review fixture | [Data](../data/README.md), [development study](model-review-study.md) |
-| Public data studies | NOAA Central Park daily temperature: preserved archive, 2024 seasonality comparison, 2025 evaluation with settings frozen before download, matched minimum/maximum forecasts; availability simulated from archive date labels | [Seasonality](noaa-seasonality.md), [2025 evaluation](noaa-later-period.md), [temperature pair](noaa-temperature-pair.md) |
+| Public data studies | NOAA Central Park daily temperature: 2024 seasonality comparison, frozen 2025 evaluation, matched minimum/maximum forecasts, and a frozen 181-case range-probability evaluation | [Seasonality](noaa-seasonality.md), [2025 evaluation](noaa-later-period.md), [temperature pair](noaa-temperature-pair.md), [range probability](noaa-range-probability.md) |
 | Ingestion | Local copy receipts and CSV/XLSX table reading | [Ingestion](ingestion.md) |
 | Preservation | One-file SHA-256 snapshots, verified retrieval, repeat registration events, optional receipt context | [Snapshots](snapshots.md) |
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
 | Execution | Daily model-independent experiments, release-aware expanding histories, one fixed positive-day horizon per run; defaults preserve the original next-day task | [Experiments](experiments.md) |
-| Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering; weekly harmonic regression point adapter; seasonal temperature regression inside the NOAA study scripts | [Model guide](local-level.md), [harmonic example](reading-guide.md#run-the-weekly-harmonic-example) |
+| Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering; weekly harmonic and seasonal temperature regression point adapters | [Model guide](local-level.md), [harmonic example](reading-guide.md#run-the-weekly-harmonic-example), [temperature adapter](../src/model_pipelining/README.md#temperature-regression-and-noaa-inputs) |
 | Adapter construction | `from_configuration` on every repository adapter; script catalog `build_model`/`build_scenarios`; benchmark and workflow names defined once; one JSON/CSV writer module | [Rebuilding adapters](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings), [shared names](../src/model_pipelining/README.md#shared-names-and-artifact-writers) |
 | Parameter learning | Unknown constant Gaussian mean with known or learned observation variance; exact normal/Student-t predictions, optional independent-chain audits and saved fit evidence | [Parameter uncertainty](parameter-uncertainty.md), [joint model](normal-mean-variance.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
@@ -182,11 +187,10 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-As of [PR #13](https://github.com/aquinjay/model-pipelining/pull/13) (`fc59e0b`),
-the suite has 475 tests. All pass on Python 3.14.10 with nothing skipped. The
-same 475 run on the Python 3.12.16 profile, where 31 MCMC and XLSX tests are
-skipped and the rest pass. CI runs both on every push. Earlier checkpoints
-passed 391, 415 and 449 tests.
+The suite has 481 tests, including benchmark validation, NOAA replay checks,
+and a synthetic range-probability evaluation. The Python 3.12 workplace profile skips 31 MCMC and
+XLSX tests. CI runs both the research and workplace profiles on every push.
+Earlier checkpoints passed 391, 415 and 449 tests.
 [The test guide](../tests/README.md) maps them
 to behavior: data preservation, independent posterior/predictive calculations,
 requested uncertainty validation, disjoint region membership/display, future

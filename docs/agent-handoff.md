@@ -98,8 +98,9 @@ byte for byte. The behavior differences are:
 - **Frozen NOAA scripts:** do not edit `scripts/check_noaa_later_period.py`,
   `scripts/run_noaa_temperature.py` or `scripts/study_noaa_seasonality.py`. The
   frozen 2025 plan stores their SHA-256 hashes, and `evaluate` refuses to run
-  if any changes. `TemperatureRegression` and the NOAA helpers therefore
-  still live there.
+  if any changes. Those scripts retain their original implementations. Use
+  the [packaged temperature adapter and helpers](../src/model_pipelining/README.md#temperature-regression-and-noaa-inputs)
+  for new work.
 - **Branches:** merged feature branches are kept on GitHub, so a stacked PR is
   not retargeted automatically when its base merges. Retarget it with
   `gh pr edit <n> --base main`.
@@ -140,14 +141,10 @@ Do not change the gate wording without their approval.**
 
 ## Next work
 
-The range-probability experiment in [next-session.md](next-session.md#next-work)
-is next. Before freezing its plan, move `TemperatureRegression` and the NOAA
-helpers into the package so the new plan pins package modules rather than the
-frozen 2025 scripts. Before any later data is retrieved, the user must confirm:
-- the threshold (10 °C was proposed);
-- the evaluation period;
-- the scoring rule.
-
-Report how many 2025 days had a range of at least 10 °C before choosing the
-threshold. Treat 2025 as a calibration cohort, not a clean holdout, because
-its results have already been seen.
+The [range-probability study](noaa-range-probability.md) is complete. The user
+delegated the design choices, and the plan froze January–June 2026, a 10 °C
+threshold and paired Brier scoring before retrieval. The 181-case run favors
+independent pairing on Brier score, while same-day pairing assigns less
+probability to negative ranges. The [checkpoint](next-session.md#next-work)
+records the outcome and the archived inputs. Freeze a new design before
+retrieving observations for a follow-up evaluation.

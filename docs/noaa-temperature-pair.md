@@ -35,8 +35,8 @@ often miss in the same direction. Since range error is maximum error minus
 minimum error, that dependence matters when estimating uncertainty about the
 range. If a task needs a probability for the range, evaluate a joint
 predictive distribution on a new cohort. The existing scalar interface serves
-the point forecasts used here. See the [next experiment](next-session.md#next-work)
-for a proposed comparison that isolates the effect of pairing residuals.
+the point forecasts used here. The [range-probability workflow](noaa-range-probability.md)
+uses the saved 2025 residuals to isolate the effect of pairing on later dates.
 
 The audit independently recalculated the order check, range MAE and paired
 error correlation. The matched case table, summary, minimum forecasts,
@@ -62,6 +62,8 @@ PYTHONPATH=src runs/python312-forecast-env/bin/python -m scripts.study_noaa_extr
 ```
 
 The command reads local archives and preserves the new raw and normalized
-minimum snapshots. It runs the minimum forecast and persistence benchmark,
-checks the origin and eligibility fields across both saved runs, and writes
+minimum snapshots. It uses the packaged temperature adapter and helpers and
+records their source digests in `design.json`. It runs the minimum forecast
+and persistence benchmark, checks the origin and eligibility fields across
+both saved runs, and writes
 `matched-extrema.csv`, `summary.json`, and `paired-forecasts.png`.
