@@ -28,6 +28,10 @@ in a freeze directory. A separate evaluation writes the later archive and
 scalar runs, `matched-range.csv` and `summary.json` to a new directory.
 The January–June 2026 evaluation also has a
 [tracked summary and audit](../docs/artifacts/noaa-range-probability-summary.json).
+The [seasonal study](../docs/noaa-range-probability.md#seasonal-calibration-follow-up)
+also saves a monthly diagnostic, nested annual baseline plan and results for
+four methods. The [seasonal audit](../docs/artifacts/noaa-range-seasonal-summary.json)
+records the July pilot and longer frozen plan.
 
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and

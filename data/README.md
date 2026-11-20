@@ -26,6 +26,10 @@ For the [range-probability study](../docs/noaa-range-probability.md), freeze the
 saved 2025 calibration table and normalized histories first. Then acquire the
 separate metric NOAA archive from the frozen plan’s URL. Evaluation validates
 both extremes and preserves the supplied source bytes and expanded snapshots.
+The [seasonal pilot](../docs/noaa-range-probability.md#frozen-july-pilot) pins
+the existing January–June archive for training. The caller acquires a
+separate later archive, and the study saves both the fresh bytes and the
+combined input used by the scalar runs.
 
 The [innovation moment check](../docs/innovation-moment-check.md) reuses frozen
 state-grid cases. The [weekly harmonic example](../docs/reading-guide.md#run-the-weekly-harmonic-example)

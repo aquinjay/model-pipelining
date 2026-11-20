@@ -27,6 +27,11 @@ compared independent and date-matched 2025 residual pairs on 181 frozen
 January–June 2026 targets. The independent forecast had a lower Brier score
 for the 10 °C event (0.22415 versus 0.23935). Same-day pairs reduced negative
 range probability. The comparison is implemented at the study level.
+The [seasonal follow-up](noaa-range-probability.md#seasonal-calibration-follow-up)
+found a concentrated April–May loss gap and better retrospective scores with
+season-matched calibration. On the fresh ten-day July pilot, each full-year
+method scored better than its seasonal counterpart. A longer evaluation is
+frozen and awaits complete later observations.
 
 A maintenance change gives every repository adapter `from_configuration` and
 moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
@@ -187,8 +192,8 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite has 481 tests, including benchmark validation, NOAA replay checks,
-and a synthetic range-probability evaluation. The Python 3.12 workplace profile skips 31 MCMC and
+The suite has 483 tests, including benchmark validation, NOAA replay checks,
+and synthetic annual and seasonal range evaluations. The Python 3.12 workplace profile skips 31 MCMC and
 XLSX tests. CI runs both the research and workplace profiles on every push.
 Earlier checkpoints passed 391, 415 and 449 tests.
 [The test guide](../tests/README.md) maps them
