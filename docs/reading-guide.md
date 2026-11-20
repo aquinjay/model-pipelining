@@ -27,6 +27,8 @@ Then move to seasonal regression and models that forecast several series togethe
    at an origin and when the runner joins the actual outcome for scoring.
    [Time series cross-validation](https://otexts.com/fpp3/toolbox.html#time-series-cross-validation),
    [experiment contract](experiments.md), [distribution scoring](distribution-scoring.md).
+   Then follow the [cost-loss example](decision-value.md) from forecast
+   probability to action and expense.
 4. **Python for reading the pipeline.** Read dataclasses and type hints first,
    then NumPy axes, array shapes, and broadcasting. Learn to read a `unittest`
    test, especially one that compares a hand calculation or an independently

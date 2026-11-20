@@ -942,3 +942,11 @@ The ten-day July pilot found worse Brier scores with seasonal calibration
 for both pairing methods. Retain the full-year methods and the frozen 174-date
 follow-up design. See the [diagnostic and pilot](noaa-range-probability.md#seasonal-calibration-follow-up).
 
+## Evaluate cost-loss actions from saved probabilities
+
+Apply a fixed cost-loss rule to the saved binary event forecasts. Use the
+2025 calibration event rate to choose the climatology action, then evaluate
+both references and both forecast methods on the same 2026 outcomes. Save
+expenses, relative value, undefined-value reasons and input receipts across
+the fixed ratio grid. See the [worked example and NOAA plot](decision-value.md).
+

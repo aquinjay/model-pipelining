@@ -43,6 +43,9 @@ It also reduced the probability of draws with the minimum above the maximum.
 All observed and point-forecast ranges were nonnegative. The results compare
 one event on one six-month cohort using simulated availability.
 
+The [cost-loss comparison](decision-value.md) uses these saved probabilities
+to measure the expense of taking protective action at different cost-loss ratios.
+
 The Python 3.12 audit recomputed all 181 probability and Brier rows by direct
 enumeration and replayed ten output files byte for byte. The plan and evaluation
 are saved locally in `runs/noaa-range-2026-h1-plan/` and

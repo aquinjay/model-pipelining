@@ -33,6 +33,11 @@ also saves a monthly diagnostic, nested annual baseline plan and results for
 four methods. The [seasonal audit](../docs/artifacts/noaa-range-seasonal-summary.json)
 records the July pilot and longer frozen plan.
 
+The [cost-loss analysis](../docs/decision-value.md) reads a completed range
+evaluation and writes `decision-value.csv`, `decision-value-summary.json`,
+and `decision-value.png` to a new directory. The JSON records the two input
+file digests, the calibration event rate and its source, and the ratio grid.
+
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
 fit timings per case, and `summary.json`. A refined control writes a separate

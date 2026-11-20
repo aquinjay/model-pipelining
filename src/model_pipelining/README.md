@@ -49,6 +49,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
+| [decision_value.py](decision_value.py) | Cost-loss actions, expenses, and relative economic value for binary event probabilities |
 | [harmonic_regression.py](harmonic_regression.py) | Weekly Fourier-pair least-squares point forecasts for a second model family |
 | [temperature_regression.py](temperature_regression.py) | Scalar annual Fourier and lag regressions with restorable settings |
 | [noaa.py](noaa.py) | Validate a caller-supplied metric NOAA daily TMIN or TMAX archive |
