@@ -26,6 +26,10 @@ The [next experiment](next-session.md#next-work) compares independent and
 date-matched residual pairs for a range probability on later dates. It uses
 the same point forecasts and freezes the 2025 calibration pairs before scoring.
 
+A maintenance change gives every repository adapter `from_configuration` and
+moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
+It fixes restoring saved MCMC settings and adds no new modeling capability.
+
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it
 needs. Use concrete examples from harmonic regression, other state-space models,

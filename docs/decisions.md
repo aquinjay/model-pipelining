@@ -829,3 +829,20 @@ seasonal pair lowered range MAE by 14.8%. Its minimum and maximum forecast
 errors had a correlation of 0.603. Keep the scalar point forecasts as
 benchmarks. Use a concrete probability about the range to motivate a joint
 output in a later evaluation. See the [paired results](noaa-temperature-pair.md).
+
+## Rebuild adapters from saved settings through one catalog — 2026-11-19
+
+Saved `NormalMean` and `NormalMeanVariance` configurations with MCMC settings
+could not be restored: `configuration` saves `mcmc` as a dictionary, and the
+constructor requires `MCMCSettings`. Five scripts also repeated the same
+model-name branches. Every repository adapter now provides
+`from_configuration`, and scripts build models and prior scenarios through
+`adapters.build_model` and `adapters.build_scenarios`. The catalog serves
+scripts only. The runner and evidence workflows still accept any conforming
+object, so a new model family needs no shared-code change to run. Provider
+selection for calibration now also rejects missing or duplicate
+`calibration_parameters` with `ValueError`. Model outputs and saved formats are
+unchanged. Saved runs record source hashes, so artifacts made before this change
+report the edited modules as changed sources. See the
+[API reference](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
+

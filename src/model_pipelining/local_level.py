@@ -83,6 +83,11 @@ class LocalLevel:
     def configuration(self) -> dict:
         return asdict(self)
 
+    @classmethod
+    def from_configuration(cls, configuration):
+        """Rebuild a model from its saved JSON configuration."""
+        return cls(**configuration)
+
     def filter_history(self, history: tuple[Observation, ...]) -> tuple[FilterStep, ...]:
         """Return a fresh forward-filter trace for nonempty, daily eligible history.
 

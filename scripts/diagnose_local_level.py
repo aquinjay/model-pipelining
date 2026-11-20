@@ -1,10 +1,10 @@
 """Inspect caller-chosen assumptions; strong prior influence is not a failure."""
 
 import argparse
-from dataclasses import replace
 import json
 from pathlib import Path
 
+from model_pipelining.adapters import build_scenarios
 from model_pipelining.diagnostics import plot_local_level_diagnostics, run_local_level_diagnostics
 from model_pipelining.local_level import LocalLevel
 
@@ -24,8 +24,8 @@ def main() -> int:
         raise ValueError("Config must contain exactly reference and scenarios")
     if not isinstance(configuration["reference"], dict) or not isinstance(configuration["scenarios"], dict):
         raise ValueError("reference and scenarios must be dictionaries")
-    reference = LocalLevel(**configuration["reference"])
-    scenarios = {name: replace(reference, **overrides) for name, overrides in configuration["scenarios"].items()}
+    reference = LocalLevel.from_configuration(configuration["reference"])
+    scenarios = build_scenarios(reference, configuration["scenarios"])
     output = run_local_level_diagnostics(**options, reference=reference, scenarios=scenarios)
     print(f"Saved diagnostics: {output}")
     print(f"Charts: {plot_local_level_diagnostics(output)}")

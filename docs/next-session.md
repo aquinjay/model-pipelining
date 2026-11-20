@@ -26,6 +26,13 @@ frozen 2025 maximum evaluation. The branch starts from `main` at `f7aec5a`.
 The paired study passed 86 targeted tests on Python 3.12 and replayed five
 saved files byte for byte. See the [paired result and audit](artifacts/noaa-extrema-summary.json).
 
+The `feature/model-configuration-restore` branch starts from that branch. It
+fixes restoring saved MCMC settings for the constant-mean models and gives every
+adapter `from_configuration`. Scripts now build models and prior scenarios
+through one catalog, and calibration rejects malformed parameter names when it
+selects the provider. Forecast outputs and saved formats are unchanged. See the
+[decision](decisions.md#rebuild-adapters-from-saved-settings-through-one-catalog--2026-11-19).
+
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved
 results and separate computational checks and human interpretation. Application

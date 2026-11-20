@@ -79,8 +79,6 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
         raise ValueError("seed must be an integer in [0,2**32)")
     interval_probabilities(interval_level)
     parameters = provider.calibration_parameters
-    if not parameters or len(set(parameters)) != len(parameters):
-        raise ValueError("Calibration needs unique unknown parameter names")
     output = Path(output_directory).expanduser().absolute()
     output.mkdir(parents=True, exist_ok=False)
     (output/"trials").mkdir()

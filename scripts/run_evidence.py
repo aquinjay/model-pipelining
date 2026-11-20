@@ -1,16 +1,13 @@
 """Run an experiment's required evidence workflows, then draw saved results."""
 
 import argparse
-from dataclasses import replace
 from datetime import datetime
 import json
 from pathlib import Path
 
+from model_pipelining.adapters import EVIDENCE_MODEL_NAMES, build_model, build_scenarios
 from model_pipelining.evidence_workflows import run_experiment_evidence, plot_experiment_evidence
 from model_pipelining.experiments import ExperimentSpec
-from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
-from model_pipelining.local_level_variance import LocalLevelVariance
-from model_pipelining.normal_mean_variance import NormalMeanVariance
 
 
 def main() -> int:
@@ -22,7 +19,7 @@ def main() -> int:
     parser.add_argument("--store", default="data/versioned")
     parser.add_argument("--as-of", type=datetime.fromisoformat, required=True)
     parser.add_argument("--experiment", type=Path, required=True)
-    parser.add_argument("--model", choices=("normal-mean-variance", "local-level-variance", "local-level-joint-variance"), required=True)
+    parser.add_argument("--model", choices=EVIDENCE_MODEL_NAMES, required=True)
     parser.add_argument("--config", type=Path, required=True, help="Reference model settings and named prior overrides")
     parser.add_argument("--output-directory", required=True)
     options = vars(parser.parse_args())
@@ -31,13 +28,8 @@ def main() -> int:
             or not isinstance(configuration["reference"], dict) or not isinstance(configuration["scenarios"], dict)
             or any(not isinstance(value, dict) for value in configuration["scenarios"].values())):
         raise ValueError("Config needs reference settings and named scenario override dictionaries")
-    kind=options.pop("model")
-    model = (LocalLevelJointVariance.from_configuration(configuration["reference"]) if kind == "local-level-joint-variance" else
-             LocalLevelVariance.from_configuration(configuration["reference"]) if kind == "local-level-variance" else
-             NormalMeanVariance(**configuration["reference"]))
-    restore=getattr(type(model),"from_configuration",None)
-    scenarios = {name: restore({**model.configuration,**values}) if restore else replace(model,**values)
-                 for name,values in configuration["scenarios"].items()}
+    model = build_model(options.pop("model"), configuration["reference"])
+    scenarios = build_scenarios(model, configuration["scenarios"])
     experiment = ExperimentSpec.load(options.pop("experiment"))
     options["issued_at"] = options.pop("as_of")
     output = run_experiment_evidence(**options, experiment=experiment, model=model, scenarios=scenarios)

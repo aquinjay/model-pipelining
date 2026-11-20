@@ -30,11 +30,10 @@ def main():
     for scenario in plan["scenario_order"]:
         for name, settings in plan["models"].items():
             kind = MODEL_CONFIGS[name][0]
-            restore = getattr(kind, "from_configuration", lambda value: kind(**value))
             for prior, configuration in settings["alternatives"].items():
                 print(f"Prior criticism: {scenario}/{name}/{prior}", flush=True)
                 path = run_predictive_checks(dataset=scenario, snapshot_id=plan["snapshots"][scenario],
-                    store=study / "store", experiment=experiment, model=restore(configuration),
+                    store=study / "store", experiment=experiment, model=kind.from_configuration(configuration),
                     issued_at=datetime.fromisoformat(plan["experiment"]["evaluation"]["final_start"]) - timedelta(seconds=1),
                     replications=experiment.evidence.replications, seed=experiment.evidence.seed,
                     output_directory=output / scenario / name / prior)

@@ -44,9 +44,8 @@ def run_job(study, scenario, name, plan=None):
     spec = ExperimentSpec.from_dict(plan["experiment"])
     settings = plan["models"][name]
     kind = MODEL_CONFIGS[name][0]
-    restore = getattr(kind, "from_configuration", lambda value: kind(**value))
-    model = restore(settings["reference"])
-    alternatives = {prior: restore(value) for prior, value in settings["alternatives"].items()}
+    model = kind.from_configuration(settings["reference"])
+    alternatives = {prior: kind.from_configuration(value) for prior, value in settings["alternatives"].items()}
     base = root / scenario / name
     common = dict(dataset=scenario, snapshot_id=plan["snapshots"][scenario], store=root / "store", experiment=spec)
     for prior, selected in (("reference", model), *alternatives.items()):

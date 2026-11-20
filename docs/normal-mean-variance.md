@@ -142,19 +142,16 @@ plot_run(run)  # explicit library reporting
 the variance is undefined; use the posterior properties for nullable metadata.
 `fit`/`forecast` use the existing fitted-forecast and forecast records.
 
-Replay explicitly reconstructs nested settings from the saved configuration:
+Replay rebuilds the model, including any nested sampler settings, from the
+saved configuration:
 
 ```python
-configuration = dict(manifest["model"]["configuration"])
-sampler = configuration.pop("mcmc")
-model = NormalMeanVariance(**configuration, mcmc=(
-    MCMCSettings(**sampler) if sampler is not None else None
-))
+model = NormalMeanVariance.from_configuration(manifest["model"]["configuration"])
 ```
 
 Restore the permanent input, `ExperimentSpec.from_dict(manifest["experiment"])`,
 interval levels, and matching code/environment, then run into a new directory.
-There is no automatic restoration or fit reuse. Seeds use only eligible history,
+Replay is a caller action; there is no automatic replay or fit reuse. Seeds use only eligible history,
 issuance, target, base seed and chain index. Reordering fits or changing future
 values cannot change earlier chains. Global Python/NumPy RNG states are untouched.
 
