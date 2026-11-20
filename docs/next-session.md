@@ -340,7 +340,8 @@ model choice.
 
 ## How to resume
 
-Read this note and inspect the working tree. The immediate inputs for the
+Read the [agent handoff](agent-handoff.md) for changes since `c3fe4ff`, then
+this note, and inspect the working tree. The immediate inputs for the
 range experiment are `matched-extrema.csv` and `design.json` in
 `runs/noaa-temperature-pair-verified-20261119/`. Keep the frozen maximum run
 under `runs/noaa-2025-frozen-20261119/`. The [pair study guide](noaa-temperature-pair.md)
