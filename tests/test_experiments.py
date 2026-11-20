@@ -155,6 +155,14 @@ class ExperimentTests(unittest.TestCase):
         for name in ("predictions.csv", "evaluation.csv", "benchmark_predictions.csv", "benchmark_evaluation.csv", "scores.json"):
             self.assertEqual((first / name).read_bytes(), (changed / name).read_bytes())
 
+    def test_malformed_benchmark_names_in_json_raise_value_error(self):
+        for name in ([], {}, None, "persistence"):
+            with self.subTest(name=name):
+                spec = self.experiment.to_dict()
+                spec["evaluation"]["benchmarks"] = ["training-mean", name]
+                with self.assertRaisesRegex(ValueError, "unique training-mean/last-value names"):
+                    ExperimentSpec.from_dict(json.loads(json.dumps(spec)))
+
     def test_benchmarks_use_identical_cases_and_known_point_scores(self):
         run = self.run_experiment(self.register())
         predictions = self.read_csv(run)

@@ -1,5 +1,11 @@
 # Repository instructions
 
+## Read the handoff first
+
+Before starting work, read [the agent handoff](docs/agent-handoff.md) for recent
+changes, current conventions and open decisions. Then use
+[the checkpoint note](docs/next-session.md) for full project status.
+
 ## Keep forecasting model independent
 
 Bayesian dynamic linear models are the first main use case. The shared pipeline

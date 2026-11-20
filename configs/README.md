@@ -18,7 +18,13 @@ and inputs automatically before evaluation.
 The [temperature pair study](../docs/noaa-temperature-pair.md) reuses the
 frozen 2025 maximum run and its seasonal settings for a separate minimum
 forecast. The caller names the saved maximum study, local NOAA archive, and
-new output directory.
+new output directory. The script uses the packaged `annual-plus-lag` variant
+and checks its settings against the saved maximum run.
+
+The [range-probability study](../docs/noaa-range-probability.md#freeze-and-evaluate)
+takes explicit inclusive evaluation dates, a Celsius threshold and Brier
+scoring. The freeze command pins the 2025 calibration data and the
+annual-plus-lag settings before the caller acquires the later archive.
 
 The [innovation moment check](../docs/innovation-moment-check.md) inherits the
 observations, model and query grids from a completed state-grid study. The

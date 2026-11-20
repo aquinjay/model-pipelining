@@ -8,7 +8,8 @@ import unittest
 
 import numpy as np
 
-from scripts.study_noaa_extrema import ORIGIN_FIELDS, _paired_scores, _require_matched_origins
+from model_pipelining.temperature_evaluation import ORIGIN_FIELDS, require_matched_origins
+from scripts.study_noaa_extrema import _paired_scores
 
 
 class NoaaExtremaTests(unittest.TestCase):
@@ -40,7 +41,7 @@ class NoaaExtremaTests(unittest.TestCase):
 
             write(reference, 731)
             write(counterpart, 731)
-            _require_matched_origins(reference, counterpart, [date(2025, 1, 1)])
+            require_matched_origins(reference, counterpart, [date(2025, 1, 1)])
             write(counterpart, 730)
             with self.assertRaisesRegex(ValueError, "matching origins"):
-                _require_matched_origins(reference, counterpart, [date(2025, 1, 1)])
+                require_matched_origins(reference, counterpart, [date(2025, 1, 1)])

@@ -24,7 +24,10 @@ the [Python 3.12 setup and example](docs/python312-public-forecast.md). The
 a temperature lag, and their combination on the same 366 dates. The
 [frozen 2025 evaluation](docs/noaa-later-period.md) checks the improvement on
 a separate year. The [temperature pair study](docs/noaa-temperature-pair.md)
-matches separately fitted minimum and maximum forecasts.
+matches separately fitted minimum and maximum forecasts using the
+[packaged temperature adapter and helpers](src/model_pipelining/README.md#temperature-regression-and-noaa-inputs).
+The [range-probability study](docs/noaa-range-probability.md) uses those saved
+errors to compare same-day and independent residual pairs on 181 later dates.
 
 The state-grid proposal meets the probability criteria on all 17 frozen cases.
 An independent Gibbs calculation also agrees on moments and predictive density

@@ -22,6 +22,7 @@ for current behavior and review priorities.
 - Use model-supplied evidence calculations and experiment-owned fit names/separate workflow requirements; execute separate evidence explicitly and retain failed or unavailable requirements.
 - Use CPython 3.14 with pandas, openpyxl, matplotlib, NumPy, SciPy, emcee and pre-1.0 ArviZ for research. Keep a separate Python 3.12.16 workplace profile (pandas, NumPy, SciPy, matplotlib) for CSV Gaussian workflows. CI checks both on every push. Installable packaging, arbitrary-stage checks, and release automation remain open.
 - Use public NOAA daily data with availability simulated from archive date labels. Freeze model and scoring settings before downloading evaluation data, and leave frozen study scripts unchanged so their plans can replay.
+- Use the packaged temperature regression and NOAA helpers for new studies and record their source hashes in study designs.
 - Define benchmark and workflow names once, and write saved JSON/CSV through one writer module.
 
 ## How to read earlier entries
@@ -897,4 +898,37 @@ job sets `REQUIRE_OPTIONAL_TEST_DEPENDENCIES=1`, which turns any such skip into
 a failure, so no test silently disappears from the full environment. The cost
 is that shared code must keep running on Python 3.12. A dependency change also
 needs both `uv.lock` and `requirements-python312.txt` updated.
+
+## Package temperature code and preserve the frozen NOAA replay
+
+The paired study imports the scalar `TemperatureRegression` adapter, metric
+NOAA parser and saved-forecast checks from the package. The parser takes a
+station, inclusive dates and either `TMIN` or `TMAX` from the caller. The
+adapter restores each of the three historical seasonal configurations from
+JSON. New paired designs record the package module digests alongside the
+script digest. The frozen maximum workflow still runs its original three
+scripts with their recorded hashes. The next range study can pin the package
+modules when its design is confirmed.
+
+Validate benchmark entries as strings before consulting the shared benchmark
+dictionary. Invalid types or names in a loaded experiment now follow the
+same `ValueError` path with the allowed benchmark names.
+
+## Compare empirical range probabilities from the same marginal errors
+
+Use the full 2025 matched minimum and maximum residual series as calibration.
+The same-day forecast gives each matched pair equal weight. The independent
+forecast gives every cross-pair equal weight. Both use the same saved scalar
+point forecasts. Score the inclusive range event on matching later dates with
+Brier loss, and retain the probability of a strictly negative range. Use
+decimal comparisons of the saved Celsius values at the event boundary.
+Freeze the inputs, study sources and evaluation settings before retrieving
+later observations. The [study script and workflow](noaa-range-probability.md)
+keep event scoring at the study level.
+
+The frozen January–June 2026 evaluation scored 181 targets, of which 64
+reached the 10 °C threshold. Independent pairing scored 0.22415 and same-day
+pairing scored 0.23935. Mean negative-range probability fell from 5.01% to
+0.91% with same-day pairing. The evidence supports keeping this comparison at
+the study level. See the [result and audit](noaa-range-probability.md#januaryjune-2026-results).
 

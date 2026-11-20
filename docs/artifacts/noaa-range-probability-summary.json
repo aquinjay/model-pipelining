@@ -1,0 +1,209 @@
+{
+  "run": "runs/noaa-range-2026-h1",
+  "plan_directory": "runs/noaa-range-2026-h1-plan",
+  "source_url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USW00094728&startDate=2026-01-01&endDate=2026-06-30&dataTypes=TMIN%2CTMAX&units=metric&includeAttributes=true&format=csv",
+  "inputs": {
+    "plan_sha256": "cd1cd7bb003081fc1d32c4a7661c0f027e644f6578026899c04908ef54ed1e67",
+    "raw_snapshot_id": "7ab0a9ce61de8df3005e45c9a66185fcf0a0a91e18c2e1dc3292f65d34b49beb"
+  },
+  "result": {
+    "evaluation_start": "2026-01-01",
+    "evaluation_end": "2026-06-30",
+    "cases": 181,
+    "observed_events": 64,
+    "observed_event_rate": 0.35359116022099446,
+    "threshold_celsius": "10",
+    "calibration": {
+      "cases": 365,
+      "observed_events": 82,
+      "pair_design_sha256": "8d3900909bee693def9bf894e9f555371bc58d92eec8f8e357b26fe12d9e5c42"
+    },
+    "draws_per_case": {
+      "independent": 133225,
+      "same_day": 365
+    },
+    "methods": {
+      "independent": {
+        "brier": 0.22414871921879156,
+        "mean_probability": 0.37402346588923946,
+        "mean_negative_range_probability": 0.050069410677943786,
+        "cases_with_negative_range_probability": 181,
+        "calibration_bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "cases": 4,
+            "mean_probability": 0.08721899042972416,
+            "event_rate": 0.25
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "cases": 28,
+            "mean_probability": 0.15805082701123235,
+            "event_rate": 0.21428571428571427
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "cases": 37,
+            "mean_probability": 0.2521260010244811,
+            "event_rate": 0.21621621621621623
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "cases": 40,
+            "mean_probability": 0.3489782323137549,
+            "event_rate": 0.475
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "cases": 28,
+            "mean_probability": 0.45090207221939255,
+            "event_rate": 0.35714285714285715
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "cases": 24,
+            "mean_probability": 0.5521526865578282,
+            "event_rate": 0.4166666666666667
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "cases": 13,
+            "mean_probability": 0.64952408447248,
+            "event_rate": 0.46153846153846156
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "cases": 6,
+            "mean_probability": 0.7524476136861199,
+            "event_rate": 0.6666666666666666
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "cases": 1,
+            "mean_probability": 0.8007355976731094,
+            "event_rate": 0.0
+          }
+        ]
+      },
+      "same_day": {
+        "brier": 0.23934510325551114,
+        "mean_probability": 0.3081207901309317,
+        "mean_negative_range_probability": 0.00911223794747597,
+        "cases_with_negative_range_probability": 176,
+        "calibration_bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "cases": 36,
+            "mean_probability": 0.06575342465753425,
+            "event_rate": 0.19444444444444445
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "cases": 43,
+            "mean_probability": 0.15316979929913985,
+            "event_rate": 0.23255813953488372
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "cases": 28,
+            "mean_probability": 0.2560665362035225,
+            "event_rate": 0.6071428571428571
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "cases": 23,
+            "mean_probability": 0.3492555092316855,
+            "event_rate": 0.34782608695652173
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "cases": 11,
+            "mean_probability": 0.43885429638854295,
+            "event_rate": 0.45454545454545453
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "cases": 13,
+            "mean_probability": 0.5340358271865122,
+            "event_rate": 0.23076923076923078
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "cases": 13,
+            "mean_probability": 0.648050579557429,
+            "event_rate": 0.3076923076923077
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "cases": 7,
+            "mean_probability": 0.7526418786692759,
+            "event_rate": 0.8571428571428571
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "cases": 6,
+            "mean_probability": 0.8726027397260273,
+            "event_rate": 0.6666666666666666
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "cases": 1,
+            "mean_probability": 0.915068493150685,
+            "event_rate": 0.0
+          }
+        ]
+      }
+    },
+    "mean_brier_difference_same_day_minus_independent": 0.015196384036719556
+  },
+  "validation": {
+    "python": "3.12.16",
+    "plan_hash_verified": true,
+    "plan_written_before_download": true,
+    "frozen_input_hashes_verified": 3,
+    "frozen_source_hashes_verified": 8,
+    "archive_rows_verified": 181,
+    "source_flags": {
+      "TMIN": [
+        "1"
+      ],
+      "TMAX": [
+        "1"
+      ]
+    },
+    "observed_crossings": 0,
+    "point_forecast_crossings": 0,
+    "cases_recomputed_by_direct_enumeration": 181,
+    "replay_sha256": {
+      "matched-range.csv": "47121c6e0445b66295c30525e20885fd563754c99ff2cf5f7603f13e583f276b",
+      "summary.json": "1549e0c52b8eac1201cc22930f9882dc020566920f180c000b09585786848605",
+      "tmin.csv": "66a28865634c443fe2f9bab1fad9e822cd01ac815734ae5ecbdb69b3cd64d4e4",
+      "tmax.csv": "3704ff49ed6cfeb74d535e65bdcbffceb0af62faff6bf9ebec70d43fe2e1b7fc",
+      "tmin/predictions.csv": "caa2b74ecf3072e2a4fb79db81c565cab0c2d8b203d83366e12e45e623bac30b",
+      "tmax/predictions.csv": "e3326e488eaf2888bd217fa4477da1c094ffcd67603817944edc150f8b116bd8",
+      "tmin/scores.json": "b9a3a70d71d041433ffc70a7c38aa49b73c28dad56e372b0af0c2a9a02dfc611",
+      "tmax/scores.json": "24371847c1fb2fb980668d34e92e6d3e213bcfc6c2964856ba3cd0bccd1eb7e4",
+      "tmin/case_schedule.csv": "93d202c55c409704b174726708f081a4242f722e858fe40b901466d07070ed3b",
+      "tmax/case_schedule.csv": "93d202c55c409704b174726708f081a4242f722e858fe40b901466d07070ed3b"
+    }
+  }
+}

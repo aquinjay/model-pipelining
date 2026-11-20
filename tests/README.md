@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **475 tests**. They use temporary fixtures/stores rather than
+There are currently **481 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -30,7 +30,7 @@ missing package fail instead, as the research CI job does.
 | [test_local_level.py](test_local_level.py) | 19 | Independent posterior calculations, prior/state simulations, validation/limiting cases, no retained state, shared execution/replay, matched-case reports |
 | [test_uncertainty.py](test_uncertainty.py) | 21 | Observation predictive variance, quantile/HPD semantics, known scores, disconnected sets, capability failures, freezing/replay, old-artifact compatibility |
 | [test_diagnostics.py](test_diagnostics.py) | 12 | Independent initial-mean influence, strong prior completion, prior/noise distinction, sequential errors, isolation/replay, saved failures, explicit missing correlation, charts without models, CLI inheritance |
-| [test_experiments.py](test_experiments.py) | 16 | Named targets, release/revision isolation, actual vintages, available-history counts, disjoint target roles, benchmark freezing/failures, horizons, replay/history fingerprints, legacy version 2, both CLIs |
+| [test_experiments.py](test_experiments.py) | 17 | Named targets, release/revision isolation, actual vintages, available-history counts, disjoint target roles, benchmark validation/freezing/failures, horizons, replay/history fingerprints, legacy version 2, both CLIs |
 | [test_normal_mean.py](test_normal_mean.py) | 18 | Hand posterior, independent raw-density/predictive quadrature, HPD mass/density, strong prior influence, numerical extremes, fit identity/freezing/replay/failures, delayed releases/final roles, exact/audit CLI |
 | [test_sampling.py](test_sampling.py) | 10 | Independent-chain posterior/predictive agreement, target-density ratios, warmup/acceptance, random-state isolation, seed/replay/order invariance, biased/stuck/missing diagnostics, partial failures, saved-only trace plotting |
 | [test_normal_mean_variance.py](test_normal_mean_variance.py) | 20 | Joint posterior/raw-density quadrature, predictive mixture integration and HPD, undefined moments, nonconstant sampler Jacobian, joint/reference agreement, partial/stuck failures, isolation/replay, release/final roles, CLI and saved-only traces |
@@ -56,10 +56,11 @@ missing package fail instead, as the research CI job does.
 | [test_innovation_probability_bounds.py](test_innovation_probability_bounds.py) | 11 | Dense-likelihood/prior/proposal envelope identity, unseen-event positive uncertainty, vacuous-normalizer failure, retained quiet/gradual oracles, Gaussian limits and atoms, near-dominant components, fixed-seed/global-RNG isolation, bounded long histories, saved-statistic interval replay, validation and CLI input/source freezing/overwrite rejection |
 | [test_innovation_lattice.py](test_innovation_lattice.py) | 4 | State-grid likelihoods versus dense Gaussian references, including unlikely observations in Gaussian limits, positive upper bounds for unseen events, exact state atoms, resource failures and replay |
 | [test_innovation_gibbs_check.py](test_innovation_gibbs_check.py) | 3 | Banded likelihood and Gaussian state draws against dense calculations, zero-transition atom entry and exit, and independent-seed replay |
-| [test_noaa_temperature.py](test_noaa_temperature.py) | 3 | Public example calendar sorting, leap-day inclusion, preserved units, and rejection of quality flags, gaps, and duplicate dates |
-| [test_noaa_seasonality.py](test_noaa_seasonality.py) | 2 | Known annual-plus-lag prediction, one-day horizon enforcement, and unmatched saved case rejection |
+| [test_noaa_temperature.py](test_noaa_temperature.py) | 4 | Packaged and frozen calendar sorting, leap day, preserved units, element-specific quality flags, gaps, and duplicate dates |
+| [test_noaa_seasonality.py](test_noaa_seasonality.py) | 4 | Known annual-plus-lag prediction, one-day horizon, saved case validation, configuration restoration, and parity with frozen forecasts and summaries |
 | [test_noaa_later_period.py](test_noaa_later_period.py) | 2 | Frozen final date boundaries, exact history preservation, and rejection of changed inputs before reading evaluation data |
 | [test_noaa_extrema.py](test_noaa_extrema.py) | 2 | Ordered-range scoring with a deliberately crossed pair and rejection of mismatched eligible dates |
+| [test_noaa_range.py](test_noaa_range.py) | 2 | Finite residual pair counts, ties and negative ranges, frozen calibration and source checks, paired Brier scoring, replay and future actual isolation |
 
 The [Python 3.12 profile](../docs/python312-public-forecast.md) passed 80 targeted
 tests covering the Gaussian local-level adapter, backtests, experiment timing,

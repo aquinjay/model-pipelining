@@ -18,7 +18,16 @@ point forecasts, benchmark, comparison chart, `matched-cases.csv`, and
 The [temperature pair study](../docs/noaa-temperature-pair.md) saves the new
 archive and minimum snapshots, `design.json`, one scalar `minimum/` run, and
 the paired `matched-extrema.csv`, `summary.json`, and `paired-forecasts.png`.
-It reads the completed maximum run as a caller-supplied input.
+It reads the completed maximum run as a caller-supplied input. New pair runs
+record the packaged parser, adapter, and evaluation source hashes in
+`design.json`.
+
+The [range-probability study](../docs/noaa-range-probability.md) saves
+`plan.json`, its digest, the 2025 calibration table and normalized histories
+in a freeze directory. A separate evaluation writes the later archive and
+scalar runs, `matched-range.csv` and `summary.json` to a new directory.
+The January–June 2026 evaluation also has a
+[tracked summary and audit](../docs/artifacts/noaa-range-probability-summary.json).
 
 The explicit [innovation moment check](../docs/innovation-moment-check.md) saves
 `design.json`, input and source archives, Gibbs draws in `.npz`, comparisons and
