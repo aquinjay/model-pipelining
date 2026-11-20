@@ -30,6 +30,8 @@ The [range-probability study](docs/noaa-range-probability.md) uses those saved
 errors to compare same-day and independent residual pairs on 181 later dates.
 Its [seasonal follow-up](docs/noaa-range-probability.md#seasonal-calibration-follow-up)
 adds a monthly diagnostic and a frozen ten-day July pilot.
+A [cost-loss analysis](docs/decision-value.md) evaluates the expense of
+acting on the saved January–June probabilities.
 
 The state-grid proposal meets the probability criteria on all 17 frozen cases.
 An independent Gibbs calculation also agrees on moments and predictive density
