@@ -112,5 +112,6 @@ PYTHONPATH=src .venv/bin/python scripts/run_harmonic_example.py \
 The command generates and registers the input, runs both models, and writes
 the report under `comparison/`. The observed MAE was 0.247 for harmonic
 regression and 1.844 for the training mean on this synthetic fixture.
-See the [example code](../scripts/run_harmonic_example.py) and the
-[forecasting walkthrough](forecasting.md).
+The adapter is [`harmonic_regression.WeeklyHarmonicRegression`](../src/model_pipelining/harmonic_regression.py);
+the [example command](../scripts/run_harmonic_example.py) only generates the
+series and runs both models. See the [forecasting walkthrough](forecasting.md).

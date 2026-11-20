@@ -864,3 +864,22 @@ in place of `backtest.py`. Model-family internals, such as the innovation
 modules' shared helpers, stay private. See the
 [API reference](../src/model_pipelining/README.md#shared-names-and-artifact-writers).
 
+## Move the weekly harmonic adapter into the package; keep frozen NOAA scripts unchanged — 2026-11-19
+
+`WeeklyHarmonicRegression` moved from `scripts/run_harmonic_example.py` to
+`model_pipelining.harmonic_regression`, with its name and configuration
+unchanged. It also joined the adapter catalog with a fixed `from_configuration`.
+Re-running the example reproduced the saved
+`runs/weekly-harmonic-example-20261119` input, predictions, evaluations,
+scores and case schedule byte for byte. Only the recorded class path and source
+filename changed. `scripts/__init__.py` now makes the `python -m scripts.…`
+commands use a regular package.
+
+`TemperatureRegression` and the NOAA helpers (`daily_maxima`, `MODELS`,
+`_evaluated`, `_metrics`) stay in `study_noaa_seasonality.py` and
+`run_noaa_temperature.py`. The frozen 2025 plan records SHA-256 hashes of those
+scripts and of `check_noaa_later_period.py`. `evaluate` refuses to run if any of
+them changes, so moving code out of them would block replaying the frozen
+evaluation. Move them into the package when the next NOAA experiment freezes its
+own plan. That plan can then pin the package modules.
+

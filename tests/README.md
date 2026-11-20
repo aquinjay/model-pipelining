@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **471 tests**. They use temporary fixtures/stores rather than
+There are currently **475 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -34,8 +34,9 @@ before running sampler tests.
 | [test_dynamic_evidence.py](test_dynamic_evidence.py) | 11 | Random-walk covariance, joint initial-state/variance posterior replication with fresh innovations, gaps, replay/RNG isolation, numerical failure evidence, dynamic prior comparisons, undefined moments, final isolation and workflow CLIs |
 | [test_evidence_interfaces.py](test_evidence_interfaces.py) | 22 | Provider extension without model dispatch, v1/v2 migration/comparison, caller-required fits/workflows, missing/optional evidence, pinned tags/history/settings, numerical failures, replay/final isolation, saved-only/legacy plots and both new CLI modes |
 | [test_sequential.py](test_sequential.py) | 9 | Full predictive CDFs, freezing, release-aware histories, own-target/final isolation, replay, failures and CLI |
-| [test_adapters.py](test_adapters.py) | 7 | JSON restoration of every adapter including MCMC/quadrature settings, catalog names, scenario overrides that keep unchanged settings, invalid restored settings and calibration parameter validation |
+| [test_adapters.py](test_adapters.py) | 7 | JSON restoration of every adapter (including the weekly harmonic adapter) including MCMC/quadrature settings, catalog names, scenario overrides that keep unchanged settings, invalid restored settings and calibration parameter validation |
 | [test_artifacts.py](test_artifacts.py) | 6 | JSON/CSV writer bytes unchanged, exclusive creation and explicit manifest replacement, no partial file for nonfinite JSON, single-definition benchmark/workflow tables and the immediate observation reader |
+| [test_harmonic_regression.py](test_harmonic_regression.py) | 4 | Exact recovery of a noiseless weekly curve, rejection of unidentified phases, fixed configuration and the 72-case example command using the package adapter |
 | [test_calibration.py](test_calibration.py) | 10 | Independent CDF references, simulation covariance, recovery, failed trials, seed/prefix isolation and CLI |
 | [test_joint_variance.py](test_joint_variance.py) | 14 | Independent batch/adaptive joint posterior references, dominant-component V-quantile bracket repair, limits, uncertainty, confounding, controlled studies and CLI |
 | [test_joint_evidence.py](test_joint_evidence.py) | 10 | Joint parameter dependence, fresh paths, atoms, prior mass, support restrictions and historical evidence |

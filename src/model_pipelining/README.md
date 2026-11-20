@@ -49,6 +49,7 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
+| [harmonic_regression.py](harmonic_regression.py) | Weekly Fourier-pair least-squares point forecasts for a second model family |
 | [artifacts.py](artifacts.py) | Shared JSON/CSV writers for saved manifests, checks and tables |
 | [adapters.py](adapters.py) | Name-to-class catalog that scripts use to rebuild adapters from saved settings |
 
@@ -668,10 +669,29 @@ plan. Per-origin fit names are enforced by `run_backtest`, while separate workfl
 requirements remain pending in forecast manifests. See [the evidence guide](../../docs/evidence.md)
 for all `EvidencePlan` fields, statuses, compatibility and examples.
 
+## Weekly harmonic regression
+
+Import `WeeklyHarmonicRegression` from `model_pipelining.harmonic_regression`.
+
+```text
+WeeklyHarmonicRegression()
+WeeklyHarmonicRegression.forecast(request) -> float
+WeeklyHarmonicRegression.from_configuration({"period_days": 7, "harmonics": 1})
+```
+
+Each forecast refits an intercept plus one seven-day sine/cosine pair by least
+squares on the eligible history. The phase starts at the first eligible
+observation, and the fitted curve is evaluated at the target time. It returns a
+point forecast only, with no quantiles or highest-density regions. A history
+with fewer than three distinct weekly phases raises `ValueError`, and the
+runner records that case as failed. The period and harmonic count are fixed.
+`scripts/run_harmonic_example.py` runs it against the training mean on a
+generated weekly series; see the [reading guide](../../docs/reading-guide.md#run-the-weekly-harmonic-example).
+
 ## Rebuilding adapters from saved settings
 
 Every repository adapter (`NormalMean`, `NormalMeanVariance`, `LocalLevel`,
-`LocalLevelVariance`, `LocalLevelJointVariance`) provides
+`LocalLevelVariance`, `LocalLevelJointVariance`, `WeeklyHarmonicRegression`) provides
 `from_configuration(configuration)`. It accepts the JSON form of the adapter's
 `configuration` property, such as `manifest["model"]["configuration"]`, and
 rebuilds nested settings (`MCMCSettings`, `QuadratureSettings`, tuples). The
