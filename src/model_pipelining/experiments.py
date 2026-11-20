@@ -9,9 +9,13 @@ from numbers import Real
 from pathlib import Path
 
 from model_pipelining.ingest import read_local_table
-from model_pipelining.models import Observation
+from model_pipelining.models import BENCHMARK_MODELS, Observation
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
+
+
+# Separate evidence workflows an experiment can require, in report order.
+EVIDENCE_WORKFLOWS = ("predictive_checks", "prior_influence", "sequential_checks")
 
 
 def _utc(value, name):
@@ -81,9 +85,9 @@ class EvaluationPlan:
         if self.role == "final" and self.final_start is None:
             raise ValueError("Final evaluation requires explicit start and end boundaries")
         if (not isinstance(self.benchmarks, tuple)
-                or any(name not in ("training-mean", "last-value") for name in self.benchmarks)
+                or any(name not in BENCHMARK_MODELS for name in self.benchmarks)
                 or len(set(self.benchmarks)) != len(self.benchmarks)):
-            raise ValueError("benchmarks must be a tuple of unique training-mean/last-value names")
+            raise ValueError(f"benchmarks must be a tuple of unique {'/'.join(BENCHMARK_MODELS)} names")
 
     def includes(self, timestamp):
         if self.final_start is None:
@@ -114,8 +118,9 @@ class EvidencePlan:
                     or any(not isinstance(item, str) or not item.strip() for item in value)
                     or len(set(value)) != len(value)):
                 raise ValueError(f"{name} must be a tuple of unique nonblank names")
-        if any(name not in ("predictive_checks", "prior_influence", "sequential_checks") for name in self.required_workflows):
-            raise ValueError("Required evidence workflows must be predictive_checks, prior_influence or sequential_checks")
+        if any(name not in EVIDENCE_WORKFLOWS for name in self.required_workflows):
+            raise ValueError("Required evidence workflows must be "
+                             f"{', '.join(EVIDENCE_WORKFLOWS[:-1])} or {EVIDENCE_WORKFLOWS[-1]}")
         if type(self.replications) is not int or self.replications < 1:
             raise ValueError("replications must be a positive integer")
         if type(self.seed) is not int or not 0 <= self.seed < 2**32:
@@ -238,6 +243,11 @@ def read_task_data(path: Path, task: ForecastTask) -> tuple[ObservationVersion, 
                 raise ValueError("Timestamps must be ordered and exactly one UTC day apart; gaps are rejected")
         versions.append(ObservationVersion(timestamp, value, available_at))
     return tuple(versions)
+
+
+def read_observations(path: Path) -> tuple[Observation, ...]:
+    """Read a daily CSV with immediate, unrevised availability as plain observations."""
+    return tuple(Observation(item.timestamp, item.value) for item in read_task_data(path, ForecastTask()))
 
 
 def select_history_as_of(versions: tuple[ObservationVersion, ...], *, issued_at: datetime,

@@ -29,6 +29,8 @@ the same point forecasts and freezes the 2025 calibration pairs before scoring.
 A maintenance change gives every repository adapter `from_configuration` and
 moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
 It fixes restoring saved MCMC settings and adds no new modeling capability.
+A follow-up defines benchmark and workflow names once and routes saved JSON/CSV
+through one [writer module](../src/model_pipelining/README.md#shared-names-and-artifact-writers).
 
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it

@@ -1,6 +1,5 @@
 """Execute a declared daily experiment with release-aware, frozen forecasts."""
 
-import csv
 from datetime import UTC, datetime, timedelta
 import hashlib
 from importlib.metadata import version
@@ -11,33 +10,18 @@ from pathlib import Path
 import platform
 from statistics import mean
 
+from model_pipelining.artifacts import write_csv, write_json
 from model_pipelining.experiments import ExperimentSpec, ForecastTask, plan_cases, read_task_data, select_actuals
 from model_pipelining.distribution_scoring import (METHOD, evaluate_distributions,
     summarize_distribution_scores, validate_distribution_forecast)
 from model_pipelining.inference import save_fit_evidence
-from model_pipelining.models import ForecastRequest, Forecaster, LastValue, Observation, TrainingMean
+from model_pipelining.models import BENCHMARK_MODELS, ForecastRequest, Forecaster, TrainingMean
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
 from model_pipelining.uncertainty import (
     evaluate_highest_density, evaluate_intervals, interval_probabilities, required_quantiles, summarize_uncertainty,
     validate_forecast, validate_interval_levels,
 )
-
-
-def _write_json(path: Path, value: object) -> None:
-    path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-
-
-def _write_csv(path: Path, rows: list[dict]) -> None:
-    with path.open("x", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _read_observations(path: Path) -> tuple[Observation, ...]:
-    """The original immediate, unrevised daily reader used by diagnostics."""
-    return tuple(Observation(item.timestamp, item.value) for item in read_task_data(path, ForecastTask()))
 
 
 def _evaluate_points(predictions, actuals):
@@ -146,7 +130,8 @@ def run_backtest(
     source_files = [Path(__file__), Path(__file__).with_name("models.py"),
                     Path(__file__).with_name("uncertainty.py"), Path(__file__).with_name("experiments.py"),
                     Path(__file__).with_name("inference.py"), Path(__file__).with_name("distribution_scoring.py"),
-                    Path(__file__).with_name("mixtures.py")]
+                    Path(__file__).with_name("mixtures.py"),
+                    Path(__file__).with_name("artifacts.py")]
     source_files.extend(getattr(selected_model, "implementation_files", ()))
     model_source = inspect.getsourcefile(type(selected_model))
     if model_source is not None:
@@ -197,8 +182,8 @@ def run_backtest(
     }
     output = Path(output_directory).expanduser().absolute()
     output.mkdir(parents=True, exist_ok=False)
-    _write_json(output / "manifest.json", manifest)
-    _write_csv(output / "case_schedule.csv", schedule)
+    write_json(output / "manifest.json", manifest)
+    write_csv(output / "case_schedule.csv", schedule[0], schedule)
 
     predictions = []
     quantile_predictions = []
@@ -206,7 +191,7 @@ def run_backtest(
     density_predictions = []
     density_outputs = {}
     distributions = []
-    benchmark_models = {name: {"training-mean": TrainingMean, "last-value": LastValue}[name]() for name in experiment.evaluation.benchmarks}
+    benchmark_models = {name: BENCHMARK_MODELS[name]() for name in experiment.evaluation.benchmarks}
     benchmark_predictions = []
     history_checks_passed = True
     fit_rows = []
@@ -307,30 +292,30 @@ def run_backtest(
 
     # Close the forecast file before consulting actual targets for evaluation.
     # It is never rewritten by evaluation or reporting.
-    _write_csv(output / "predictions.csv", predictions)
+    write_csv(output / "predictions.csv", predictions[0], predictions)
     if supports_quantiles:
-        _write_csv(output / "quantiles.csv", quantile_predictions)
+        write_csv(output / "quantiles.csv", quantile_predictions[0], quantile_predictions)
     if supports_highest_density:
-        _write_csv(output / "highest_density.csv", density_predictions)
+        write_csv(output / "highest_density.csv", density_predictions[0], density_predictions)
     if benchmark_models:
-        _write_csv(output / "benchmark_predictions.csv", benchmark_predictions)
+        write_csv(output / "benchmark_predictions.csv", benchmark_predictions[0], benchmark_predictions)
     if requires_fit_evidence:
-        _write_csv(output / "fit_index.csv", fit_rows)
+        write_csv(output / "fit_index.csv", fit_rows[0], fit_rows)
     if supports_distribution:
-        _write_json(output / "predictive_distributions.json", distributions)
+        write_json(output / "predictive_distributions.json", distributions)
     actuals = select_actuals(versions, task)
     distribution_evaluations = []
     if supports_distribution:
         # Evaluate the saved laws rather than constructing a new model output.
         frozen = json.loads((output / "predictive_distributions.json").read_text(encoding="utf-8"))
         distribution_evaluations = evaluate_distributions(frozen, actuals)
-        _write_csv(output / "distribution_evaluation.csv", distribution_evaluations)
+        write_csv(output / "distribution_evaluation.csv", distribution_evaluations[0], distribution_evaluations)
     evaluations = _evaluate_points(predictions, actuals)
-    _write_csv(output / "evaluation.csv", evaluations)
+    write_csv(output / "evaluation.csv", evaluations[0], evaluations)
     benchmark_scores = {"status": "not_applicable", "runs": []}
     if benchmark_models:
         benchmark_evaluations = _evaluate_points(benchmark_predictions, actuals)
-        _write_csv(output / "benchmark_evaluation.csv", benchmark_evaluations)
+        write_csv(output / "benchmark_evaluation.csv", benchmark_evaluations[0], benchmark_evaluations)
         benchmark_scores["runs"] = [{"name": name, **_point_scores([row for row in benchmark_evaluations if row["benchmark"] == name])}
                                     for name in benchmark_models]
         benchmark_scores["status"] = "completed" if all(row["complete"] for row in benchmark_scores["runs"]) else "failed"
@@ -371,9 +356,9 @@ def run_backtest(
             interval_evaluations.extend(rows)
             density_evaluations.extend(region_rows)
     if supports_quantiles:
-        _write_csv(output / "interval_evaluation.csv", interval_evaluations)
+        write_csv(output / "interval_evaluation.csv", interval_evaluations[0], interval_evaluations)
     if supports_highest_density:
-        _write_csv(output / "highest_density_evaluation.csv", density_evaluations)
+        write_csv(output / "highest_density_evaluation.csv", density_evaluations[0], density_evaluations)
     scores = {
         **_point_scores(evaluations), "benchmarks": benchmark_scores,
         "distribution": summarize_distribution_scores(distribution_evaluations, supported=supports_distribution),
@@ -382,7 +367,7 @@ def run_backtest(
                                              highest_density_rows=density_evaluations,
                                              supports_highest_density=supports_highest_density),
     }
-    _write_json(output / "scores.json", scores)
+    write_json(output / "scores.json", scores)
     checks = [
         {"name": "full_predictive_distributions_valid", "required": supports_distribution,
          "status": ("passed" if all(row["status"] == "passed" for row in distributions) else "failed")
@@ -414,8 +399,8 @@ def run_backtest(
          "status": ("passed" if scores["uncertainty"]["status"] == "completed" else "failed")
                    if supports_quantiles or supports_highest_density else "not_applicable"},
     ]
-    _write_json(output / "checks.json", checks)
-    _write_json(output / "review.json", {
+    write_json(output / "checks.json", checks)
+    write_json(output / "review.json", {
         "status": "pending", "decision": None,
         "limitations": [f"Declared {experiment.evaluation.role} evaluation; boundary selection does not certify untouched data",
                         "One daily series; release timestamps are caller-supplied claims, not independently verified",
@@ -427,5 +412,5 @@ def run_backtest(
     })
     checks_passed = all(check["status"] == "passed" for check in checks if check["required"])
     manifest.update(status="completed" if checks_passed else "failed", finished_at=datetime.now(UTC).isoformat())
-    _write_json(output / "manifest.json", manifest)
+    write_json(output / "manifest.json", manifest, overwrite=True)
     return output

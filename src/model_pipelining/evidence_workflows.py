@@ -4,16 +4,18 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 
-from model_pipelining.evidence import get_evidence_provider, source_hashes, _write_json
-from model_pipelining.experiments import ExperimentSpec, select_development_history
+from model_pipelining.artifacts import write_json
+from model_pipelining.evidence import get_evidence_provider, source_hashes
+from model_pipelining.experiments import EVIDENCE_WORKFLOWS, ExperimentSpec, select_development_history
 from model_pipelining.inference import assess_checks
 from model_pipelining.predictive_checks import run_predictive_checks, plot_predictive_checks
 from model_pipelining.prior_influence import run_prior_influence, plot_prior_influence
 from model_pipelining.sequential import run_sequential_checks, plot_sequential_checks
 
 
-_MANIFESTS = {"predictive_checks": "predictive_checks.json", "prior_influence": "prior_influence.json", "sequential_checks": "sequential_checks.json"}
-_REQUIRED_CHECKS = {
+# Each workflow saves its manifest as <workflow>.json in its own child directory.
+WORKFLOW_MANIFESTS = {name: f"{name}.json" for name in EVIDENCE_WORKFLOWS}
+REQUIRED_WORKFLOW_CHECKS = {
     "sequential_checks": ("all_sequential_predictions_and_scores",),
     "predictive_checks": ("prior_simulation_and_statistics", "posterior_simulation_and_statistics",
                           "observed_statistics_computed"),
@@ -47,13 +49,13 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
         "plan": experiment.to_dict()["evidence"], "workflows": [],
         "scope": "Required separate evidence workflows only; per-origin fit requirements belong to forecasting; human review remains pending",
         "source_sha256": source_hashes(*(Path(__file__).with_name(name) for name in
-            ("evidence_workflows.py", "evidence.py", "experiments.py", "inference.py"))),
+            ("evidence_workflows.py", "evidence.py", "experiments.py", "inference.py", "artifacts.py"))),
     }
-    _write_json(output / "evidence.json", manifest)
+    write_json(output / "evidence.json", manifest)
     for workflow in experiment.evidence.required_workflows:
         directory = output / workflow
         row = {"name": workflow, "required": True, "status": "failed", "error": None,
-               "directory": workflow, "manifest": _MANIFESTS[workflow]}
+               "directory": workflow, "manifest": WORKFLOW_MANIFESTS[workflow]}
         try:
             provider = get_evidence_provider(model, workflow)
             common = dict(dataset=dataset, snapshot_id=context["input"]["snapshot_id"], store=store,
@@ -68,7 +70,7 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
                     raise ValueError("Required prior_influence needs explicit named scenarios")
                 run_prior_influence(**common, reference=model, scenarios=scenarios,
                                     interval_level=experiment.evidence.interval_level)
-            child = json.loads((directory / _MANIFESTS[workflow]).read_text(encoding="utf-8"))
+            child = json.loads((directory / WORKFLOW_MANIFESTS[workflow]).read_text(encoding="utf-8"))
             if child.get("format_version") != 1 or child.get("kind") != f"{provider.metadata.family}_{workflow}":
                 raise ValueError("Child evidence has an incompatible format or workflow kind")
             if ((workflow == "predictive_checks" and
@@ -76,7 +78,7 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
                     or (workflow == "prior_influence" and child.get("interval_level") != experiment.evidence.interval_level)):
                 raise ValueError("Child evidence does not match experiment evidence settings")
             checks = json.loads((directory / "checks.json").read_text(encoding="utf-8"))
-            passed, requirements = assess_checks(checks, required_names=_REQUIRED_CHECKS[workflow])
+            passed, requirements = assess_checks(checks, required_names=REQUIRED_WORKFLOW_CHECKS[workflow])
             row["check_requirements"] = requirements
             identity = child.get("context", {})
             child_configuration = (child.get("configuration") if workflow in ("predictive_checks", "sequential_checks")
@@ -89,24 +91,24 @@ def run_experiment_evidence(*, dataset: str, model, issued_at: datetime,
                     or child_configuration != configuration):
                 raise ValueError("Child evidence does not match the pinned experiment/model/history")
             row.update(status="passed" if passed and child.get("status") == "completed" else "failed",
-                       artifact_sha256=source_hashes(directory / _MANIFESTS[workflow], directory / "checks.json"))
+                       artifact_sha256=source_hashes(directory / WORKFLOW_MANIFESTS[workflow], directory / "checks.json"))
             if row["status"] == "failed":
                 row["error"] = "Required workflow computation/checks failed; inspect saved child evidence"
         except (ValueError, TypeError, OverflowError, FloatingPointError, ZeroDivisionError) as error:
             row["error"] = f"{type(error).__name__}: {error}"
         manifest["workflows"].append(row)
         # Keep completed/failed child outcomes if a later I/O operation interrupts.
-        (output / "evidence.json").write_text(json.dumps(manifest, indent=2, allow_nan=False)+"\n", encoding="utf-8")
+        write_json(output / "evidence.json", manifest, overwrite=True)
     checks = [{"name": row["name"], "required": True, "status": row["status"]}
               for row in manifest["workflows"]]
-    _write_json(output / "checks.json", checks)
-    _write_json(output / "review.json", {"status": "pending", "decision": None,
+    write_json(output / "checks.json", checks)
+    write_json(output / "review.json", {"status": "pending", "decision": None,
         "limitations": ["Completion means requested computations/checks passed, not model approval",
                         "Prior plausibility, discrepancies and influence require human interpretation",
                         "This is development evidence, not a final forecast evaluation"]})
     manifest.update(status="completed" if all(row["status"] == "passed" for row in checks) else "failed",
                     finished_at=datetime.now(UTC).isoformat())
-    (output / "evidence.json").write_text(json.dumps(manifest, indent=2, allow_nan=False)+"\n", encoding="utf-8")
+    write_json(output / "evidence.json", manifest, overwrite=True)
     return output
 
 
@@ -120,9 +122,9 @@ def plot_experiment_evidence(evidence_directory: str | Path) -> tuple[Path, ...]
     outputs = []
     for row in manifest["workflows"]:
         workflow = row["name"]
-        if workflow not in _MANIFESTS or row["directory"] != workflow:
+        if workflow not in WORKFLOW_MANIFESTS or row["directory"] != workflow:
             raise ValueError("Invalid saved evidence workflow")
-        child_path = directory / workflow / _MANIFESTS[workflow]
+        child_path = directory / workflow / WORKFLOW_MANIFESTS[workflow]
         if not child_path.is_file():
             continue  # Missing capability/scenarios can fail before child creation.
         child = json.loads(child_path.read_text(encoding="utf-8"))

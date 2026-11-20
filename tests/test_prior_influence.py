@@ -293,12 +293,12 @@ class PriorInfluenceTests(unittest.TestCase):
             pi.plot_prior_influence(output)
 
     def test_persistence_error_propagates_and_leaves_running_manifest(self):
-        original = pi._write_csv
+        original = pi.write_csv
         def fail(path, fields, rows):
             if path.name == "learning_paths.csv":
                 raise OSError("disk failure")
             return original(path, fields, rows)
-        with patch.object(pi, "_write_csv", side_effect=fail), self.assertRaisesRegex(OSError, "disk failure"):
+        with patch.object(pi, "write_csv", side_effect=fail), self.assertRaisesRegex(OSError, "disk failure"):
             self.run_comparison()
         self.assertEqual(self.read_json(self.root/"comparison", "prior_influence.json")["status"], "running")
 

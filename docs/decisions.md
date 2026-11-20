@@ -846,3 +846,21 @@ unchanged. Saved runs record source hashes, so artifacts made before this change
 report the edited modules as changed sources. See the
 [API reference](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
 
+## Define shared names once and write artifacts through one module — 2026-11-19
+
+Benchmark names were listed in both the experiment spec and the runner.
+Workflow names were listed in experiments, providers and the evidence runner.
+Three private JSON writers and two CSV writers were copied or imported across
+modules. Each name list now has one definition: `BENCHMARK_MODELS`,
+`EVIDENCE_WORKFLOWS` and `PROVIDER_WORKFLOWS`. Shared tables
+(`WORKFLOW_MANIFESTS`, `REQUIRED_WORKFLOW_CHECKS`), `read_observations` and
+`tail_summary` are public. All saved JSON and CSV go through
+`artifacts.write_json` and `artifacts.write_csv`. Saved bytes are unchanged.
+Two behaviors are stricter. Runner outputs other than the final manifest are
+now created exclusively, matching the evidence workflows. A JSON value that
+cannot be serialized no longer leaves a partial file. Manifests now list
+`artifacts.py` among their source hashes, and diagnostics list `experiments.py`
+in place of `backtest.py`. Model-family internals, such as the innovation
+modules' shared helpers, stay private. See the
+[API reference](../src/model_pipelining/README.md#shared-names-and-artifact-writers).
+

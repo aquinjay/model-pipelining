@@ -13,7 +13,8 @@ from pathlib import Path
 import platform
 from statistics import NormalDist, StatisticsError, correlation, mean
 
-from model_pipelining.backtest import _read_observations
+from model_pipelining.artifacts import write_json
+from model_pipelining.experiments import read_observations
 from model_pipelining.local_level import LocalLevel
 from model_pipelining.snapshots import retrieve_snapshot
 from model_pipelining.tags import resolve_tag
@@ -26,12 +27,6 @@ _PATH_FIELDS = (
     "initial_mean_weight", "level_mean_difference", "level_sd_difference",
     "next_observation_sd_difference",
 )
-
-
-def _write_json(path, value):
-    with path.open("x", encoding="utf-8") as stream:
-        json.dump(value, stream, indent=2, allow_nan=False)
-        stream.write("\n")
 
 
 def _path(history, model, name):
@@ -99,7 +94,7 @@ def run_local_level_diagnostics(
     if any(type(model) is not LocalLevel for model in models.values()):
         raise ValueError("All configurations must be LocalLevel instances, not subclasses")
     selected_id = resolve_tag(dataset=dataset, tag=tag, store=store) if tag is not None else snapshot_id
-    history = _read_observations(retrieve_snapshot(selected_id, dataset=dataset, store=store))
+    history = read_observations(retrieve_snapshot(selected_id, dataset=dataset, store=store))
     if not history:
         raise ValueError("Diagnostics require at least one observation")
     output = Path(output_directory).expanduser().absolute()
@@ -118,9 +113,9 @@ def run_local_level_diagnostics(
         },
         "observation_count": len(history), "python": platform.python_version(),
         "source_sha256": {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                          for name in ("diagnostics.py", "local_level.py", "backtest.py", "ingest.py")},
+                          for name in ("diagnostics.py", "local_level.py", "experiments.py", "ingest.py", "artifacts.py")},
     }
-    _write_json(output / "diagnostics.json", manifest)
+    write_json(output / "diagnostics.json", manifest)
     paths, summaries = {}, []
     for name, model in models.items():
         changed = [key for key, value in model.configuration.items() if value != reference.configuration[key]]
@@ -155,8 +150,8 @@ def run_local_level_diagnostics(
         writer = csv.DictWriter(stream, fieldnames=_PATH_FIELDS)
         writer.writeheader()
         writer.writerows(row for rows in paths.values() for row in rows)
-    _write_json(output / "scenario_summaries.json", summaries)
-    _write_json(output / "review.json", {
+    write_json(output / "scenario_summaries.json", summaries)
+    write_json(output / "review.json", {
         "status": "pending", "decision": None,
         "questions": ["How do the stated assumptions shape the update path and uncertainty?",
                       "Which effects matter for the intended question, and why?",
@@ -171,7 +166,7 @@ def run_local_level_diagnostics(
                     finished_at=datetime.now(UTC).isoformat(), expected_configurations=len(models),
                     completed_configurations=len(paths), failed_configurations=len(models) - len(paths))
     # The initial manifest is the only artifact updated during execution.
-    (output / "diagnostics.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    write_json(output / "diagnostics.json", manifest, overwrite=True)
     return output
 
 

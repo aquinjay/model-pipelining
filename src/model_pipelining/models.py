@@ -130,3 +130,6 @@ class LastValue:
 
     def forecast(self, request: ForecastRequest) -> float:
         return request.history[-1].value
+
+
+BENCHMARK_MODELS = {kind.name: kind for kind in (TrainingMean, LastValue)}

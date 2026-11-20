@@ -11,9 +11,10 @@ from pathlib import Path
 
 import numpy as np
 
-from model_pipelining.evidence import get_evidence_provider, source_hashes, _write_json, _write_csv
+from model_pipelining.artifacts import write_csv, write_json
+from model_pipelining.evidence import get_evidence_provider, source_hashes
 from model_pipelining.models import ForecastRequest, Observation
-from model_pipelining.predictive_checks import _tail_summary
+from model_pipelining.predictive_checks import tail_summary
 from model_pipelining.uncertainty import interval_probabilities
 
 
@@ -58,7 +59,7 @@ def summarize_calibration(rows, *, trials, parameters, level):
             "central_interval_level": level,
             "randomized_trials":sum(row["randomized"] for row in selected),
             "mean_interval_posterior_mass":math.fsum(row["interval_mass"] for row in selected)/count if count else None,
-            "coverage": _tail_summary(sum(row["lower"] <= row["truth"] <= row["upper"] for row in selected), count),
+            "coverage": tail_summary(sum(row["lower"] <= row["truth"] <= row["upper"] for row in selected), count),
             "mean_absolute_median_error": math.fsum(abs(row["median"]-row["truth"]) for row in selected)/count if count else None,
             "mean_credible_width": math.fsum(row["upper"]-row["lower"] for row in selected)/count if count else None}
     return summaries
@@ -90,9 +91,9 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
         "method": "Posterior CDF at truth, randomized within genuine probability atoms; not sampled ranks",
         "seed_derivation": "PCG64(SeedSequence([seed,2,trial_index]))",
         "atom_seed_derivation":"PCG64(SeedSequence([seed,3,trial_index,first_64_bits_SHA256(parameter)])); little-endian label",
-        "source_sha256": source_hashes(Path(__file__), Path(__file__).with_name("evidence.py"),
+        "source_sha256": source_hashes(Path(__file__), Path(__file__).with_name("evidence.py"), Path(__file__).with_name("artifacts.py"),
                                         *provider.metadata.implementation_files)}
-    _write_json(output/"calibration.json", manifest)
+    write_json(output/"calibration.json", manifest)
     rows, inference = [], []
     for index in range(trials):
         truth, values, results, error, evidence = {}, (), {}, None, None
@@ -102,7 +103,7 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
             if (set(truth) != set(parameters) or len(values) != observation_count
                     or not all(math.isfinite(value) for value in (*truth.values(), *values))):
                 raise ValueError("Invalid simulated truth/data")
-            _write_json(output/"trials"/f"{index:06d}.json", {"truth": truth, "values": values})
+            write_json(output/"trials"/f"{index:06d}.json", {"truth": truth, "values": values})
             start = datetime(2000,1,1,tzinfo=UTC)
             history = tuple(Observation(start+timedelta(days=i),value) for i,value in enumerate(values))
             request = ForecastRequest(history, history[-1].timestamp, history[-1].timestamp+timedelta(days=1))
@@ -129,13 +130,13 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
             if error is None:
                 row.update(results[name])
             rows.append(row)
-    _write_csv(output/"calibration.csv", tuple(rows[0]), rows)
-    _write_json(output/"inference.json", inference)
-    _write_json(output/"summary.json", summarize_calibration(rows, trials=trials, parameters=parameters, level=interval_level))
+    write_csv(output/"calibration.csv", tuple(rows[0]), rows)
+    write_json(output/"inference.json", inference)
+    write_json(output/"summary.json", summarize_calibration(rows, trials=trials, parameters=parameters, level=interval_level))
     passed = all(row["status"] == "passed" for row in rows)
-    _write_json(output/"checks.json", [{"name": "all_calibration_trials_computed", "required": True,
+    write_json(output/"checks.json", [{"name": "all_calibration_trials_computed", "required": True,
                                        "status": "passed" if passed else "failed"}])
-    _write_json(output/"review.json", {"status": "pending", "decision": None,
+    write_json(output/"review.json", {"status": "pending", "decision": None,
         "limitations": ["Marginal CDF calibration does not prove joint correctness or posterior concentration",
             "Simulation coverage averages over the prior, not every fixed parameter value",
             "Uniform-CDF bands use DKW with a union bound across parameters; numerical approximation remains",
@@ -144,7 +145,7 @@ def run_calibration(*, model, observation_count, output_directory, trials=200, s
             "Failed fits can induce selection bias; conditional summaries do not certify calibration",
             "No automatic uniformity or model-approval threshold; no external dataset or MCMC sampler is tested"]})
     manifest.update(status="completed" if passed else "failed", finished_at=datetime.now(UTC).isoformat())
-    (output/"calibration.json").write_text(json.dumps(manifest, indent=2, allow_nan=False)+"\n")
+    write_json(output/"calibration.json", manifest, overwrite=True)
     return output
 
 

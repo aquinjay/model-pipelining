@@ -17,7 +17,8 @@ import platform
 import numpy as np
 
 from model_pipelining.evidence import (PredictiveReplications, ReplicatedDataset,
-    get_evidence_provider, source_hashes, saved_presentation, validate_replications, _write_csv, _write_json)
+    get_evidence_provider, source_hashes, saved_presentation, validate_replications)
+from model_pipelining.artifacts import write_csv, write_json
 from model_pipelining.experiments import ExperimentSpec, select_development_history as _select_development_history
 from model_pipelining.models import Forecaster, ForecastRequest
 
@@ -101,7 +102,7 @@ def dataset_statistics(values) -> dict:
             for name in _STATISTICS}
 
 
-def _tail_summary(count, total):
+def tail_summary(count, total):
     if not total:
         return {"count": count, "fraction": None, "mcse": None, "wilson_95": None}
     fraction = count / total
@@ -152,12 +153,12 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
         },
         "environment": {"python": platform.python_version(), "numpy": version("numpy"), "scipy": version("scipy")},
         "source_sha256": source_hashes(*(Path(__file__).with_name(name) for name in
-            ("predictive_checks.py", "evidence.py", "experiments.py", "ingest.py", "models.py")),
+            ("predictive_checks.py", "evidence.py", "experiments.py", "ingest.py", "models.py", "artifacts.py")),
             *metadata.implementation_files),
     }
-    _write_json(output / "predictive_checks.json", manifest)
+    write_json(output / "predictive_checks.json", manifest)
     observations = context["selected_history"] if context else []
-    _write_csv(output / "observations.csv", ("observation_index", "timestamp", "available_at", "value"),
+    write_csv(output / "observations.csv", ("observation_index", "timestamp", "available_at", "value"),
                ({"observation_index": i, **item} for i, item in enumerate(observations)))
     observed = {"status": "not_applicable", "statistics": {}, "error": None}
     if request is not None:
@@ -165,7 +166,7 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
             observed.update(status="completed", statistics=dataset_statistics([item.value for item in request.history]))
         except (ValueError, OverflowError, FloatingPointError) as error:
             observed.update(status="failed", error=f"{type(error).__name__}: {error}")
-    _write_json(output / "observed_statistics.json", observed)
+    write_json(output / "observed_statistics.json", observed)
     summaries = {}
     for kind in (("prior", "posterior") if request is not None else ("prior",)):
         directory = output / kind
@@ -191,12 +192,12 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
         parameter_fields = ("replication", "mean", "observation_variance", "status", "error",
                             *(name for name in metadata.parameter_fields if name not in ("mean", "observation_variance")))
         if metadata.latent_paths:
-            _write_csv(directory/"latent_levels.csv", ("replication", "observation_index", "level"),
+            write_csv(directory/"latent_levels.csv", ("replication", "observation_index", "level"),
                 ({"replication": item.replication, "observation_index": i, "level": value}
                  for item in datasets for i, value in enumerate(item.latent_levels)))
-        _write_csv(directory / "parameter_draws.csv", parameter_fields,
+        write_csv(directory / "parameter_draws.csv", parameter_fields,
                    sorted(parameter_rows, key=lambda row: row["replication"]))
-        _write_csv(directory / "replicated.csv", ("replication", "observation_index", "value"),
+        write_csv(directory / "replicated.csv", ("replication", "observation_index", "value"),
                    ({"replication": item.replication, "observation_index": i, "value": value}
                     for item in datasets for i, value in enumerate(item.values)))
         statistic_rows, statistic_failures = [], []
@@ -207,7 +208,7 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                                       for name, value in statistics.items())
             except (ValueError, OverflowError, FloatingPointError) as failure:
                 statistic_failures.append({"replication": item.replication, "error": f"{type(failure).__name__}: {failure}"})
-        _write_csv(directory / "statistics.csv", ("replication", "statistic", "value", "unavailable_reason"), statistic_rows)
+        write_csv(directory / "statistics.csv", ("replication", "statistic", "value", "unavailable_reason"), statistic_rows)
         comparisons = {}
         for name in _STATISTICS:
             valid = [row["value"] for row in statistic_rows if row["statistic"] == name and row["value"] is not None]
@@ -220,8 +221,8 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                     if observed_value is None or not total else None,
                 "valid_replications": total, "missing_replications": replications-total,
                 "replicated_quantiles": _replicated_quantiles(valid),
-                "greater_equal": _tail_summary(sum(x >= observed_value for x in valid), total) if observed_value is not None else None,
-                "less_equal": _tail_summary(sum(x <= observed_value for x in valid), total) if observed_value is not None else None,
+                "greater_equal": tail_summary(sum(x >= observed_value for x in valid), total) if observed_value is not None else None,
+                "less_equal": tail_summary(sum(x <= observed_value for x in valid), total) if observed_value is not None else None,
                 "equal_count": sum(x == observed_value for x in valid) if observed_value is not None else None,
             }
             if request is None:
@@ -235,15 +236,15 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
                    "comparisons": comparisons}
         if metadata.integration_checks:
             summary["inference_failure"] = inference_failure
-        _write_json(directory / "summary.json", summary)
+        write_json(directory / "summary.json", summary)
         summaries[kind] = summary
     checks = [{"name": f"{kind}_simulation_and_statistics", "required": True,
                "status": "passed" if summary["status"] == "completed" else "failed"}
               for kind, summary in summaries.items()]
     checks.append({"name": "observed_statistics_computed", "required": request is not None,
                    "status": {"completed": "passed", "failed": "failed", "not_applicable": "not_applicable"}[observed["status"]]})
-    _write_json(output / "checks.json", checks)
-    _write_json(output / "review.json", {
+    write_json(output / "checks.json", checks)
+    write_json(output / "review.json", {
         "status": "pending", "decision": None,
         "questions": ["Are prior-generated levels, variability and extremes plausible in the target units?",
                       "Which observed tail, dependence or level-change patterns are poorly reproduced?",
@@ -256,7 +257,7 @@ def _run_checks(*, model, observation_count, replications, seed, output_director
     manifest.update(status="completed" if all(c["status"] == "passed" for c in checks if c["required"]) else "failed",
                     finished_at=datetime.now(UTC).isoformat(),
                     phase_status={kind: summary["status"] for kind, summary in summaries.items()})
-    (output / "predictive_checks.json").write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    write_json(output / "predictive_checks.json", manifest, overwrite=True)
     return output
 
 

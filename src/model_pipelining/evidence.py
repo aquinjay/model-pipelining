@@ -1,10 +1,9 @@
-"""Small model evidence boundary and shared artifact helpers.
+"""Small model evidence boundary and shared evidence records.
 
 Providers own distribution calculations. Workflows own selection, discrepancies,
 persistence and computational requirements. This is a trusted Python interface.
 """
 
-import csv
 from dataclasses import dataclass
 import json
 import math
@@ -12,7 +11,12 @@ from numbers import Real
 from pathlib import Path
 from typing import Protocol
 
+from model_pipelining.experiments import EVIDENCE_WORKFLOWS
 from model_pipelining.models import ForecastRequest
+
+
+# Experiment-required workflows plus data-free calibration, which runs separately.
+PROVIDER_WORKFLOWS = EVIDENCE_WORKFLOWS + ("calibration",)
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,7 @@ class EvidenceMetadata:
     predictive_scope: dict
     influence_scope: dict
     presentation: dict
-    workflows: tuple[str, ...] = ("predictive_checks", "prior_influence", "sequential_checks", "calibration")
+    workflows: tuple[str, ...] = PROVIDER_WORKFLOWS
     parameter_fields: tuple[str, ...] = ("mean", "observation_variance")
     latent_paths: bool = False
     integration_checks: bool = False
@@ -78,7 +82,7 @@ def get_evidence_provider(model, workflow: str) -> EvidenceProvider:
     if workflow not in metadata.workflows:
         raise ValueError(f"Model does not supply {workflow} evidence")
     if (not isinstance(metadata.workflows, tuple)
-            or any(name not in ("predictive_checks", "prior_influence", "sequential_checks", "calibration") for name in metadata.workflows)
+            or any(name not in PROVIDER_WORKFLOWS for name in metadata.workflows)
             or len(set(metadata.workflows)) != len(metadata.workflows)):
         raise ValueError("Malformed evidence workflow capabilities")
     if workflow == "sequential_checks" and not callable(getattr(provider, "predictive", None)):
@@ -181,13 +185,3 @@ def source_hashes(*files):
     return {Path(path).name: hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in files}
 
 
-def _write_json(path, value):
-    with path.open("x", encoding="utf-8") as stream:
-        json.dump(value, stream, indent=2, allow_nan=False)
-        stream.write("\n")
-
-def _write_csv(path, fields, rows):
-    with path.open("x", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(rows)

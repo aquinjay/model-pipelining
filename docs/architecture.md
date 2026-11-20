@@ -106,6 +106,10 @@ columns remain, with additional selection/provenance columns.
 Snapshots, acquisition events, and tags retain their separate format version 1.
 Reports can read old version-1/2 saved runs without generating new uncertainty
 or inferring missing experiment/history claims.
+All workflows write JSON and CSV through [artifacts.py](../src/model_pipelining/artifacts.py),
+which creates new files exclusively and replaces only a workflow's own final
+manifest. Benchmark and evidence-workflow names each have one definition that
+specs, providers and workflows validate against.
 See [the API reference](../src/model_pipelining/README.md) and
 [run-file reference](../runs/README.md).
 
