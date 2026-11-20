@@ -39,6 +39,12 @@ Both branches merged through [PR #9](https://github.com/aquinjay/model-pipelinin
 benchmark and workflow names once and writes saved JSON/CSV through
 `artifacts.py`; see the
 [decision](decisions.md#define-shared-names-once-and-write-artifacts-through-one-module--2026-11-19).
+It merged through [PR #11](https://github.com/aquinjay/model-pipelining/pull/11)
+(`e54def4`). The `feature/harmonic-adapter-in-src` branch moves the weekly harmonic
+adapter into the package. When the range experiment freezes its plan, first move
+`TemperatureRegression` and the NOAA helpers into the package so the new plan
+pins those modules; see the
+[decision](decisions.md#move-the-weekly-harmonic-adapter-into-the-package-keep-frozen-noaa-scripts-unchanged--2026-11-19).
 
 The project is developing repeatable, model-independent forecasting experiments:
 preserved inputs, release-aware histories, explicit assumptions, comparable saved

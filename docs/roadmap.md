@@ -31,6 +31,8 @@ moves script model construction into one [catalog](../src/model_pipelining/READM
 It fixes restoring saved MCMC settings and adds no new modeling capability.
 A follow-up defines benchmark and workflow names once and routes saved JSON/CSV
 through one [writer module](../src/model_pipelining/README.md#shared-names-and-artifact-writers).
+The weekly harmonic adapter now lives in the package; the NOAA regression stays
+in its frozen study script until the next NOAA plan is frozen.
 
 Bayesian dynamic linear models are the first main use case within a broader
 forecasting project. Keep the first integration focused on the capabilities it

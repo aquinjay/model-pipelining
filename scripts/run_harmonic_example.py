@@ -1,4 +1,4 @@
-"""Exercise the existing point forecast contract with a small seasonal regression."""
+"""Run the weekly harmonic adapter and the training mean on a generated weekly series."""
 
 import argparse
 import csv
@@ -7,37 +7,10 @@ import math
 from pathlib import Path
 import random
 
-import numpy as np
-
 from model_pipelining.backtest import run_backtest
+from model_pipelining.harmonic_regression import WeeklyHarmonicRegression
 from model_pipelining.reporting import compare_runs
 from model_pipelining.snapshots import register_snapshot
-
-
-class WeeklyHarmonicRegression:
-    """One fixed seven-day Fourier pair and an intercept."""
-
-    name = "weekly-harmonic-example"
-    supports_quantiles = False
-    supports_highest_density = False
-
-    @property
-    def configuration(self):
-        return {"period_days": 7, "harmonics": 1}
-
-    def forecast(self, request):
-        start = request.history[0].timestamp
-
-        def features(timestamp):
-            phase = 2 * math.pi * ((timestamp - start).total_seconds() / 86400 % 7) / 7
-            return [1., math.sin(phase), math.cos(phase)]
-
-        design = np.array([features(observation.timestamp) for observation in request.history])
-        values = [observation.value for observation in request.history]
-        coefficients, _, rank, _ = np.linalg.lstsq(design, values, rcond=None)
-        if rank != len(coefficients):
-            raise ValueError("The supplied history does not identify the weekly Fourier pair")
-        return float(features(request.target_time) @ coefficients)
 
 
 def main(argv=None):

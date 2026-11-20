@@ -6,6 +6,7 @@ import unittest
 from model_pipelining.adapters import EVIDENCE_MODEL_NAMES, MODEL_TYPES, build_model, build_scenarios
 from model_pipelining.evidence import get_evidence_provider
 from model_pipelining.evidence_normal import NormalMeanVarianceEvidence
+from model_pipelining.harmonic_regression import WeeklyHarmonicRegression
 from model_pipelining.local_level import LocalLevel
 from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
 from model_pipelining.local_level_variance import LocalLevelVariance, QuadratureSettings
@@ -28,6 +29,7 @@ class ConfigurationRestoreTests(unittest.TestCase):
         LocalLevelJointVariance(),
         LocalLevelJointVariance(evolution_variances=(0., .2), evolution_weights=(.3, .7),
                                 quadrature=QuadratureSettings(maximum_nodes=512)),
+        WeeklyHarmonicRegression(),
     )
 
     def test_every_catalog_adapter_restores_from_saved_json(self):

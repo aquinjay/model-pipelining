@@ -7,6 +7,7 @@ Forecaster or EvidenceProvider contract. A new adapter registers here only so
 scripts can construct it by name.
 """
 
+from model_pipelining.harmonic_regression import WeeklyHarmonicRegression
 from model_pipelining.local_level import LocalLevel
 from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
 from model_pipelining.local_level_variance import LocalLevelVariance
@@ -15,7 +16,8 @@ from model_pipelining.normal_mean_variance import NormalMeanVariance
 
 
 MODEL_TYPES = {kind.name: kind for kind in
-               (NormalMean, NormalMeanVariance, LocalLevel, LocalLevelVariance, LocalLevelJointVariance)}
+               (NormalMean, NormalMeanVariance, LocalLevel, LocalLevelVariance, LocalLevelJointVariance,
+                WeeklyHarmonicRegression)}
 EVIDENCE_MODEL_NAMES = tuple(name for name, kind in MODEL_TYPES.items() if hasattr(kind, "evidence_provider"))
 
 
