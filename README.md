@@ -30,8 +30,10 @@ The [range-probability study](docs/noaa-range-probability.md) uses those saved
 errors to compare same-day and independent residual pairs on 181 later dates.
 Its [seasonal follow-up](docs/noaa-range-probability.md#seasonal-calibration-follow-up)
 adds a monthly diagnostic and a frozen ten-day July pilot.
-A [cost-loss analysis](docs/decision-value.md) evaluates the expense of
-acting on the saved January–June probabilities.
+A [cost-loss analysis and model-independent decision layer](docs/decision-value.md)
+evaluates both binary threshold actions and continuous asymmetric (newsvendor)
+decisions from saved Bayesian predictive distributions or saved NOAA event
+probabilities, separating frozen issuance from post-outcome scoring.
 
 The state-grid proposal meets the probability criteria on all 17 frozen cases.
 An independent Gibbs calculation also agrees on moments and predictive density
@@ -92,6 +94,7 @@ explains which checks support each implementation claim.
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
 | Reporting | Saved-only forecast/evidence/calibration review and complete matched-case comparisons, with paired full-law losses and charts |
+| Decision layer | Model-independent `DecisionSpec`, frozen per-origin recommendation issuance from saved distributions or event probabilities, separate post-outcome scoring (binary cost-loss and continuous asymmetric), tail-concentration summaries, and paired HAC comparisons |
 | Repository verification | Locked-environment tests, pip-export parity, local documentation checks and temporary walkthrough in GitHub Actions |
 | Model diagnostics | Fixed-model influence paths and learned-variance full-CDF sequential criticism; human interpretation stays pending |
 | Predictive checks | Prior/posterior whole-dataset replication for constant-mean and fixed/joint-noise local-level models, with saved discrepancies and charts |

@@ -24,6 +24,7 @@ for current behavior and review priorities.
 - Use public NOAA daily data with availability simulated from archive date labels. Freeze model and scoring settings before downloading evaluation data, and leave frozen study scripts unchanged so their plans can replay.
 - Use the packaged temperature regression and NOAA helpers for new studies and record their source hashes in study designs.
 - Define benchmark and workflow names once, and write saved JSON/CSV through one writer module.
+- Separate saved decision issuance from outcome scoring through `DecisionSpec` and `decisions.py`, supporting both binary cost-loss and continuous asymmetric policies from frozen distributions or saved probabilities with tail-concentration and paired HAC diagnostics.
 
 ## How to read earlier entries
 
@@ -949,4 +950,26 @@ Apply a fixed cost-loss rule to the saved binary event forecasts. Use the
 both references and both forecast methods on the same 2026 outcomes. Save
 expenses, relative value, undefined-value reasons and input receipts across
 the fixed ratio grid. See the [worked example and NOAA plot](decision-value.md).
+
+## Separate saved decision issuance from outcome scoring — 2026-11-24
+
+Add a model-independent decision layer in `decisions.py` and extend
+`decision_value.py` with continuous asymmetric (newsvendor) expenses and
+robust tail-concentration summaries (`summarize_expenses`). Keep
+`evaluate_decisions` keys unchanged so existing NOAA study CSV outputs remain
+identical.
+
+Decision issuance (`issue_decisions_from_run`, `issue_decisions_from_probabilities`)
+reads only forecast-time artifacts (`manifest.json`, `predictions.csv`,
+`predictive_distributions.json`, or forecast-time probability columns) and
+writes immutable `decision_spec.json`, `recommendations.csv`, and
+`decision_manifest.json` files with SHA-256 digests. Scoring (`score_decisions`)
+runs as a separate caller action writing to a new directory so changing later
+outcomes updates realized expense while frozen recommendations stay fixed.
+Failed forecast origins visibly apply the declared fallback (`decision_source="fallback"`).
+`compare_decision_scores` requires identical specs, targets, and outcomes and
+reports paired expense differences with win/loss/tie rates, action agreement,
+worst-5% absolute difference share, and deterministic Bartlett HAC standard
+errors. All new code uses only dependencies present in the Python 3.12
+workplace profile. See [the decision guide](decision-value.md).
 

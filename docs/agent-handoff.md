@@ -141,6 +141,15 @@ Do not change the gate wording without their approval.**
 
 ## Next work
 
+Phase 1, Slice 1 (the [model-independent saved decision layer](decision-value.md#model-independent-decision-layer))
+is implemented in `src/model_pipelining/decisions.py`, `src/model_pipelining/decision_value.py`,
+and `scripts/run_decisions.py`, and verified on both the saved Bayesian
+`LocalLevel` Central Park run and the frozen NOAA range probabilities.
+Resume with [Phase 1, Slice 2](next-session.md#up-next-robust-evaluation-summaries-viewer-and-shadow-trial)
+(robust/decision-aligned summaries in `compare_runs` and `experiment_review.py`
+plus a probabilistic benchmark), followed by the read-only comparison viewer
+and live issuance/settlement separation for shadow trials.
+
 The [range-probability study](noaa-range-probability.md) is complete. The user
 delegated the design choices, and the plan froze January–June 2026, a 10 °C
 threshold and paired Brier scoring before retrieval. The 181-case run favors

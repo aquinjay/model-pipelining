@@ -9,7 +9,17 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from model_pipelining.artifacts import write_csv, write_json
-from model_pipelining.decision_value import decide, evaluate_decisions, expense, value_curve
+from model_pipelining.decision_value import (
+    asymmetric_expense,
+    asymmetric_quantile_level,
+    decide,
+    evaluate_asymmetric_decisions,
+    evaluate_decisions,
+    expense,
+    summarize_expenses,
+    value_curve,
+)
+from model_pipelining.uncertainty import pinball_loss
 from scripts.study_decision_value import ALPHAS, main, run_study
 
 
@@ -99,6 +109,55 @@ class CostLossTests(unittest.TestCase):
             expense(1, 0, .2)
         with self.assertRaises(ValueError):
             value_curve(CASES, alphas=[], base_rate=.4)
+
+    def test_asymmetric_quantile_and_pinball_identity(self):
+        # Under-cost 3, over-cost 1 -> optimal quantile is 3 / (3 + 1) = 0.75.
+        level = asymmetric_quantile_level(3.0, 1.0)
+        self.assertAlmostEqual(level, 0.75)
+        for action, actual in ((10.0, 14.0), (10.0, 6.0), (10.0, 10.0)):
+            cost = asymmetric_expense(action, actual, under_cost=3.0, over_cost=1.0)
+            expected = 4.0 * pinball_loss(actual, action, level)
+            self.assertAlmostEqual(cost, expected, places=12)
+        self.assertAlmostEqual(asymmetric_expense(10.0, 14.0, under_cost=3.0, over_cost=1.0), 12.0)
+        self.assertAlmostEqual(asymmetric_expense(10.0, 6.0, under_cost=3.0, over_cost=1.0), 4.0)
+        self.assertEqual(asymmetric_expense(10.0, 10.0, under_cost=3.0, over_cost=1.0), 0.0)
+        for bad in (0, -1.0, float("nan"), float("inf"), True, "1"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                asymmetric_quantile_level(bad, 1.0)
+
+    def test_asymmetric_evaluation_and_expense_concentration(self):
+        # under_cost=3, over_cost=1, baseline_action=10.
+        # Cases (action, actual):
+        #   (12, 14) -> under by 2 -> forecast cost 6, baseline cost 3*4=12
+        #   (12, 12) -> exact      -> forecast cost 0, baseline cost 3*2=6
+        #   (12, 10) -> over by 2  -> forecast cost 2, baseline cost 0
+        #   (9, 10)  -> under by 1 -> forecast cost 3, baseline cost 0
+        #   (11, 10) -> over by 1  -> forecast cost 1, baseline cost 0
+        # Forecast total = 12, mean = 2.4; Baseline total = 18, mean = 3.6.
+        # Relative value = (3.6 - 2.4) / 3.6 = 1/3.
+        cases = ((12.0, 14.0), (12.0, 12.0), (12.0, 10.0), (9.0, 10.0), (11.0, 10.0))
+        result = evaluate_asymmetric_decisions(cases, under_cost=3.0, over_cost=1.0, baseline_action=10.0)
+        self.assertEqual((result["under_count"], result["over_count"], result["exact_count"]), (2, 2, 1))
+        self.assertAlmostEqual(result["mean_forecast_expense"], 2.4)
+        self.assertAlmostEqual(result["mean_baseline_expense"], 3.6)
+        self.assertEqual(result["mean_perfect_expense"], 0.0)
+        self.assertAlmostEqual(result["relative_value"], 1.0 / 3.0)
+        dist = result["expense_distribution"]
+        # Sorted expenses: [0, 1, 2, 3, 6]; top 5% = 1 case (cost 6) -> 6 / 12 = 0.5.
+        self.assertEqual(dist["median_expense"], 2.0)
+        self.assertEqual(dist["max_expense"], 6.0)
+        self.assertEqual(dist["top_5pct_case_count"], 1)
+        self.assertAlmostEqual(dist["top_5pct_expense_share"], 0.5)
+
+        zero_baseline = evaluate_asymmetric_decisions(((10.0, 10.0), (11.0, 10.0)),
+                                                      under_cost=2.0, over_cost=1.0, baseline_action=10.0)
+        self.assertIsNone(zero_baseline["relative_value"])
+        self.assertIn("equal mean expense", zero_baseline["relative_value_reason"])
+        self.assertEqual(summarize_expenses([0.0, 0.0])["top_5pct_expense_share"], 0.0)
+        with self.assertRaises(ValueError):
+            summarize_expenses([-0.1])
+        with self.assertRaises(ValueError):
+            summarize_expenses([])
 
 
 class SavedDecisionStudyTests(unittest.TestCase):

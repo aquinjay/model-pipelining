@@ -49,7 +49,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [distribution_scoring.py](distribution_scoring.py) | Frozen full-law validation, proper losses and saved score cohorts |
 | [experiment_review.py](experiment_review.py) | Assemble compatible saved forecast/evidence/calibration for human review |
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
-| [decision_value.py](decision_value.py) | Cost-loss actions, expenses, and relative economic value for binary event probabilities |
+| [decision_value.py](decision_value.py) | Binary cost-loss and continuous asymmetric (newsvendor) expenses, relative economic value, and tail-concentration summaries |
+| [decisions.py](decisions.py) | Model-independent `DecisionSpec`, frozen per-origin recommendation issuance, separate outcome scoring, saved-only charts, and paired comparisons |
 | [harmonic_regression.py](harmonic_regression.py) | Weekly Fourier-pair least-squares point forecasts for a second model family |
 | [temperature_regression.py](temperature_regression.py) | Scalar annual Fourier and lag regressions with restorable settings |
 | [noaa.py](noaa.py) | Validate a caller-supplied metric NOAA daily TMIN or TMAX archive |
@@ -963,3 +964,47 @@ complete tests and `scripts/check_documentation.py --walkthrough`. The checker
 parses examples by default; the explicit flag also executes the forecasting guide
 in temporary storage. CI adds no library/runtime configuration or model approval
 rule. Large scientific evidence exercises remain explicit calls.
+
+## Saved decision layer
+
+[decision_value.py](decision_value.py) supplies pure cost-loss calculations:
+
+```text
+decide(probability, alpha) -> bool
+expense(acted, event, alpha) -> float
+evaluate_decisions(cases, *, alpha, base_rate) -> dict
+value_curve(cases, *, alphas, base_rate) -> list[dict]
+asymmetric_quantile_level(under_cost, over_cost) -> float
+asymmetric_expense(action, actual, *, under_cost, over_cost) -> float
+evaluate_asymmetric_decisions(cases, *, under_cost, over_cost, baseline_action) -> dict
+summarize_expenses(expenses) -> dict
+```
+
+[decisions.py](decisions.py) separates forecast-time decision issuance from
+post-outcome scoring without calling or refitting any model adapter:
+
+```text
+DecisionSpec(..., policy="binary_cost_loss" | "continuous_asymmetric", ...)
+distribution_event_probability(record, *, threshold, comparison=">=") -> float
+distribution_quantile(record, probability) -> float
+event_indicator(value, *, threshold, comparison=">=") -> int
+issue_decisions_from_run(*, run_directory, spec, output_directory) -> Path
+issue_decisions_from_probabilities(*, source_directory, method, spec, output_directory, ...) -> Path
+load_outcomes(outcomes_source) -> tuple[dict[str, dict], dict]
+score_decisions(*, issued_directory, outcomes_source, output_directory, sensitivity_alphas=None) -> Path
+plot_decision_scores(scored_directory) -> Path
+compare_decision_scores(first_scored, second_scored, *, output_directory) -> Path
+```
+
+Issuance reads only forecast-time artifacts (`manifest.json`, `predictions.csv`,
+`predictive_distributions.json`, or forecast-time columns of a saved probability
+CSV) and writes immutable `decision_spec.json`, `recommendations.csv`, and
+`decision_manifest.json` files. `score_decisions` verifies issued digests,
+links realized outcomes in a separate directory without modifying issued files,
+and reports robust expense concentration (`median_expense`, `p90_expense`,
+`p95_expense`, `max_expense`, `top_5pct_expense_share`). `compare_decision_scores`
+verifies identical specs, targets, and outcomes and saves paired expense
+differences with win/loss/tie rates, action agreement, worst-5% difference share,
+and naive plus Bartlett HAC standard errors. Library callers invoke
+`plot_decision_scores` explicitly; `scripts/run_decisions.py score` draws it
+automatically unless `--no-plot` is supplied. See [the decision guide](../../docs/decision-value.md).

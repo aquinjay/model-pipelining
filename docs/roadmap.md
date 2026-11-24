@@ -32,9 +32,12 @@ found a concentrated April–May loss gap and better retrospective scores with
 season-matched calibration. On the fresh ten-day July pilot, each full-year
 method scored better than its seasonal counterpart. A longer evaluation is
 frozen and awaits complete later observations.
-The [cost-loss analysis](decision-value.md) evaluates decisions made from
-the frozen January–June probabilities across 19 ratios and uses the 2025
-calibration event rate for climatology.
+The [cost-loss analysis and decision layer](decision-value.md) evaluates decisions
+from saved probabilities and frozen Bayesian predictive distributions. Callers
+freeze per-origin recommendations from forecast-time outputs (`DecisionSpec`,
+binary cost-loss or continuous asymmetric policies, explicit fallbacks) before
+scoring later outcomes in a separate directory, with tail-concentration
+diagnostics and paired HAC comparisons.
 
 A maintenance change gives every repository adapter `from_configuration` and
 moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
@@ -184,6 +187,7 @@ No new model, sampler, application or automatic human decision is introduced.
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
 | Reporting | Saved-only reviews, charts and matched-case comparisons with full-law losses; HPD preferred; old point artifacts readable | [Run files](../runs/README.md) |
+| Decision layer | Model-independent `DecisionSpec` (binary cost-loss and continuous asymmetric), frozen forecast-time recommendation issuance, separate outcome scoring, tail-concentration summaries, and paired HAC comparisons | [Decision value](decision-value.md) |
 | Model evidence | Explicit full-path prior/noise influence, conditional initial-mean weights, sequential criticism, saved-only diagnostic charts | [Diagnostics](diagnostics.md) |
 | Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
@@ -195,8 +199,9 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite has 491 tests, including NOAA replay, seasonal range evaluation, and
-hand-calculated cost-loss checks. The Python 3.12 workplace profile skips 31 MCMC and
+The suite has 499 tests, including NOAA replay, seasonal range evaluation,
+hand-calculated binary and continuous asymmetric cost-loss checks, and
+outcome-isolated decision issuance/scoring/comparison tests. The Python 3.12 workplace profile skips 31 MCMC and
 XLSX tests. CI runs both the research and workplace profiles on every push.
 Earlier checkpoints passed 391, 415 and 449 tests.
 [The test guide](../tests/README.md) maps them

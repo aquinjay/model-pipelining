@@ -221,6 +221,49 @@ results and reproduction. No forecast/provider integration was started.
 
 ## Next work
 
+### Completed: model-independent saved decision layer (Phase 1, Slice 1 — 2026-11-24)
+
+The [model-independent decision layer](decision-value.md#model-independent-decision-layer)
+is implemented in [decisions.py](../src/model_pipelining/decisions.py) with
+continuous asymmetric (newsvendor) and expense-concentration extensions in
+[decision_value.py](../src/model_pipelining/decision_value.py) and CLI
+`scripts/run_decisions.py` (`issue`, `score`, `compare`).
+
+- **Pre-outcome frozen issuance:** `DecisionSpec` pins event/action/target/horizon,
+  policy (`binary_cost_loss` or `continuous_asymmetric`), calibration reference,
+  and explicit fallback before scoring. Issuance reads only forecast-time
+  artifacts and freezes `recommendations.csv` with SHA-256 receipts.
+- **Separate outcome scoring and replay:** `score_decisions` writes expenses,
+  tail-concentration diagnostics (median, p90, p95, max, worst-5% share), and
+  pending `review.json` to a new directory without mutating issued files. Both
+  the saved Bayesian `LocalLevel` Central Park forecast (`runs/noaa-central-park-20261119/verified-py312/forecast/`)
+  and the frozen NOAA range probabilities (`runs/noaa-range-2026-h1/`) were
+  verified end to end and replayed byte for byte under
+  `runs/decision-layer-verified-20261124/`. Unit tests verify that mutating a
+  later outcome updates expense while issued recommendations stay fixed.
+- **Paired comparisons:** `compare_decision_scores` verifies identical specs and
+  cohorts and reports mean/median differences, win/loss/tie rates, action
+  agreement, worst-5% difference concentration, and Bartlett HAC SEs.
+
+### Up next: robust evaluation summaries, viewer, and shadow trial
+
+1. **Upgrade `compare_runs` and `experiment_review.py` (Phase 1, Slice 2):**
+   Move beyond RMSE and raw mean log score as headline summaries by surfacing
+   bias, MdAE, CRPS, pinball/asymmetric loss, HPD coverage/width, worst-5%
+   loss concentration, paired win rates + Bartlett HAC SEs, and at least one
+   probabilistic baseline benchmark (empirical climatology or residual
+   persistence).
+2. **Local read-only comparison and decision viewer (Phase 2):**
+   Build a small local read-only viewer (e.g., Streamlit) over saved run and
+   decision directories showing observed values, HPD intervals, cohort-mismatch
+   checks, and a cost-loss / asymmetric-cost control against reference policies.
+3. **Two-stage live issuance and personal shadow trial (Phase 2):**
+   Separate forecast issuance (for targets without realized outcomes yet) from
+   later settlement so the framework can run a shadow trial on one recurring,
+   reversible personal decision with predeclared rule, deadline, and miss cost.
+
+### NOAA research checkpoint
+
 The [range-probability study](noaa-range-probability.md#januaryjune-2026-results)
 is complete. The plan pinned the full 2025 calibration series, model settings
 and sources before retrieving January–June 2026 data. On 181 matched dates,

@@ -100,3 +100,90 @@ Value depends on the cost-loss ratio. A forecast can save money for one user
 and cost another user more than climatology. The fixed grid describes that
 dependence, and no ratio or event threshold is selected or tuned on these
 evaluation outcomes.
+
+## Model-independent decision layer
+
+[decisions.py](../src/model_pipelining/decisions.py) generalizes cost-loss
+evaluation across saved runs without calling or refitting any model adapter.
+Issuance and outcome scoring are separate caller actions that write to separate
+directories so later outcome updates cannot alter frozen recommendations:
+
+1. **Declare a `DecisionSpec`** (JSON format version 1) before scoring outcomes:
+   event and action descriptions, target and horizon, policy parameters,
+   calibration reference (pre-evaluation base rate or baseline action), and
+   explicit fallback action for failed forecast origins.
+   - `binary_cost_loss`: extracts exact threshold event probabilities
+     ($P(Y \ge \tau)$, $P(Y > \tau)$, $P(Y \le \tau)$, or $P(Y < \tau)$) from
+     frozen `predictive_distributions.json` (`gaussian_mixture` or `student_t`)
+     or reads saved event probabilities (such as the NOAA range CSV), then acts
+     when $p > \alpha$.
+   - `continuous_asymmetric`: uses positive unit under-forecast (`under_cost`)
+     and over-forecast (`over_cost`) costs, taking the exact
+     `under_cost / (under_cost + over_cost)` predictive quantile as the
+     recommended action. Its unit-sum-scaled expense equals unscaled pinball
+     loss at that quantile level.
+2. **Issue frozen recommendations** (`issue_decisions_from_run` or
+   `issue_decisions_from_probabilities`): reads only forecast-time artifacts
+   (never `evaluation.csv` or outcome columns) and writes `decision_spec.json`,
+   `recommendations.csv`, and `decision_manifest.json` with SHA-256 digests.
+   Failed forecast origins explicitly record `decision_source="fallback"` and
+   apply the declared fallback policy.
+3. **Score realized outcomes** (`score_decisions`): verifies the issued digests,
+   joins outcomes from a backtest run directory, NOAA range directory, or plain
+   CSV, and writes `decision_evaluation.csv`, `decision_summary.json`,
+   `checks.json`, and a pending `review.json` in a new directory. Summaries
+   include median, 90th/95th-percentile, and maximum case expense alongside the
+   share of total expense concentrated in the worst 5% of origins.
+4. **Compare scored runs** (`compare_decision_scores`): checks identical
+   `DecisionSpec`, targets, and observed outcomes, then writes paired expense
+   differences (mean, median, win/loss/tie rates, action agreement, worst-5%
+   concentration, and naive + Bartlett HAC standard errors) to
+   `decision_comparison.json` and `decision_comparison.png`.
+
+### CLI workflow and automatic vs. caller actions
+
+Run each stage explicitly with `scripts/run_decisions.py`; backtests never
+invoke decision issuance or scoring automatically. `score` draws
+`decision_scores.png` automatically unless `--no-plot` is passed, and `compare`
+draws `decision_comparison.png` automatically.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.run_decisions issue \
+  --run-directory runs/noaa-central-park-20261119/verified-py312/forecast \
+  --spec path/to/decision_spec.json \
+  --output-directory runs/example-bayesian-issued
+
+PYTHONPATH=src .venv/bin/python -m scripts.run_decisions score \
+  --issued-directory runs/example-bayesian-issued \
+  --outcomes runs/noaa-central-park-20261119/verified-py312/forecast \
+  --output-directory runs/example-bayesian-scored
+
+PYTHONPATH=src .venv/bin/python -m scripts.run_decisions compare \
+  --first runs/example-noaa-independent-scored \
+  --second runs/example-noaa-same-day-scored \
+  --output-directory runs/example-noaa-comparison
+```
+
+### Verified examples on saved local runs
+
+Both the saved Bayesian `LocalLevel` Central Park forecast
+(`runs/noaa-central-park-20261119/verified-py312/forecast/`, 366 dates in 2024,
+calibration references computed strictly from 2023 history: rate $\ge 25$ °C =
+115/365 = 0.31507, 75th percentile = 25.6 °C) and the frozen NOAA range cohort
+(`runs/noaa-range-2026-h1/`, 181 dates in January–June 2026, 2025 base rate
+82/365 = 0.22466) were exercised end to end and replayed byte for byte under
+`runs/decision-layer-verified-20261124/`:
+
+| Saved example | Policy | Cases | Mean expense | Baseline | Perfect | Relative value | Top-5% expense share |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Bayesian `LocalLevel` TMAX ($\ge 25$ °C, $\alpha = 0.25$) | Binary cost-loss | 366 | 0.12432 | 0.25000 | 0.07992 | 0.73896 | 23.6% (19 days) |
+| Bayesian `LocalLevel` TMAX (3:1 under/over cost) | Continuous asymmetric | 366 | 4.61832 | 11.57295 | 0.00000 | 0.60094 | 17.0% (19 days) |
+| NOAA range `independent` ($\ge 10$ °C, $\alpha = 0.25$) | Binary cost-loss | 181 | 0.23481 | 0.35359 | 0.08840 | 0.44792 | 23.5% (10 days) |
+| NOAA range `same_day` ($\ge 10$ °C, $\alpha = 0.25$) | Binary cost-loss | 181 | 0.26657 | 0.35359 | 0.08840 | 0.32812 | 20.7% (10 days) |
+
+Comparing `independent` minus `same_day` on the 181 NOAA dates at $\alpha = 0.25$
+gives a mean expense difference of −0.03177 (Bartlett HAC SE 0.01646, lag 5)
+with 77.3% action agreement; `same_day` had lower expense on 25 days versus 16
+for `independent` (fewer false alarms, more misses), and 41.1% of the total
+absolute expense difference concentrated in 10 days (top 5%). These figures are
+descriptive development/study evidence, not an operational policy approval.
