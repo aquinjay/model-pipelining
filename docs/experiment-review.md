@@ -11,13 +11,16 @@ PYTHONPATH=src .venv/bin/python scripts/review_experiment.py \
   --evidence-directory runs/my-evidence \
   --calibration-directories runs/calibration-original runs/calibration-followup \
   --require-calibration \
+  --decision-directories runs/my-decision-scored \
+  --require-decisions \
   --output-directory runs/my-review
 ```
 
 Replace the example paths with existing artifact folders. The output must be new
-and separate from every source tree. Calibration and evidence folders are supplied
-explicitly, without searching local runs. Omit `--require-calibration` to make
-omitted calibration optional. Historical workflows declared in the forecast's
+and separate from every source tree. Calibration, decision, and evidence folders
+are supplied explicitly, without searching local runs. Omit
+`--require-calibration` or `--require-decisions` to make omitted calibration or
+decision evaluations optional. Historical workflows declared in the forecast's
 experiment remain required even if no evidence folder is supplied. Supplied failed
 or incompatible sources always block readiness.
 
@@ -80,10 +83,23 @@ combined 130 development forecasts, all three historical workflows, 200 predicti
 replications per phase and two 50-trial calibration runs with saved charts. These
 small calibration exercises validate assembly mechanics, not calibration claims.
 
-## Full-law scores
+## Full-law scores, robust summaries, and decision evaluations
 
-For forecasts declaring full distributions, review also checks required scoring
-checks, frozen-law and score case identities, actual vintages, finite losses and
-mean aggregates. Markdown displays mean CRPS/log loss when complete. This reads
-saved artifacts and does not recalculate the model or authenticate files. See
+For every forecast anchor, `report.json` and `report.md` summarize saved point
+errors with signed bias (mean and median error), MdAE, p95 absolute error, and
+worst-5% absolute and squared error concentration alongside MAE and
+outlier-sensitive RMSE. When full distributions are saved, review rechecks
+required scoring checks, frozen-law and score case identities, actual vintages,
+finite losses, and mean aggregates, and reports CRPS median/p95/worst-5% share
+and negative log density median/top-5% mean. Saved highest-density coverage and
+width plus mean pinball losses from `scores.json` are surfaced alongside them.
+This reads saved artifacts without calling a model or rewriting old runs. See
 [distribution scoring](distribution-scoring.md).
+
+Optional `decision_directories` (CLI `--decision-directories`, plus
+`--require-decisions`) attach saved `decision_evaluation` folders produced by
+[decisions.py](../src/model_pipelining/decisions.py). Review verifies that each
+decision evaluation matches the forecast input, model identity/configuration,
+target cohort, and observed actuals, checks its required receipts and version
+hashes, and summarizes realized expense, baseline/perfect references, relative
+economic value, worst-5% expense concentration, and fallback count in `report.md`.

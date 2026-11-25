@@ -114,14 +114,15 @@ directories so later outcome updates cannot alter frozen recommendations:
    explicit fallback action for failed forecast origins.
    - `binary_cost_loss`: extracts exact threshold event probabilities
      ($P(Y \ge \tau)$, $P(Y > \tau)$, $P(Y \le \tau)$, or $P(Y < \tau)$) from
-     frozen `predictive_distributions.json` (`gaussian_mixture` or `student_t`)
-     or reads saved event probabilities (such as the NOAA range CSV), then acts
-     when $p > \alpha$.
+     frozen `predictive_distributions.json` (`gaussian_mixture`, `student_t`,
+     or discrete `empirical_samples`, preserving strict vs. inclusive tie
+     semantics on discrete atoms) or reads saved event probabilities (such as
+     the NOAA range CSV), then acts when $p > \alpha$.
    - `continuous_asymmetric`: uses positive unit under-forecast (`under_cost`)
      and over-forecast (`over_cost`) costs, taking the exact
-     `under_cost / (under_cost + over_cost)` predictive quantile as the
-     recommended action. Its unit-sum-scaled expense equals unscaled pinball
-     loss at that quantile level.
+     `under_cost / (under_cost + over_cost)` predictive quantile (left-continuous
+     inverse CDF for `empirical_samples`) as the recommended action. Its
+     unit-sum-scaled expense equals unscaled pinball loss at that quantile level.
 2. **Issue frozen recommendations** (`issue_decisions_from_run` or
    `issue_decisions_from_probabilities`): reads only forecast-time artifacts
    (never `evaluation.csv` or outcome columns) and writes `decision_spec.json`,
@@ -133,12 +134,24 @@ directories so later outcome updates cannot alter frozen recommendations:
    CSV, and writes `decision_evaluation.csv`, `decision_summary.json`,
    `checks.json`, and a pending `review.json` in a new directory. Summaries
    include median, 90th/95th-percentile, and maximum case expense alongside the
-   share of total expense concentrated in the worst 5% of origins.
+   share of total expense concentrated in the worst 5% of origins. For
+   `binary_cost_loss` without fallbacks, `decision_summary.json` also saves a
+   **Brier reliability/resolution/uncertainty decomposition** (`brier_decomposition`,
+   including Expected Calibration Error, probability bias, and Brier Skill Score
+   against the predeclared calibration base rate) and an elementary **Murphy curve**
+   (`binary_murphy_curve`); `decision_scores.png` includes a reliability diagram
+   panel. For `continuous_asymmetric`, it saves the Ehm et al. (2016) elementary
+   quantile Murphy curve (`quantile_murphy_curve`).
 4. **Compare scored runs** (`compare_decision_scores`): checks identical
    `DecisionSpec`, targets, and observed outcomes, then writes paired expense
    differences (mean, median, win/loss/tie rates, action agreement, worst-5%
-   concentration, and naive + Bartlett HAC standard errors) to
-   `decision_comparison.json` and `decision_comparison.png`.
+   concentration, and naive + Bartlett HAC standard errors) plus a **Murphy
+   dominance comparison** (`first_dominates`, `second_dominates`, `tied`, or
+   `crossing`) to `decision_comparison.md`, `decision_comparison.json`, and a
+   3-panel `decision_comparison.png` (cumulative expense difference, mean vs.
+   p95 bars, and Murphy diagram). For a plain-English walkthrough of all tools
+   and metrics, see
+   [the evaluation, baselines, and decision tools guide](evaluation-and-decisions.md).
 
 ### CLI workflow and automatic vs. caller actions
 

@@ -141,14 +141,24 @@ Do not change the gate wording without their approval.**
 
 ## Next work
 
-Phase 1, Slice 1 (the [model-independent saved decision layer](decision-value.md#model-independent-decision-layer))
-is implemented in `src/model_pipelining/decisions.py`, `src/model_pipelining/decision_value.py`,
-and `scripts/run_decisions.py`, and verified on both the saved Bayesian
-`LocalLevel` Central Park run and the frozen NOAA range probabilities.
-Resume with [Phase 1, Slice 2](next-session.md#up-next-robust-evaluation-summaries-viewer-and-shadow-trial)
-(robust/decision-aligned summaries in `compare_runs` and `experiment_review.py`
-plus a probabilistic benchmark), followed by the read-only comparison viewer
-and live issuance/settlement separation for shadow trials.
+Phase 1 is complete:
+- **Slice 1** (`ea637de`): [model-independent saved decision layer](decision-value.md#model-independent-decision-layer)
+  in `src/model_pipelining/decisions.py`, `src/model_pipelining/decision_value.py`,
+  and `scripts/run_decisions.py`.
+- **Slice 2**: shared robust evaluation and Bartlett HAC paired diagnostics in
+  `src/model_pipelining/robust_scoring.py`, upgraded `compare_runs` and
+  decision-integrated `experiment_review.py`, and zero-tuning Student-t
+  probabilistic baseline adapters (`GaussianClimatology`, `ResidualPersistence`)
+  in `src/model_pipelining/probabilistic_baselines.py`.
+- **Slice 3**: `empirical_samples` predictive distribution family (exact
+  $O(k \log k)$ CRPS, `log_score=None`), nonparametric baselines
+  (`EmpiricalClimatology`, `EmpiricalResidualPersistence`), Brier
+  reliability/resolution/uncertainty decomposition (with ECE and reliability
+  diagrams), and Ehm et al. (2016) Murphy curves/dominance checks.
+
+Resume with [Phase 2](next-session.md#up-next-viewer-live-issuancesettlement-and-calendar-flexibility):
+the local read-only comparison/decision viewer and two-stage live issuance and
+settlement for shadow trials, followed by calendar flexibility and packaging.
 
 The [range-probability study](noaa-range-probability.md) is complete. The user
 delegated the design choices, and the plan froze January–June 2026, a 10 °C

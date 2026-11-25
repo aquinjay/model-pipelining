@@ -39,7 +39,18 @@ records are:
 student = {"family": "student_t", "df": 8, "location": 2, "scale": 1.5}
 mixture = {"family": "gaussian_mixture", "weights": [0.7, 0.3],
            "means": [-2, 4], "variances": [0.16, 2]}
+empirical = {"family": "empirical_samples", "values": [1.0, 2.5, 4.0],
+             "weights": [0.25, 0.5, 0.25]}
 ```
+
+Discrete `empirical_samples` laws compute exact $O(k \log k)$ nonnegative
+step-integral CRPS (`int (F(x) - 1{x >= y})^2 dx`) and leave `log_score` as
+`None` because discrete atoms have no continuous Lebesgue density. Nonparametric
+baselines (`EmpiricalClimatology`, `EmpiricalResidualPersistence`) use this
+family with `supports_highest_density=False` so no continuous density or HPD
+region is fabricated. Comparisons between continuous and empirical runs still
+compute paired CRPS differences, worst-5% concentration, and Bartlett HAC SEs
+while marking log-score comparison not applicable.
 
 Current Bayesian adapters (`LocalLevel`, `NormalMean`, `NormalMeanVariance`,
 `LocalLevelVariance`, `LocalLevelJointVariance`) serialize the law from the same
@@ -74,15 +85,29 @@ also checks saved distribution/score case alignment, required checks, finite
 losses, method/units and aggregates recomputed from per-case scores. It does not
 refit or authenticate historical files.
 
+`comparison.json.point_comparison` summarizes each run's saved errors (signed
+mean/median bias, MdAE, MAE, p95/max absolute error, RMSE, and worst-5% absolute
+and squared error concentration) alongside paired absolute-error and squared-error
+differences with win/loss/tie rates, worst-5% absolute difference share,
+deterministic naive plus Bartlett HAC standard errors (`robust_scoring.py`),
+and an Ehm et al. (2016) mean Murphy dominance check (`mean_murphy_curve`).
+`compare_runs` also writes a human-readable `comparison.md` alongside
+`comparison.json` and the charts. See
+[the evaluation and decision tools guide](evaluation-and-decisions.md) for how
+to read each metric.
+
 `comparison.json.distribution_comparison` retains both mean losses and per-case
-first-minus-second differences. Negative differences favor the first forecast on
-that loss. `distribution_scores.png` plots saved losses over the same dates.
-These are descriptive paired results; no independence assumption, confidence
-interval, significance threshold or automatic winner is introduced. If either
-run lacks full laws, distribution comparison is explicitly not applicable while
-point and common uncertainty comparisons remain available. Older saved runs are
-not backfilled or rewritten. Failed/partial declared distribution scores cannot
-silently enter a full-cohort comparison.
+first-minus-second differences, and adds per-run CRPS/log-score tail summaries
+plus paired CRPS and log-score stability diagnostics (median difference, win
+rates, worst-5% absolute difference share, and Bartlett HAC SEs). Negative
+differences favor the first forecast on that loss. `distribution_scores.png`
+plots per-case CRPS, negative log density, and cumulative CRPS difference over
+the same dates so regime shifts and single-day outliers stand out visually.
+These remain descriptive paired results; no significance threshold or automatic
+winner is introduced. If either run lacks full laws, distribution comparison is
+explicitly not applicable while point and common uncertainty comparisons remain
+available. Older saved runs are not backfilled or rewritten. Failed/partial
+declared distribution scores cannot silently enter a full-cohort comparison.
 
 [Experiment review](experiment-review.md) also checks the saved distribution
 cohort and displays mean losses when present. The library scoring API is

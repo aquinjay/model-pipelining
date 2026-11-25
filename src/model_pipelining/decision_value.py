@@ -233,3 +233,247 @@ def evaluate_asymmetric_decisions(cases, *, under_cost, over_cost, baseline_acti
         "expense_distribution": summarize_expenses(forecast_expenses),
         "baseline_expense_distribution": summarize_expenses(baseline_expenses),
     }
+
+
+def brier_decomposition(cases, *, base_rate, bins: int = 10) -> dict:
+    """Decompose Brier score into reliability, resolution, uncertainty, and within-bin residual.
+
+    Satisfies the exact identity:
+        brier_score == reliability - resolution + uncertainty + within_bin_term
+
+    Also reports Expected Calibration Error (ECE), probability bias, and Brier
+    Skill Score relative to the predeclared calibration base_rate (never using
+    in-sample evaluation prevalence as the baseline forecast).
+    """
+    if type(bins) is not int or bins < 2:
+        raise ValueError("bins must be an integer >= 2")
+    base = _probability(base_rate, "base_rate")
+    pairs = []
+    for case in _iterate(cases, "cases"):
+        try:
+            probability, event = case
+        except (TypeError, ValueError) as error:
+            raise ValueError("Each case must be a (probability, event) pair") from error
+        _validate_event(event)
+        pairs.append((_probability(probability, "probability"), int(event)))
+    if not pairs:
+        raise ValueError("At least one case is required")
+
+    count = len(pairs)
+    brier = math.fsum((p - y) ** 2 for p, y in pairs) / count
+    clim_brier = math.fsum((base - y) ** 2 for _, y in pairs) / count
+    mean_prob = math.fsum(p for p, _ in pairs) / count
+    obs_rate = math.fsum(y for _, y in pairs) / count
+    uncertainty = obs_rate * (1.0 - obs_rate)
+
+    buckets: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
+    for prob, event in pairs:
+        index = min(bins - 1, int(prob * bins))
+        buckets[index].append((prob, event))
+
+    reliability_terms = []
+    resolution_terms = []
+    ece_terms = []
+    within_terms = []
+    bin_records = []
+    for index, items in enumerate(buckets):
+        lower = index / bins
+        upper = (index + 1) / bins
+        n_k = len(items)
+        if n_k == 0:
+            bin_records.append({
+                "lower": lower, "upper": upper, "count": 0,
+                "mean_probability": None, "observed_rate": None, "abs_calibration_gap": None,
+            })
+            continue
+        p_k = math.fsum(p for p, _ in items) / n_k
+        o_k = math.fsum(y for _, y in items) / n_k
+        gap = abs(p_k - o_k)
+        reliability_terms.append(n_k * ((p_k - o_k) ** 2))
+        resolution_terms.append(n_k * ((o_k - obs_rate) ** 2))
+        ece_terms.append(n_k * gap)
+        for p, y in items:
+            dp = p - p_k
+            within_terms.append(dp * dp - 2.0 * dp * (y - o_k))
+        bin_records.append({
+            "lower": lower, "upper": upper, "count": n_k,
+            "mean_probability": p_k, "observed_rate": o_k, "abs_calibration_gap": gap,
+        })
+
+    reliability = math.fsum(reliability_terms) / count
+    resolution = math.fsum(resolution_terms) / count
+    within_bin = math.fsum(within_terms) / count
+    ece = math.fsum(ece_terms) / count
+    bss = (1.0 - brier / clim_brier) if clim_brier > 0.0 else None
+    return {
+        "cases": count,
+        "base_rate": base,
+        "brier_score": brier,
+        "climatology_brier_score": clim_brier,
+        "brier_skill_score": bss,
+        "brier_skill_reason": None if clim_brier > 0.0 else "Climatology Brier score is zero.",
+        "reliability": reliability,
+        "resolution": resolution,
+        "uncertainty": uncertainty,
+        "within_bin_term": within_bin,
+        "ece": ece,
+        "mean_probability": mean_prob,
+        "observed_event_rate": obs_rate,
+        "probability_bias": mean_prob - obs_rate,
+        "bin_count": bins,
+        "bins": bin_records,
+    }
+
+
+def binary_murphy_curve(cases, *, alphas) -> list[dict]:
+    """Evaluate elementary cost-loss regret S_alpha(p, y) across cost-loss ratios alpha in (0, 1).
+
+    S_alpha(p, y) = expense(p > alpha, y, alpha) - perfect_expense(y, alpha):
+    equals alpha on false alarms, (1 - alpha) on misses, and 0 otherwise.
+    Integrating S_alpha over alpha in (0, 1) recovers 0.5 * Brier score.
+    """
+    pairs = []
+    for case in _iterate(cases, "cases"):
+        try:
+            probability, event = case
+        except (TypeError, ValueError) as error:
+            raise ValueError("Each case must be a (probability, event) pair") from error
+        _validate_event(event)
+        pairs.append((_probability(probability, "probability"), int(event)))
+    if not pairs:
+        raise ValueError("At least one case is required")
+    grid = [_alpha(value) for value in _iterate(alphas, "alphas")]
+    if not grid:
+        raise ValueError("At least one alpha is required")
+    count = len(pairs)
+    curve = []
+    for ratio in grid:
+        scores = []
+        for prob, event in pairs:
+            acted = prob > ratio
+            if acted and event == 0:
+                scores.append(ratio)
+            elif (not acted) and event == 1:
+                scores.append(1.0 - ratio)
+            else:
+                scores.append(0.0)
+        curve.append({"threshold": ratio, "mean_elementary_score": math.fsum(scores) / count})
+    return curve
+
+
+def quantile_murphy_curve(cases, *, quantile_level, thresholds) -> list[dict]:
+    """Evaluate Ehm et al. (2016) elementary quantile score S_{theta, tau}(action, actual).
+
+    For quantile level tau in (0, 1) and threshold theta:
+        S_{theta, tau}(x, y) = (1 - tau) if y <= theta < x
+                               tau       if x <= theta < y
+                               0         otherwise
+    Integrating over theta in (-inf, inf) recovers unscaled pinball loss at tau.
+    """
+    tau = _alpha(quantile_level)
+    pairs = []
+    for case in _iterate(cases, "cases"):
+        try:
+            action, actual = case
+        except (TypeError, ValueError) as error:
+            raise ValueError("Each case must be an (action, actual) pair") from error
+        pairs.append((_finite_real(action, "action"), _finite_real(actual, "actual")))
+    if not pairs:
+        raise ValueError("At least one case is required")
+    grid = [_finite_real(value, "threshold") for value in _iterate(thresholds, "thresholds")]
+    if not grid:
+        raise ValueError("At least one threshold is required")
+    count = len(pairs)
+    curve = []
+    for theta in grid:
+        scores = []
+        for action, actual in pairs:
+            if actual <= theta < action:
+                scores.append(1.0 - tau)
+            elif action <= theta < actual:
+                scores.append(tau)
+            else:
+                scores.append(0.0)
+        curve.append({"threshold": theta, "mean_elementary_score": math.fsum(scores) / count})
+    return curve
+
+
+def mean_murphy_curve(cases, *, thresholds) -> list[dict]:
+    """Evaluate Ehm et al. (2016) elementary mean score S_theta(prediction, actual).
+
+    For threshold theta:
+        S_theta(x, y) = |theta - y|  if min(x, y) <= theta < max(x, y)  (sign-flipped across theta)
+                        0            otherwise
+    More precisely, S_theta(x, y) = (theta - y) * (1{x > theta} - 1{y > theta}) >= 0.
+    Integrating S_theta over theta in (-inf, inf) recovers 0.5 * (x - y)^2.
+    """
+    pairs = []
+    for case in _iterate(cases, "cases"):
+        try:
+            prediction, actual = case
+        except (TypeError, ValueError) as error:
+            raise ValueError("Each case must be a (prediction, actual) pair") from error
+        pairs.append((_finite_real(prediction, "prediction"), _finite_real(actual, "actual")))
+    if not pairs:
+        raise ValueError("At least one case is required")
+    grid = [_finite_real(value, "threshold") for value in _iterate(thresholds, "thresholds")]
+    if not grid:
+        raise ValueError("At least one threshold is required")
+    count = len(pairs)
+    curve = []
+    for theta in grid:
+        scores = []
+        for prediction, actual in pairs:
+            indicator_diff = (1.0 if prediction > theta else 0.0) - (1.0 if actual > theta else 0.0)
+            scores.append((theta - actual) * indicator_diff if indicator_diff else 0.0)
+        curve.append({"threshold": theta, "mean_elementary_score": math.fsum(scores) / count})
+    return curve
+
+
+def murphy_dominance(first_curve: list[dict], second_curve: list[dict], *, tolerance: float = 1e-12) -> dict:
+    """Compare two aligned Murphy curves (first minus second; lower elementary score is better)."""
+    if not first_curve or len(first_curve) != len(second_curve):
+        raise ValueError("Murphy dominance requires two nonempty aligned curves")
+    first_better = second_better = ties = 0
+    max_first_adv = 0.0
+    max_second_adv = 0.0
+    differences = []
+    for first_pt, second_pt in zip(first_curve, second_curve):
+        if not math.isclose(first_pt["threshold"], second_pt["threshold"], rel_tol=1e-12, abs_tol=1e-12):
+            raise ValueError("Murphy curves must share identical threshold grids")
+        diff = first_pt["mean_elementary_score"] - second_pt["mean_elementary_score"]
+        differences.append({
+            "threshold": first_pt["threshold"],
+            "first_score": first_pt["mean_elementary_score"],
+            "second_score": second_pt["mean_elementary_score"],
+            "first_minus_second": diff,
+        })
+        if diff < -tolerance:
+            first_better += 1
+            max_first_adv = max(max_first_adv, -diff)
+        elif diff > tolerance:
+            second_better += 1
+            max_second_adv = max(max_second_adv, diff)
+        else:
+            ties += 1
+    total = len(differences)
+    if first_better > 0 and second_better == 0:
+        status = "first_dominates"
+    elif second_better > 0 and first_better == 0:
+        status = "second_dominates"
+    elif first_better == 0 and second_better == 0:
+        status = "tied"
+    else:
+        status = "crossing"
+    return {
+        "dominance_status": status,
+        "threshold_count": total,
+        "first_better_count": first_better,
+        "second_better_count": second_better,
+        "tie_count": ties,
+        "first_better_fraction": first_better / total,
+        "second_better_fraction": second_better / total,
+        "max_first_advantage": max_first_adv,
+        "max_second_advantage": max_second_adv,
+        "curve": differences,
+    }

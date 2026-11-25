@@ -37,7 +37,11 @@ from saved probabilities and frozen Bayesian predictive distributions. Callers
 freeze per-origin recommendations from forecast-time outputs (`DecisionSpec`,
 binary cost-loss or continuous asymmetric policies, explicit fallbacks) before
 scoring later outcomes in a separate directory, with tail-concentration
-diagnostics and paired HAC comparisons.
+diagnostics and paired HAC comparisons. [Saved comparisons](distribution-scoring.md)
+and [experiment review](experiment-review.md) now also surface robust bias,
+MdAE, worst-5% loss concentration, HPD/pinball summaries, Bartlett HAC paired
+SEs, optional linked decision evaluations, and zero-tuning probabilistic
+baselines (`GaussianClimatology`, `ResidualPersistence`).
 
 A maintenance change gives every repository adapter `from_configuration` and
 moves script model construction into one [catalog](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings).
@@ -181,13 +185,13 @@ No new model, sampler, application or automatic human decision is introduced.
 | Preservation | One-file SHA-256 snapshots, verified retrieval, repeat registration events, optional receipt context | [Snapshots](snapshots.md) |
 | References | Dataset-scoped explicit tags, saved assignment history, permanent run input IDs | [Tags](snapshots.md#assign-resolve-and-inspect-tags) |
 | Execution | Daily model-independent experiments, release-aware expanding histories, one fixed positive-day horizon per run; defaults preserve the original next-day task | [Experiments](experiments.md) |
-| Models | Training mean and last-value point models; fixed-variance Gaussian local level with exact filtering; weekly harmonic and seasonal temperature regression point adapters | [Model guide](local-level.md), [harmonic example](reading-guide.md#run-the-weekly-harmonic-example), [temperature adapter](../src/model_pipelining/README.md#temperature-regression-and-noaa-inputs) |
+| Models | Training mean and last-value point models; zero-tuning `GaussianClimatology`, `ResidualPersistence`, `EmpiricalClimatology`, and `EmpiricalResidualPersistence` probabilistic baselines; fixed-variance Gaussian local level with exact filtering; weekly harmonic and seasonal temperature regression point adapters | [Model guide](local-level.md), [API](../src/model_pipelining/README.md#robust-evaluation-summaries-and-probabilistic-baselines), [harmonic example](reading-guide.md#run-the-weekly-harmonic-example), [temperature adapter](../src/model_pipelining/README.md#temperature-regression-and-noaa-inputs) |
 | Adapter construction | `from_configuration` on every repository adapter; script catalog `build_model`/`build_scenarios`; benchmark and workflow names defined once; one JSON/CSV writer module | [Rebuilding adapters](../src/model_pipelining/README.md#rebuilding-adapters-from-saved-settings), [shared names](../src/model_pipelining/README.md#shared-names-and-artifact-writers) |
 | Parameter learning | Unknown constant Gaussian mean with known or learned observation variance; exact normal/Student-t predictions, optional independent-chain audits and saved fit evidence | [Parameter uncertainty](parameter-uncertainty.md), [joint model](normal-mean-variance.md) |
 | Uncertainty | Observation quantiles and highest-density regions; disconnected regions supported by the shared format | [Uncertainty](uncertainty.md) |
 | Evaluation | Point errors, quantile/equal-tail scores, separate HPD coverage/total width, explicit case completion | [Uncertainty evaluation](uncertainty.md#validation-and-evaluation) |
-| Reporting | Saved-only reviews, charts and matched-case comparisons with full-law losses; HPD preferred; old point artifacts readable | [Run files](../runs/README.md) |
-| Decision layer | Model-independent `DecisionSpec` (binary cost-loss and continuous asymmetric), frozen forecast-time recommendation issuance, separate outcome scoring, tail-concentration summaries, and paired HAC comparisons | [Decision value](decision-value.md) |
+| Reporting | Saved-only reviews (forecast, evidence, calibration, and optional decision evaluations), charts and matched-case comparisons with robust bias/MdAE/concentration summaries, paired full-law losses, and Bartlett HAC SEs; HPD preferred; old point artifacts readable | [Run files](../runs/README.md), [Experiment review](experiment-review.md) |
+| Decision layer | Model-independent `DecisionSpec` (binary cost-loss and continuous asymmetric) over `student_t`, `gaussian_mixture`, `empirical_samples`, or saved probabilities; frozen issuance, separate scoring, Brier reliability/resolution decomposition, Murphy diagrams/dominance, tail-concentration summaries, and paired HAC comparisons | [Decision value](decision-value.md) |
 | Model evidence | Explicit full-path prior/noise influence, conditional initial-mean weights, sequential criticism, saved-only diagnostic charts | [Diagnostics](diagnostics.md) |
 | Predictive checks | Data-free prior and full selected-history posterior replications for the joint mean/variance model; descriptive discrepancies, finite-simulation precision and saved-only charts | [Predictive checks](predictive-checks.md) |
 | Prior comparisons | Exact learning/predictive summaries, matched as-of release histories, variance-scale decomposition and signed differences for caller-chosen priors | [Prior influence](prior-influence.md) |
@@ -199,9 +203,11 @@ No new model, sampler, application or automatic human decision is introduced.
 
 ## Verification at this checkpoint
 
-The suite has 499 tests, including NOAA replay, seasonal range evaluation,
-hand-calculated binary and continuous asymmetric cost-loss checks, and
-outcome-isolated decision issuance/scoring/comparison tests. The Python 3.12 workplace profile skips 31 MCMC and
+The suite has 509 tests, including NOAA replay, seasonal range evaluation,
+hand-calculated binary and continuous asymmetric cost-loss checks,
+outcome-isolated decision issuance/scoring/comparison, robust concentration and
+Bartlett HAC SE diagnostics, empirical-sample CRPS and nonparametric baselines,
+and Brier reliability/resolution plus Murphy dominance identities. The Python 3.12 workplace profile skips 31 MCMC and
 XLSX tests. CI runs both the research and workplace profiles on every push.
 Earlier checkpoints passed 391, 415 and 449 tests.
 [The test guide](../tests/README.md) maps them

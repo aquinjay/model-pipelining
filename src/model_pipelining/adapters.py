@@ -13,11 +13,18 @@ from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
 from model_pipelining.local_level_variance import LocalLevelVariance
 from model_pipelining.normal_mean import NormalMean
 from model_pipelining.normal_mean_variance import NormalMeanVariance
+from model_pipelining.probabilistic_baselines import (
+    EmpiricalClimatology,
+    EmpiricalResidualPersistence,
+    GaussianClimatology,
+    ResidualPersistence,
+)
 
 
 MODEL_TYPES = {kind.name: kind for kind in
                (NormalMean, NormalMeanVariance, LocalLevel, LocalLevelVariance, LocalLevelJointVariance,
-                WeeklyHarmonicRegression)}
+                WeeklyHarmonicRegression, GaussianClimatology, ResidualPersistence,
+                EmpiricalClimatology, EmpiricalResidualPersistence)}
 EVIDENCE_MODEL_NAMES = tuple(name for name, kind in MODEL_TYPES.items() if hasattr(kind, "evidence_provider"))
 
 

@@ -25,6 +25,7 @@ for current behavior and review priorities.
 - Use the packaged temperature regression and NOAA helpers for new studies and record their source hashes in study designs.
 - Define benchmark and workflow names once, and write saved JSON/CSV through one writer module.
 - Separate saved decision issuance from outcome scoring through `DecisionSpec` and `decisions.py`, supporting both binary cost-loss and continuous asymmetric policies from frozen distributions or saved probabilities with tail-concentration and paired HAC diagnostics.
+- Surface robust bias, MdAE, worst-5% loss concentration, HPD/pinball summaries, Bartlett HAC paired SEs, Brier reliability/resolution decomposition, Murphy dominance diagrams, and optional linked decision evaluations in `compare_runs`, `decisions.py`, and `experiment_review.py`, alongside parametric (`GaussianClimatology`, `ResidualPersistence`) and nonparametric (`EmpiricalClimatology`, `EmpiricalResidualPersistence`, `empirical_samples` family) probabilistic baselines.
 
 ## How to read earlier entries
 
@@ -972,4 +973,70 @@ reports paired expense differences with win/loss/tie rates, action agreement,
 worst-5% absolute difference share, and deterministic Bartlett HAC standard
 errors. All new code uses only dependencies present in the Python 3.12
 workplace profile. See [the decision guide](decision-value.md).
+
+## Add robust evaluation summaries, probabilistic baselines, and decision review integration — 2026-11-24
+
+Add stdlib-only `robust_scoring.py` (`summarize_point_errors`,
+`summarize_loss_series`, `summarize_paired_differences`, `newey_west_se`) and
+share it across `reporting.py`, `experiment_review.py`, and `decisions.py`.
+Extend `compare_runs` to save `point_comparison`, per-run CRPS/log-score tail
+summaries, paired win/loss/tie rates, worst-5% absolute difference shares,
+deterministic Bartlett HAC standard errors, and a cumulative CRPS difference
+panel in `distribution_scores.png`, while keeping all legacy comparison fields
+intact. Extend `build_experiment_review` and `scripts/review_experiment.py` to
+surface bias, MdAE, worst-5% concentration, HPD coverage/width, and pinball
+losses automatically and accept optional `decision_directories` /
+`require_decisions` verified against the forecast identity and target cohort.
+
+Add zero-tuning Student-t probabilistic baseline adapters (`GaussianClimatology`
+and `ResidualPersistence`) in `probabilistic_baselines.py` (registered in
+`adapters.MODEL_TYPES` with CLI `scripts/run_probabilistic_baseline.py`). Keep
+point-only `BENCHMARK_MODELS` unchanged so existing point-benchmark contracts
+and saved manifests remain valid.
+
+Exercising the upgraded diagnostics on Central Park 2024 TMAX (`runs/robust-evaluation-study-20261124/`)
+showed that zero-tuning `ResidualPersistence` beat the fixed-variance Bayesian
+`LocalLevel` on CRPS (2.104 vs 2.119, 55.7% win rate), HPD95 width (15.24 vs
+15.68 °C at ~95% coverage), binary $\ge 25$ °C decision expense (0.1148 vs
+0.1243, HAC SE 0.0044), and 3:1 asymmetric expense (4.539 vs 4.618), while
+expanding `GaussianClimatology` scored negative decision value (−0.466) on the
+bimodal annual temperature cycle. Re-evaluating the 130-case synthetic
+mean-shift comparison (`LocalLevelVariance` vs `LocalLevelJointVariance`)
+showed that the earlier mean CRPS (+0.0058 ± 0.0153 HAC SE), log-score
+(−0.0245 ± 0.0479 HAC SE), and squared-error (−0.0535 ± 0.1051 HAC SE)
+differences lie well within serial-correlation noise, with 34–49% of total
+absolute differences concentrated in 7 transition days (top 5%).
+
+## Add empirical-sample predictive distributions, nonparametric baselines, and Brier/Murphy diagnostics — 2026-11-24
+
+Extend `distribution_scoring.py` and `decisions.py` with a discrete
+weighted-sample predictive law family (`"family": "empirical_samples"`).
+CRPS is computed exactly in $O(k \log k)$ via the nonnegative step-function
+integral $\int (F(x) - \mathbf{1}\{x \ge y\})^2 dx$ with zero subtraction
+cancellation; `log_score` is explicitly `None` because discrete atoms have no
+continuous Lebesgue density (never applying a density floor or hidden KDE).
+Discrete event probabilities distinguish strict and inclusive inequalities at
+sample atoms, and continuous asymmetric decisions use the exact left-continuous
+inverse CDF.
+
+Add nonparametric `EmpiricalClimatology` and `EmpiricalResidualPersistence`
+adapters to `probabilistic_baselines.py` (with `supports_highest_density=False`),
+preserving skewed and multimodal historical distributions. Add exact binned
+Brier reliability/resolution/uncertainty decomposition (`brier_decomposition`,
+including ECE, probability bias, and Brier Skill Score against the predeclared
+calibration base rate) and Ehm et al. (2016) Murphy curves/dominance checks
+(`binary_murphy_curve`, `quantile_murphy_curve`, `murphy_dominance`) to
+`decision_value.py` and `decisions.py`, with reliability and Murphy chart panels.
+
+On Central Park 2024 TMAX (`runs/option-a-empirical-study-20261124/`),
+`EmpiricalResidualPersistence` improved over both fixed `LocalLevel` and
+Student-t `ResidualPersistence` on CRPS (2.0995 vs 2.1036 vs 2.1188, winning
+60.4% of days vs `LocalLevel`), Brier score (0.0736 vs 0.0751 vs 0.0769),
+reliability (0.0028), resolution (0.1467), and ECE (2.17%), cutting probability
+bias in half (−0.0086 vs −0.0209). On NOAA 2026 H1 range forecasts, Brier
+decomposition revealed that `same_day` pairing actually achieved more than
+double the resolution of `independent` pairing (0.03407 vs 0.01566) while
+losing overall Brier due to 3× higher reliability error (0.04525 vs 0.01497,
+ECE 16.2% vs 10.1%), and Murphy curves crossed (independent ahead on 14/19
+cost-loss ratios, same-day ahead on 4/19).
 

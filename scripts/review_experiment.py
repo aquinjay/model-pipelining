@@ -12,6 +12,8 @@ def main():
     parser.add_argument("--evidence-directory")
     parser.add_argument("--calibration-directories", nargs="*", default=())
     parser.add_argument("--require-calibration", action="store_true")
+    parser.add_argument("--decision-directories", nargs="*", default=())
+    parser.add_argument("--require-decisions", action="store_true")
     parser.add_argument("--output-directory", required=True)
     output = build_experiment_review(**vars(parser.parse_args()))
     status = json.loads((output / "report.json").read_text())["status"]

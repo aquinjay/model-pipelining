@@ -33,7 +33,10 @@ adds a monthly diagnostic and a frozen ten-day July pilot.
 A [cost-loss analysis and model-independent decision layer](docs/decision-value.md)
 evaluates both binary threshold actions and continuous asymmetric (newsvendor)
 decisions from saved Bayesian predictive distributions or saved NOAA event
-probabilities, separating frozen issuance from post-outcome scoring.
+probabilities, separating frozen issuance from post-outcome scoring. For a
+plain-English tour of all evaluation metrics, probabilistic baselines,
+comparisons, and decision commands, see
+[the evaluation, baselines, and decision tools guide](docs/evaluation-and-decisions.md).
 
 The state-grid proposal meets the probability criteria on all 17 frozen cases.
 An independent Gibbs calculation also agrees on moments and predictive density
@@ -82,7 +85,7 @@ explains which checks support each implementation claim.
 | Input preservation | One local file per snapshot; verified retrieval, registration history, optional copy receipts, and explicit dataset tags |
 | Table reading | CSV or one selected XLSX worksheet; forecasting currently accepts CSV only |
 | Forecasting task | Versioned target/timing/evaluation specifications; daily UTC, expanding available history, next-day forecasts and 30 observations by default |
-| Point models/benchmarks | Training mean and last available value; optional required benchmarks on identical histories/cases |
+| Point & probabilistic baselines | Point training-mean and last-value benchmarks, plus zero-tuning parametric (`GaussianClimatology`, `ResidualPersistence`) and nonparametric (`EmpiricalClimatology`, `EmpiricalResidualPersistence`) probabilistic baseline adapters |
 | Bayesian local level | Estimate a changing hidden level using a Gaussian prior and fixed noise variances; supplies a mean, quantiles, and HPD prediction regions |
 | Bayesian constant mean | Learn an unknown mean, integrate parameter uncertainty exactly, and optionally audit each fit with independent MCMC chains and saved diagnostics |
 | Bayesian mean and variance | Learn both with a normal/inverse-gamma prior, return exact Student-t forecasts, and optionally audit the joint posterior |
@@ -93,8 +96,8 @@ explains which checks support each implementation claim.
 | Simulation calibration | Data-free continuous/discrete/mixed posterior-CDF calibration, recovery, finite-trial uncertainty and saved failures |
 | Local level with learned noise | Filter an evolving level, learn a shared observation variance with checked numerical integration, and return marginal Gaussian-mixture forecasts |
 | Shared execution | Validate inputs/outputs, freeze predictions/laws before scoring, retain failed cases, and save configuration, CRPS/log losses and checks |
-| Reporting | Saved-only forecast/evidence/calibration review and complete matched-case comparisons, with paired full-law losses and charts |
-| Decision layer | Model-independent `DecisionSpec`, frozen per-origin recommendation issuance from saved distributions or event probabilities, separate post-outcome scoring (binary cost-loss and continuous asymmetric), tail-concentration summaries, and paired HAC comparisons |
+| Reporting | Saved-only forecast/evidence/calibration/decision review and complete matched-case comparisons, with robust bias/MdAE/concentration summaries, paired full-law losses with Bartlett HAC SEs, and charts |
+| Decision layer | Model-independent `DecisionSpec`, frozen per-origin recommendation issuance from saved distributions (`student_t`, `gaussian_mixture`, `empirical_samples`) or event probabilities, separate post-outcome scoring, Brier reliability/resolution decomposition, Murphy dominance diagrams, tail-concentration summaries, and paired HAC comparisons |
 | Repository verification | Locked-environment tests, pip-export parity, local documentation checks and temporary walkthrough in GitHub Actions |
 | Model diagnostics | Fixed-model influence paths and learned-variance full-CDF sequential criticism; human interpretation stays pending |
 | Predictive checks | Prior/posterior whole-dataset replication for constant-mean and fixed/joint-noise local-level models, with saved discrepancies and charts |
@@ -190,6 +193,7 @@ explains how to read both execution and review status.
 
 | Need | Read |
 |---|---|
+| Understand all evaluation metrics, probabilistic baselines, and decision tools | [Evaluation, baselines, and decision tools guide](docs/evaluation-and-decisions.md) |
 | Run and understand the complete example | [Forecasting walkthrough](docs/forecasting.md) |
 | Understand the Bayesian model and its equations | [Local-level model](docs/local-level.md) |
 | Learn the statistics and Python used here and explore later model families | [Reading guide](docs/reading-guide.md) |

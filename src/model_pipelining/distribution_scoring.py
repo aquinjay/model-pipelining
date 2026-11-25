@@ -1,8 +1,11 @@
-"""Proper losses for saved continuous observation laws; no fitting or sampling.
+"""Proper losses for saved observation laws; no fitting or sampling.
 
 Both scores are losses (lower is better). CRPS requires a finite first moment in
-this interface. Gaussian mixtures retain every positive-weight component. See
-Jordan et al. (2019), scoringRules appendix, for the Student-t/mixture formulas.
+this interface. Continuous laws (`student_t`, `gaussian_mixture`) compute exact
+closed-form CRPS and negative log density. Discrete weighted empirical laws
+(`empirical_samples`) compute exact O(k log k) step-integral CRPS and leave
+negative log density as None because no continuous Lebesgue density exists.
+See Jordan et al. (2019), scoringRules appendix, for the Student-t/mixture formulas.
 """
 
 import csv
@@ -25,18 +28,54 @@ METHOD = {"version": 1, "crps": "cdf_integral_loss_closed_form",
           "crps_relative_roundoff_budget": 1e-7}
 
 
+def _sorted_empirical_pairs(record: dict) -> tuple[list[float], list[float]]:
+    """Aggregate equal sample values in ascending order with normalized positive weights."""
+    by_value: dict[float, float] = {}
+    for value, weight in zip(record["values"], record["weights"]):
+        by_value[value] = by_value.get(value, 0.0) + weight
+    ordered_values = sorted(by_value)
+    raw_weights = [by_value[value] for value in ordered_values]
+    total = math.fsum(raw_weights)
+    weights = [weight / total for weight in raw_weights]
+    return ordered_values, weights
+
+
+def empirical_cdf_bounds(record: dict, x: float) -> tuple[float, float]:
+    """Return (P(Y < x), P(Y <= x)) for a validated empirical_samples law."""
+    ordered_values, weights = _sorted_empirical_pairs(record)
+    strictly_less = math.fsum(w for v, w in zip(ordered_values, weights) if v < x)
+    at_most = math.fsum(w for v, w in zip(ordered_values, weights) if v <= x)
+    return min(max(strictly_less, 0.0), 1.0), min(max(at_most, 0.0), 1.0)
+
+
+def empirical_quantile(record: dict, probability: float) -> float:
+    """Return the exact left-continuous inverse CDF inf{x : F(x) >= p}."""
+    if isinstance(probability, bool) or not isinstance(probability, (int, float)) or not math.isfinite(probability):
+        raise ValueError("probability must be finite")
+    if not 0.0 < probability < 1.0:
+        raise ValueError("probability must be strictly between 0 and 1")
+    ordered_values, weights = _sorted_empirical_pairs(record)
+    cumulative = 0.0
+    for value, weight in zip(ordered_values, weights):
+        cumulative += weight
+        if cumulative >= probability - 1e-15:
+            return value
+    return ordered_values[-1]
+
+
 def validate_distribution(record):
     """Return an independent finite JSON law; never infer one from quantiles."""
     if not isinstance(record, dict):
         raise ValueError("A declared distribution model must supply a distribution dictionary")
     record = json.loads(json.dumps(record, allow_nan=False))
-    if record.get("family") == "student_t":
+    family = record.get("family")
+    if family == "student_t":
         values = [record[key] for key in ("location", "scale", "df")]
         if (any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values)
                 or record["scale"] <= 0 or record["df"] <= 1):
             raise ValueError("Student-t scoring requires finite location/scale and df > 1 (finite first moment)")
         return {key: record[key] for key in ("family", "location", "scale", "df")}
-    if record.get("family") == "gaussian_mixture":
+    if family == "gaussian_mixture":
         components = [record[key] for key in ("weights", "means", "variances")]
         if any(not isinstance(items, list) or any(isinstance(x, bool) or not isinstance(x, (int, float)) for x in items)
                for items in components):
@@ -46,20 +85,58 @@ def validate_distribution(record):
             raise ValueError("A positive mixture weight is unrepresentable after normalization")
         return {"family": "gaussian_mixture", "weights": list(law.weights),
                 "means": list(law.means), "variances": list(law.variances)}
+    if family == "empirical_samples":
+        values = record.get("values")
+        if (not isinstance(values, list) or not values
+                or any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values)):
+            raise ValueError("empirical_samples requires a nonempty list of finite numeric values")
+        weights = record.get("weights")
+        if weights is None:
+            weights = [1.0 / len(values)] * len(values)
+        elif (not isinstance(weights, list) or len(weights) != len(values)
+              or any(isinstance(w, bool) or not isinstance(w, (int, float)) or not math.isfinite(w) or w < 0
+                     for w in weights)):
+            raise ValueError("empirical_samples weights must be a matching list of finite nonnegative numbers")
+        total = math.fsum(weights)
+        if not math.isfinite(total) or total <= 0.0:
+            raise ValueError("empirical_samples weights must have a finite positive sum")
+        kept_values, kept_weights = [], []
+        for value, weight in zip(values, weights):
+            if weight > 0.0:
+                normalized = float(weight / total)
+                if normalized <= 0.0:
+                    raise ValueError("A positive empirical sample weight is unrepresentable after normalization")
+                kept_values.append(float(value))
+                kept_weights.append(normalized)
+        return {"family": "empirical_samples", "values": kept_values, "weights": kept_weights}
     raise ValueError("Unsupported predictive distribution family")
 
 
 def validate_distribution_forecast(record, forecast):
     """Check the serialized law agrees with the supplied observation summaries."""
     record = validate_distribution(record)
-    if record["family"] == "student_t":
+    family = record["family"]
+    if family == "student_t":
         law = t(df=record["df"], loc=record["location"], scale=record["scale"])
         location = record["location"]
         rounding_scale = abs(location)
-    else:
+    elif family == "gaussian_mixture":
         law = NormalMixture(tuple(record["weights"]), tuple(record["means"]), tuple(record["variances"]))
         location = law.mean
         rounding_scale = max(map(abs, law.means))
+    else:
+        location = math.fsum(w * v for v, w in zip(record["values"], record["weights"]))
+        rounding_scale = max(map(abs, record["values"]))
+        tolerance = max(128 * math.ulp(max(rounding_scale, abs(forecast.mean))), 1e-12 * max(1.0, rounding_scale))
+        if abs(location - forecast.mean) > tolerance:
+            raise ValueError("Saved distribution mean differs from forecast mean")
+        for q in forecast.quantiles:
+            left_cdf, right_cdf = empirical_cdf_bounds(record, q.value)
+            if not (left_cdf - 1e-7 <= q.probability <= right_cdf + 1e-7):
+                raise ValueError("Saved distribution differs from forecast quantiles")
+        if forecast.highest_density_regions:
+            raise ValueError("Discrete empirical_samples laws do not define continuous highest-density regions")
+        return record
     tolerance = 128*math.ulp(max(rounding_scale, abs(forecast.mean)))
     if abs(location-forecast.mean) > tolerance:
         raise ValueError("Saved distribution mean differs from forecast mean")
@@ -79,17 +156,47 @@ def _normal_absolute(delta, sd):
         return sd*math.sqrt(2/math.pi)*np.exp(-.5*z*z) + delta*erf(z/math.sqrt(2))
 
 
+def _empirical_crps(record: dict, actual: float) -> float:
+    """Exact nonnegative step-function integral int (F(x) - 1{x >= actual})^2 dx in O(k log k)."""
+    ordered_values, weights = _sorted_empirical_pairs(record)
+    terms = []
+    if actual < ordered_values[0]:
+        terms.append(ordered_values[0] - actual)
+    cumulative = 0.0
+    for index in range(len(ordered_values) - 1):
+        cumulative += weights[index]
+        left = ordered_values[index]
+        right = ordered_values[index + 1]
+        if actual <= left:
+            terms.append(((1.0 - cumulative) ** 2) * (right - left))
+        elif actual >= right:
+            terms.append((cumulative ** 2) * (right - left))
+        else:
+            terms.append((cumulative ** 2) * (actual - left))
+            terms.append(((1.0 - cumulative) ** 2) * (right - actual))
+    if actual > ordered_values[-1]:
+        terms.append(actual - ordered_values[-1])
+    crps = math.fsum(terms)
+    if not math.isfinite(crps) or crps < 0.0:
+        raise ValueError("Nonfinite or negative empirical CRPS")
+    return crps
+
+
 def score_distribution(record, actual):
-    """Return finite CRPS and negative log density, or fail explicitly.
+    """Return finite CRPS and negative log density (or None for discrete empirical laws).
 
     No Monte Carlo approximation, moment-matched Gaussian, tail truncation or
-    density floor is used. Mixture pair sums use blocks to bound memory; runtime
-    remains quadratic in component count. Unrepresentable results raise.
+    density floor is used. Continuous families require finite log density.
+    Discrete empirical_samples laws have no continuous Lebesgue density, so
+    log_score is None while CRPS is exact.
     """
     record = validate_distribution(record)
     if isinstance(actual, bool) or not isinstance(actual, (int, float)) or not math.isfinite(actual):
         raise ValueError("Scoring actual must be finite and numeric")
-    if record["family"] == "student_t":
+    family = record["family"]
+    if family == "empirical_samples":
+        return {"crps": _empirical_crps(record, float(actual)), "log_score": None}
+    if family == "student_t":
         df, scale, location = (record[key] for key in ("df", "scale", "location"))
         delta = actual-location
         if not math.isfinite(delta):
@@ -150,10 +257,11 @@ def summarize_distribution_scores(rows, *, supported):
     if not supported:
         return {"status": "not_applicable", "reason": "Model does not declare a full predictive distribution"}
     scored = [row for row in rows if row["status"] == "passed"]
+    has_log_scores = bool(scored) and all(row["log_score"] is not None for row in scored)
     return {"status": "completed" if len(scored) == len(rows) else "failed", "method": dict(METHOD),
             "expected_count": len(rows), "scored_count": len(scored), "failed_count": len(rows)-len(scored),
             "mean_crps": mean(row["crps"] for row in scored) if scored else None,
-            "mean_log_score": mean(row["log_score"] for row in scored) if scored else None,
+            "mean_log_score": mean(row["log_score"] for row in scored) if has_log_scores else None,
             "scope": "Successful cases only; incomplete scores cannot enter a full-cohort comparison"}
 
 
@@ -190,10 +298,17 @@ def read_saved_distribution_scores(directory, manifest, predictions, evaluations
         if (not math.isfinite(float(row["actual"])) or float(row["actual"]) != float(evaluation["actual"])
                 or row["actual_available_at"] != evaluation["actual_available_at"]):
             raise ValueError("Distribution scoring actual/vintage mismatch")
-        validate_distribution_forecast(law["distribution"], Forecast(float(prediction["prediction"])))
-        for key in ("crps", "log_score"):
-            row[key] = float(row[key])
-            if not math.isfinite(row[key]) or (key == "crps" and row[key] < 0):
+        validated_law = validate_distribution_forecast(law["distribution"], Forecast(float(prediction["prediction"])))
+        row["crps"] = float(row["crps"])
+        if not math.isfinite(row["crps"]) or row["crps"] < 0:
+            raise ValueError("Invalid saved distribution loss")
+        if validated_law["family"] == "empirical_samples":
+            if row["log_score"] not in ("", None):
+                raise ValueError("Discrete empirical_samples law should not have a continuous log_score")
+            row["log_score"] = None
+        else:
+            row["log_score"] = float(row["log_score"])
+            if not math.isfinite(row["log_score"]):
                 raise ValueError("Invalid saved distribution loss")
     summary = summarize_distribution_scores(rows, supported=True)
     saved = load("scores.json").get("distribution", {})
@@ -202,7 +317,12 @@ def read_saved_distribution_scores(directory, manifest, predictions, evaluations
             raise ValueError("Saved distribution score summary is incomplete/inconsistent")
     for key in ("mean_crps", "mean_log_score"):
         value = saved.get(key)
+        expected = summary[key]
+        if expected is None:
+            if value is not None:
+                raise ValueError("Saved distribution loss aggregate differs from case scores")
+            continue
         if (isinstance(value, bool) or not isinstance(value, (int, float))
-                or not math.isfinite(value) or not math.isclose(value, summary[key], rel_tol=1e-12, abs_tol=1e-12)):
+                or not math.isfinite(value) or not math.isclose(value, expected, rel_tol=1e-12, abs_tol=1e-12)):
             raise ValueError("Saved distribution loss aggregate differs from case scores")
     return summary, rows

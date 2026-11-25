@@ -26,14 +26,23 @@ from model_pipelining.artifacts import write_csv, write_json
 from model_pipelining.decision_value import (
     asymmetric_expense,
     asymmetric_quantile_level,
+    binary_murphy_curve,
+    brier_decomposition,
     decide,
     evaluate_asymmetric_decisions,
     expense,
+    murphy_dominance,
+    quantile_murphy_curve,
     summarize_expenses,
     value_curve,
 )
-from model_pipelining.distribution_scoring import validate_distribution
+from model_pipelining.distribution_scoring import (
+    empirical_cdf_bounds,
+    empirical_quantile,
+    validate_distribution,
+)
 from model_pipelining.mixtures import NormalMixture
+from model_pipelining.robust_scoring import newey_west_se
 
 
 VALID_POLICIES = ("binary_cost_loss", "continuous_asymmetric")
@@ -133,6 +142,7 @@ def _source_hashes() -> dict[str, str]:
         here.with_name("distribution_scoring.py"),
         here.with_name("mixtures.py"),
         here.with_name("artifacts.py"),
+        here.with_name("robust_scoring.py"),
     )
     return {path.name: _sha256_file(path) for path in files}
 
@@ -158,11 +168,23 @@ def distribution_event_probability(record: dict, *, threshold: float, comparison
     cutoff = _finite_number(threshold, "threshold")
     if comparison not in VALID_COMPARISONS:
         raise ValueError(f"comparison must be one of {', '.join(VALID_COMPARISONS)}")
-    upper = comparison in (">=", ">")
-    if law["family"] == "student_t":
+    family = law["family"]
+    if family == "empirical_samples":
+        strictly_less, at_most = empirical_cdf_bounds(law, cutoff)
+        if comparison == "<":
+            probability = strictly_less
+        elif comparison == "<=":
+            probability = at_most
+        elif comparison == ">=":
+            probability = 1.0 - strictly_less
+        else:
+            probability = 1.0 - at_most
+    elif family == "student_t":
+        upper = comparison in (">=", ">")
         dist = t(df=law["df"], loc=law["location"], scale=law["scale"])
         probability = float(dist.sf(cutoff) if upper else dist.cdf(cutoff))
     else:
+        upper = comparison in (">=", ">")
         mixture = NormalMixture(tuple(law["weights"]), tuple(law["means"]), tuple(law["variances"]))
         weights = np.asarray(mixture.weights, dtype=float)
         means = np.asarray(mixture.means, dtype=float)
@@ -187,7 +209,10 @@ def distribution_quantile(record: dict, probability: float) -> float:
     prob = _finite_number(probability, "probability")
     if not 0.0 < prob < 1.0:
         raise ValueError("probability must be strictly between 0 and 1")
-    if law["family"] == "student_t":
+    family = law["family"]
+    if family == "empirical_samples":
+        value = empirical_quantile(law, prob)
+    elif family == "student_t":
         value = float(t.ppf(prob, df=law["df"], loc=law["location"], scale=law["scale"]))
     else:
         mixture = NormalMixture(tuple(law["weights"]), tuple(law["means"]), tuple(law["variances"]))
@@ -797,6 +822,8 @@ def score_decisions(
     denominator = mean_baseline - mean_perfect
 
     sensitivity = None
+    calibration = None
+    murphy_curve = None
     if spec.policy == "binary_cost_loss":
         observed_events = hits + misses
         summary_block = {
@@ -827,6 +854,11 @@ def score_decisions(
                 "note": "Descriptive sensitivity across cost-loss ratios; alpha was predeclared in DecisionSpec",
                 "curve": value_curve(binary_prob_event_pairs, alphas=alphas, base_rate=spec.base_rate),
             }
+            calibration = brier_decomposition(binary_prob_event_pairs, base_rate=spec.base_rate)
+            murphy_curve = {
+                "kind": "binary_cost_loss_regret",
+                "curve": binary_murphy_curve(binary_prob_event_pairs, alphas=alphas),
+            }
         else:
             sensitivity = {
                 "status": "omitted_due_to_fallbacks",
@@ -854,6 +886,18 @@ def score_decisions(
             "mean_action_minus_actual": math.fsum(signed_errors) / count,
             "median_action_minus_actual": median_bias,
             "fallback_count": fallback_count,
+        }
+        all_vals = [v for pair in continuous_action_actual_pairs for v in pair]
+        low, high = min(all_vals), max(all_vals)
+        thresholds = [low] if low == high else [float(x) for x in np.linspace(low, high, 41)]
+        murphy_curve = {
+            "kind": "quantile_elementary_score",
+            "quantile_level": asymmetric_result["quantile_level"],
+            "curve": quantile_murphy_curve(
+                continuous_action_actual_pairs,
+                quantile_level=asymmetric_result["quantile_level"],
+                thresholds=thresholds,
+            ),
         }
 
     checks = [
@@ -897,32 +941,14 @@ def score_decisions(
         "summary": summary_block,
         "expense_distribution": expense_summary,
         "baseline_expense_distribution": baseline_summary,
+        "calibration": calibration,
+        "murphy_curve": murphy_curve,
         "sensitivity": sensitivity,
         "environment": {"python": platform.python_version()},
         "source_sha256": _source_hashes(),
     }
     write_json(output / "decision_summary.json", summary_payload)
     return output
-
-
-def _newey_west_se(differences: list[float]) -> tuple[float | None, float | None, int]:
-    """Return (naive_se, bartlett_hac_se, max_lag) for a time-ordered paired difference series."""
-    n = len(differences)
-    if n < 2:
-        return None, None, 0
-    avg = math.fsum(differences) / n
-    centered = [value - avg for value in differences]
-    gamma0 = math.fsum(value * value for value in centered) / n
-    naive_var = math.fsum(value * value for value in centered) / (n - 1)
-    naive_se = math.sqrt(max(naive_var, 0.0) / n)
-    max_lag = min(n - 1, int(n ** (1.0 / 3.0)))
-    long_run_var = gamma0
-    for lag in range(1, max_lag + 1):
-        weight = 1.0 - lag / (max_lag + 1)
-        gamma_lag = math.fsum(centered[i] * centered[i - lag] for i in range(lag, n)) / n
-        long_run_var += 2.0 * weight * gamma_lag
-    hac_se = math.sqrt(max(long_run_var, 0.0) / n)
-    return naive_se, hac_se, max_lag
 
 
 def plot_decision_scores(scored_directory: str | Path) -> Path:
@@ -939,10 +965,15 @@ def plot_decision_scores(scored_directory: str | Path) -> Path:
 
     sensitivity = summary.get("sensitivity")
     has_curve = isinstance(sensitivity, dict) and sensitivity.get("status") == "completed" and sensitivity.get("curve")
-    figure = Figure(figsize=(9.5, 7.2 if has_curve else 4.2), layout="constrained")
+    calibration = summary.get("calibration")
+    has_calibration = isinstance(calibration, dict) and bool(calibration.get("bins"))
+    panel_count = 1 + (1 if has_curve else 0) + (1 if has_calibration else 0)
+    figure = Figure(figsize=(9.5, 3.8 * panel_count), layout="constrained")
     FigureCanvasAgg(figure)
-    axes_list = figure.subplots(2 if has_curve else 1, 1)
-    top_ax = axes_list[0] if has_curve else axes_list
+    axes_list = figure.subplots(panel_count, 1)
+    if panel_count == 1:
+        axes_list = [axes_list]
+    top_ax = axes_list[0]
     top_ax.plot(times, cum_forecast, label=f"Model: {summary['model']['name']}", linewidth=1.6, color="#28547B")
     top_ax.plot(times, cum_baseline, label="Calibration baseline", linestyle="--", linewidth=1.2, color="#485865")
     top_ax.plot(times, cum_perfect, label="Perfect foresight", linestyle=":", linewidth=1.2, color="#2D7A4D")
@@ -954,8 +985,10 @@ def plot_decision_scores(scored_directory: str | Path) -> Path:
     top_ax.grid(axis="y", alpha=0.22)
     top_ax.legend(frameon=False)
 
+    next_panel = 1
     if has_curve:
-        bottom_ax = axes_list[1]
+        bottom_ax = axes_list[next_panel]
+        next_panel += 1
         curve = sensitivity["curve"]
         alphas = [row["alpha"] for row in curve]
         values = [row["relative_value"] if row["relative_value"] is not None else math.nan for row in curve]
@@ -979,7 +1012,29 @@ def plot_decision_scores(scored_directory: str | Path) -> Path:
         bottom_ax.grid(axis="y", alpha=0.22)
         bottom_ax.legend(frameon=False)
 
-    figure.autofmt_xdate()
+    if has_calibration:
+        cal_ax = axes_list[next_panel]
+        nonempty = [b for b in calibration["bins"] if b["count"] > 0]
+        cal_ax.plot([0.0, 1.0], [0.0, 1.0], linestyle="--", color="#485865", linewidth=1, label="Perfect calibration")
+        if nonempty:
+            cal_ax.plot(
+                [b["mean_probability"] for b in nonempty],
+                [b["observed_rate"] for b in nonempty],
+                marker="o", color="#28547B", linewidth=1.6, label="Binned observed frequency",
+            )
+        cal_ax.set(
+            title=(f"Reliability diagram — Brier {calibration['brier_score']:.4f} "
+                   f"(Rel {calibration['reliability']:.4f}, Res {calibration['resolution']:.4f}, "
+                   f"ECE {calibration['ece']:.4f})"),
+            xlabel="Mean predicted probability",
+            ylabel="Observed event frequency",
+            xlim=(0, 1),
+            ylim=(0, 1),
+        )
+        cal_ax.grid(alpha=0.22)
+        cal_ax.legend(frameon=False)
+
+    top_ax.tick_params(axis="x", rotation=25)
     destination = directory / "decision_scores.png"
     with destination.open("xb") as stream:
         figure.savefig(stream, format="png", dpi=150)
@@ -1039,7 +1094,37 @@ def compare_decision_scores(
     total_abs = math.fsum(abs_diffs)
     top_count = max(1, math.ceil(0.05 * count))
     top_5pct_abs_share = math.fsum(abs_diffs[:top_count]) / total_abs if total_abs > 0 else 0.0
-    naive_se, hac_se, hac_lag = _newey_west_se(differences)
+    naive_se, hac_se, hac_lag = newey_west_se(differences)
+
+    spec_dict = summaries[0]["spec"]
+    murphy_comparison = None
+    if spec_dict["policy"] == "binary_cost_loss":
+        if all(row["event_probability"] != "" for table in tables for row in table):
+            alphas = tuple(sorted(set(DEFAULT_SENSITIVITY_ALPHAS) | {float(spec_dict["cost_loss_ratio"])}))
+            first_pairs = [(float(row["event_probability"]), int(row["event"])) for row in tables[0]]
+            second_pairs = [(float(row["event_probability"]), int(row["event"])) for row in tables[1]]
+            murphy_comparison = {
+                "kind": "binary_cost_loss_regret",
+                **murphy_dominance(
+                    binary_murphy_curve(first_pairs, alphas=alphas),
+                    binary_murphy_curve(second_pairs, alphas=alphas),
+                ),
+            }
+    else:
+        tau = float(summaries[0]["summary"]["quantile_level"])
+        first_pairs = [(float(row["action"]), float(row["actual"])) for row in tables[0]]
+        second_pairs = [(float(row["action"]), float(row["actual"])) for row in tables[1]]
+        all_vals = [v for pairs in (first_pairs, second_pairs) for pair in pairs for v in pair]
+        low, high = min(all_vals), max(all_vals)
+        thresholds = [low] if low == high else [float(x) for x in np.linspace(low, high, 41)]
+        murphy_comparison = {
+            "kind": "quantile_elementary_score",
+            "quantile_level": tau,
+            **murphy_dominance(
+                quantile_murphy_curve(first_pairs, quantile_level=tau, thresholds=thresholds),
+                quantile_murphy_curve(second_pairs, quantile_level=tau, thresholds=thresholds),
+            ),
+        }
 
     output = Path(output_directory).expanduser().absolute()
     output.mkdir(parents=True, exist_ok=False)
@@ -1059,6 +1144,7 @@ def compare_decision_scores(
                 "model": summary["model"],
                 "summary": summary["summary"],
                 "expense_distribution": summary["expense_distribution"],
+                "calibration": summary.get("calibration"),
             }
             for directory, summary in zip(dirs, summaries)
         ],
@@ -1079,16 +1165,77 @@ def compare_decision_scores(
             "top_5pct_case_count": top_count,
             "top_5pct_abs_difference_share": top_5pct_abs_share,
         },
+        "murphy_comparison": murphy_comparison,
         "source_sha256": _source_hashes(),
-        "interpretation": "Descriptive paired decision comparison; inspect concentration and uncertainty before selecting a policy",
+        "interpretation": "Descriptive paired decision comparison; inspect concentration, Murphy dominance, and uncertainty before selecting a policy",
     }
     write_json(output / "decision_comparison.json", comparison)
+    first_label_md = f"1: {summaries[0]['model']['name']}"
+    second_label_md = f"2: {summaries[1]['model']['name']}"
+    pd = comparison["paired_differences"]
+    dc_lines = [
+        f"# Saved decision comparison: `{summaries[0]['spec']['name']}`",
+        "",
+        f"Policy: `{spec_dict['policy']}` · Cases: **{count}** ({tables[0][0]['target_time']} to {tables[0][-1]['target_time']}).",
+        "",
+        "[Machine-readable comparison](decision_comparison.json) · [Comparison chart](decision_comparison.png)",
+        "",
+        "## Realized expense summary",
+        "",
+        "| Model | Mean expense | Baseline | Perfect | Relative value | Median | p95 | Top-5% expense share |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for label_text, summary in ((first_label_md, summaries[0]), (second_label_md, summaries[1])):
+        s_blk = summary["summary"]
+        ed = summary["expense_distribution"]
+        base_exp = s_blk.get("mean_climatology_expense", s_blk.get("mean_baseline_expense"))
+        rv = s_blk.get("relative_value")
+        rv_str = f"{rv:.4g}" if rv is not None else "n/a"
+        dc_lines.append(
+            f"| `{label_text}` | {s_blk['mean_forecast_expense']:.4g} | {base_exp:.4g} | "
+            f"{s_blk['mean_perfect_expense']:.4g} | {rv_str} | {ed['median_expense']:.4g} | "
+            f"{ed['p95_expense']:.4g} | {ed['top_5pct_expense_share']:.1%} |"
+        )
+    dc_lines.append("")
+    dc_lines.append(
+        f"- **Paired expense diff (1 − 2; negative favors 1):** mean `{pd['mean_expense_difference']:+.4g}` "
+        f"(Bartlett HAC SE `{pd['mean_difference_hac_se']:.4g}` at lag {pd['hac_bartlett_lag']}; "
+        f"median `{pd['median_expense_difference']:+.4g}`; 1 won {pd['first_better_count']}, "
+        f"2 won {pd['second_better_count']}, tied {pd['tie_count']}; action agreement {pd['action_agreement_rate']:.1%}; "
+        f"top-5% abs diff share {pd['top_5pct_abs_difference_share']:.1%})."
+        if pd["mean_difference_hac_se"] is not None else
+        f"- **Paired expense diff (1 − 2):** mean `{pd['mean_expense_difference']:+.4g}`, "
+        f"action agreement {pd['action_agreement_rate']:.1%}."
+    )
+    if murphy_comparison is not None:
+        dc_lines.append(
+            f"- **Murphy dominance (`{murphy_comparison['kind']}`):** `{murphy_comparison['dominance_status']}` "
+            f"(1 better on {murphy_comparison['first_better_count']}/{murphy_comparison['threshold_count']}, "
+            f"2 better on {murphy_comparison['second_better_count']}/{murphy_comparison['threshold_count']})."
+        )
+    if any(isinstance(s.get("calibration"), dict) for s in summaries):
+        dc_lines.extend(["", "## Event-probability calibration (Brier decomposition)", "",
+                         "| Model | Brier | BSS | Reliability (↓) | Resolution (↑) | ECE (↓) | Prob bias |",
+                         "|---|---:|---:|---:|---:|---:|---:|"])
+        for label_text, summary in ((first_label_md, summaries[0]), (second_label_md, summaries[1])):
+            cal = summary.get("calibration")
+            if isinstance(cal, dict):
+                bss = f"{cal['brier_skill_score']:+.4g}" if cal["brier_skill_score"] is not None else "n/a"
+                dc_lines.append(
+                    f"| `{label_text}` | {cal['brier_score']:.4g} | {bss} | {cal['reliability']:.4g} | "
+                    f"{cal['resolution']:.4g} | {cal['ece']:.4g} | {cal['probability_bias']:+.4g} |"
+                )
+    dc_lines.extend(["", f"*{comparison['interpretation']}.*", ""])
+    with (output / "decision_comparison.md").open("x", encoding="utf-8") as stream:
+        stream.write("\n".join(dc_lines))
 
     times = [datetime.fromisoformat(row["target_time"]) for row in tables[0]]
     cumulative_diff = np.cumsum(differences)
-    figure = Figure(figsize=(9.5, 6.4), layout="constrained")
+    has_murphy = murphy_comparison is not None and bool(murphy_comparison.get("curve"))
+    figure = Figure(figsize=(9.5, 9.4 if has_murphy else 6.4), layout="constrained")
     FigureCanvasAgg(figure)
-    top_ax, bottom_ax = figure.subplots(2, 1)
+    axes_list = figure.subplots(3 if has_murphy else 2, 1)
+    top_ax, middle_ax = axes_list[0], axes_list[1]
     first_label = f"1: {summaries[0]['model']['name']}"
     second_label = f"2: {summaries[1]['model']['name']}"
     top_ax.plot(times, cumulative_diff, color="#28547B", linewidth=1.6)
@@ -1099,6 +1246,7 @@ def compare_decision_scores(
         ylabel="Cumulative expense diff",
     )
     top_ax.grid(axis="y", alpha=0.22)
+    top_ax.tick_params(axis="x", rotation=25)
 
     labels = [first_label, second_label, "Calibration baseline"]
     means = [
@@ -1113,13 +1261,28 @@ def compare_decision_scores(
     ]
     positions = np.arange(len(labels))
     width = 0.35
-    bottom_ax.bar(positions - width / 2, means, width, label="Mean expense", color="#28547B")
-    bottom_ax.bar(positions + width / 2, p95s, width, label="95th percentile expense", color="#B65D24")
-    bottom_ax.set_xticks(positions, labels)
-    bottom_ax.set(title="Mean vs. tail (95th percentile) decision expense", ylabel="Expense")
-    bottom_ax.grid(axis="y", alpha=0.22)
-    bottom_ax.legend(frameon=False)
-    figure.autofmt_xdate()
+    middle_ax.bar(positions - width / 2, means, width, label="Mean expense", color="#28547B")
+    middle_ax.bar(positions + width / 2, p95s, width, label="95th percentile expense", color="#B65D24")
+    middle_ax.set_xticks(positions, labels)
+    middle_ax.set(title="Mean vs. tail (95th percentile) decision expense", ylabel="Expense")
+    middle_ax.grid(axis="y", alpha=0.22)
+    middle_ax.legend(frameon=False)
+
+    if has_murphy:
+        murphy_ax = axes_list[2]
+        curve = murphy_comparison["curve"]
+        xs = [pt["threshold"] for pt in curve]
+        murphy_ax.plot(xs, [pt["first_score"] for pt in curve], color="#28547B", linewidth=1.6, label=first_label)
+        murphy_ax.plot(xs, [pt["second_score"] for pt in curve], color="#B65D24", linewidth=1.6, linestyle="--", label=second_label)
+        xlabel = "Cost-loss ratio alpha" if spec_dict["policy"] == "binary_cost_loss" else "Threshold theta (target units)"
+        murphy_ax.set(
+            title=f"Murphy diagram — lower is better (status: {murphy_comparison['dominance_status']})",
+            xlabel=xlabel,
+            ylabel="Mean elementary score",
+        )
+        murphy_ax.grid(alpha=0.22)
+        murphy_ax.legend(frameon=False)
+
     with (output / "decision_comparison.png").open("xb") as stream:
         figure.savefig(stream, format="png", dpi=150)
     return output

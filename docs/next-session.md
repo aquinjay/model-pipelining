@@ -245,22 +245,87 @@ continuous asymmetric (newsvendor) and expense-concentration extensions in
   cohorts and reports mean/median differences, win/loss/tie rates, action
   agreement, worst-5% difference concentration, and Bartlett HAC SEs.
 
-### Up next: robust evaluation summaries, viewer, and shadow trial
+### Completed: robust evaluation summaries, probabilistic baselines, and decision review integration (Phase 1, Slice 2 — 2026-11-24)
 
-1. **Upgrade `compare_runs` and `experiment_review.py` (Phase 1, Slice 2):**
-   Move beyond RMSE and raw mean log score as headline summaries by surfacing
-   bias, MdAE, CRPS, pinball/asymmetric loss, HPD coverage/width, worst-5%
-   loss concentration, paired win rates + Bartlett HAC SEs, and at least one
-   probabilistic baseline benchmark (empirical climatology or residual
-   persistence).
-2. **Local read-only comparison and decision viewer (Phase 2):**
-   Build a small local read-only viewer (e.g., Streamlit) over saved run and
-   decision directories showing observed values, HPD intervals, cohort-mismatch
-   checks, and a cost-loss / asymmetric-cost control against reference policies.
-3. **Two-stage live issuance and personal shadow trial (Phase 2):**
-   Separate forecast issuance (for targets without realized outcomes yet) from
-   later settlement so the framework can run a shadow trial on one recurring,
-   reversible personal decision with predeclared rule, deadline, and miss cost.
+- **Shared robust diagnostics ([robust_scoring.py](../src/model_pipelining/robust_scoring.py)):**
+  Computes signed bias (mean/median error), MdAE, p90/p95/max errors, worst-5%
+  loss concentration (with signed-loss handling for negative log density),
+  paired win/loss/tie rates, and deterministic Bartlett (Newey-West) HAC SEs.
+- **Upgraded comparisons and unified review:** `compare_runs` in
+  [reporting.py](../src/model_pipelining/reporting.py) now saves
+  `point_comparison`, per-run CRPS/log-score tail summaries, paired HAC
+  stability diagnostics, and a 3-panel `distribution_scores.png` including
+  cumulative CRPS difference. `build_experiment_review` in
+  [experiment_review.py](../src/model_pipelining/experiment_review.py) (and
+  `scripts/review_experiment.py`) surfaces bias, MdAE, worst-5% concentration,
+  HPD coverage/width, and pinball losses, and optionally links and verifies
+  saved `decision_directories` (`--decision-directories`, `--require-decisions`).
+- **Probabilistic baselines ([probabilistic_baselines.py](../src/model_pipelining/probabilistic_baselines.py)):**
+  Zero-tuning reference Student-t `GaussianClimatology` and multi-horizon
+  `ResidualPersistence` adapters implement the full `Forecaster` contract
+  (`quantiles`, `highest_density`, `distribution`, `from_configuration`), with
+  CLI `scripts/run_probabilistic_baseline.py`.
+- **Empirical findings (`runs/robust-evaluation-study-20261124/`):**
+  1. On Central Park 2024 TMAX (366 cases), `ResidualPersistence` beat fixed
+     `LocalLevel` on CRPS (2.104 vs 2.119), HPD95 width (15.24 vs 15.68 °C),
+     binary $\ge 25$ °C decision expense (0.1148 vs 0.1243, HAC SE 0.0044), and
+     3:1 asymmetric expense (4.539 vs 4.618).
+  2. Expanding `GaussianClimatology` had negative binary decision value (−0.466)
+     on the bimodal seasonal cycle, motivating an empirical/nonparametric or
+     seasonal distribution family in Phase 3.
+  3. On the 130-case synthetic mean-shift study (`LocalLevelVariance` vs
+     `LocalLevelJointVariance`), paired CRPS (+0.0058 ± 0.0153 HAC SE),
+     log-score (−0.0245 ± 0.0479 HAC SE), and squared-error (−0.0535 ± 0.1051
+     HAC SE) differences are well inside noise, with 34–49% of total absolute
+     difference concentrated in 7 transition days.
+
+### Completed: empirical distributions, nonparametric baselines, and Brier/Murphy diagnostics (Phase 1, Slice 3 — 2026-11-24)
+
+- **Empirical weighted-sample laws (`empirical_samples`):** Added to
+  [distribution_scoring.py](../src/model_pipelining/distribution_scoring.py)
+  (exact $O(k \log k)$ nonnegative step-integral CRPS; `log_score=None` without
+  inventing a density) and [decisions.py](../src/model_pipelining/decisions.py)
+  (exact strict/inclusive discrete event probabilities and left-continuous
+  inverse CDF quantiles). Cross-family comparisons (continuous vs. empirical)
+  work seamlessly in `compare_runs` and `experiment_review.py`.
+- **Nonparametric baselines ([probabilistic_baselines.py](../src/model_pipelining/probabilistic_baselines.py)):**
+  Added `EmpiricalClimatology` and `EmpiricalResidualPersistence` (optional
+  rolling `window`, `supports_highest_density=False`), preserving skewness and
+  multimodality.
+- **Calibration & Murphy diagnostics ([decision_value.py](../src/model_pipelining/decision_value.py), [decisions.py](../src/model_pipelining/decisions.py)):**
+  Added exact Brier reliability/resolution/uncertainty decomposition (plus ECE,
+  probability bias, and calibration-baseline BSS) and Ehm et al. (2016) Murphy
+  curves and dominance checks (`first_dominates`, `second_dominates`, `tied`,
+  `crossing`), rendered in `decision_scores.png` (reliability diagram panel) and
+  `decision_comparison.png` (Murphy diagram panel).
+- **Empirical findings (`runs/option-a-empirical-study-20261124/`):**
+  1. On Central Park 2024 TMAX, `EmpiricalResidualPersistence` beat both
+     `LocalLevel` and Student-t `ResidualPersistence` on CRPS (2.0995 vs 2.1036
+     vs 2.1188), Brier (0.0736), reliability (0.0028), resolution (0.1467), and
+     ECE (2.17%), halving probability bias (−0.0086 vs −0.0209). Rolling 30-day
+     `EmpiricalClimatology` reached `V = +0.647` with zero probability bias.
+  2. On NOAA 2026 H1 range forecasts, Brier decomposition showed `same_day`
+     pairing had more than 2× the resolution of `independent` (0.03407 vs
+     0.01566) but 3× worse reliability error (0.04525 vs 0.01497, ECE 16.2% vs
+     10.1%), and Murphy curves crossed (independent better on 14/19 ratios,
+     same-day better on 4/19).
+
+### Up next: viewer, live issuance/settlement, and calendar flexibility
+
+1. **Local read-only comparison and decision viewer (Phase 2A):**
+   Build a small local read-only viewer (e.g., Streamlit) over saved run,
+   comparison, and decision directories showing observed values, HPD intervals,
+   cohort-mismatch checks, cumulative loss/expense differences, reliability and
+   Murphy diagrams, and an interactive cost-loss / asymmetric-cost control.
+2. **Two-stage live issuance and personal shadow trial (Phase 2B):**
+   Separate forecast issuance in `backtest.py` (for targets without realized
+   outcomes yet) from later settlement so the framework can run a shadow trial
+   on one recurring, reversible personal decision with predeclared rule,
+   deadline, and miss cost.
+3. **Calendar flexibility, packaging, and run lineage (Phase 3 & 4):**
+   Relax `daily_utc` + `missing_policy="reject"` in `experiments.py` for
+   real-world calendars/gaps, enable editable packaging in `pyproject.toml`,
+   and add a lightweight run index / iteration lineage over `runs/`.
 
 ### NOAA research checkpoint
 

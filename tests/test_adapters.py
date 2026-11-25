@@ -12,6 +12,12 @@ from model_pipelining.local_level_joint_variance import LocalLevelJointVariance
 from model_pipelining.local_level_variance import LocalLevelVariance, QuadratureSettings
 from model_pipelining.normal_mean import NormalMean
 from model_pipelining.normal_mean_variance import NormalMeanVariance
+from model_pipelining.probabilistic_baselines import (
+    EmpiricalClimatology,
+    EmpiricalResidualPersistence,
+    GaussianClimatology,
+    ResidualPersistence,
+)
 from model_pipelining.sampling import MCMCSettings
 
 
@@ -30,6 +36,10 @@ class ConfigurationRestoreTests(unittest.TestCase):
         LocalLevelJointVariance(evolution_variances=(0., .2), evolution_weights=(.3, .7),
                                 quadrature=QuadratureSettings(maximum_nodes=512)),
         WeeklyHarmonicRegression(),
+        GaussianClimatology(), GaussianClimatology(window=30),
+        ResidualPersistence(), ResidualPersistence(window=60),
+        EmpiricalClimatology(), EmpiricalClimatology(window=30),
+        EmpiricalResidualPersistence(), EmpiricalResidualPersistence(window=60),
     )
 
     def test_every_catalog_adapter_restores_from_saved_json(self):

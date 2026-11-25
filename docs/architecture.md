@@ -38,11 +38,11 @@ not a sandbox preventing an adapter from independently reading files.
 |---|---|---|
 | Application/task | Versioned task/evaluation/evidence requirements, targets/units, release/revision rules, benchmarks, and development/final periods | Richer calendars/features, source-specific availability verification, application selection |
 | Data preparation | Local copy/read, verified one-file snapshots, receipts, and tags | Remote sources, multi-file identity, processing lineage, reusable quality evidence |
-| Model adapter | Point benchmarks, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, categorical joint evolution/noise variance, conjugate unknown-mean/variance models, optional sampler audits | Continuous evolution-variance priors, intractable sampled prediction, incremental updates, broader checks |
-| Runner | Historical origins, eligible histories, output validation, fit evidence with caller-required names, explicit required evidence workflows and visible failures | Arbitrary-stage dispatch and explicit exploratory overrides |
-| Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, highest-density set summaries and full Student-t/Gaussian-mixture CRPS/log losses | Further distribution/sample capabilities when needed |
-| Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review | Run index, iteration lineage, integrity/recovery/retention automation |
-| Reporting | Saved-only unified reviews, charts and matched-case comparisons including full-law losses | Further application delivery |
+| Model adapter | Point benchmarks, zero-tuning parametric (`GaussianClimatology`, `ResidualPersistence`) and nonparametric (`EmpiricalClimatology`, `EmpiricalResidualPersistence`) probabilistic baselines, fixed-variance Gaussian local level, learned local-level observation variance with checked quadrature, categorical joint evolution/noise variance, conjugate unknown-mean/variance models, optional sampler audits, weekly harmonic and temperature regression | Continuous evolution-variance priors, intractable sampled prediction, incremental updates, broader checks |
+| Runner | Historical origins, eligible histories, output validation, fit evidence with caller-required names, explicit required evidence workflows and visible failures | Arbitrary-stage dispatch, live issuance/settlement separation, and explicit exploratory overrides |
+| Evaluation | Primary/benchmark point errors on matched cases, explicit actual vintage, quantile/equal-tail scores, highest-density set summaries, full Student-t/Gaussian-mixture/empirical-sample CRPS (and continuous log losses), robust bias/MdAE/worst-5% concentration, Bartlett HAC paired SEs, Brier reliability/resolution, and Murphy dominance | Further distribution/sample capabilities when needed |
+| Artifact storage | Local run directories, manifests, frozen forecasts, evaluations, checks, pending review, separate frozen decision issuance/scoring/comparison directories | Run index, iteration lineage, integrity/recovery/retention automation |
+| Reporting | Saved-only unified reviews (including optional decision evaluations), Markdown/JSON matched-case comparisons (`comparison.md`, `decision_comparison.md`), reliability/Murphy/cumulative-difference charts | Local interactive read-only comparison viewer and further application delivery |
 | Predictive criticism | Constant-mean, learned-noise and joint-model replications/prior comparisons, sequential criticism, marginal calibration, release-aware development selection and saved-only charts | Further models' full-data checks, application-specific review |
 
 A run's directory and manifest identify its model/configuration and saved cases.
@@ -387,9 +387,28 @@ contract](experiment-review.md).
 An optional declared `Forecast.distribution` carries the law from the model's same
 fit. Shared execution validates summaries, freezes every origin before actual
 selection and scores saved laws. `distribution_scoring.py` owns deterministic
-Student-t/mixture proper losses and saved-cohort consistency checks; reporting
-compares complete matching cases without model calls. Point-only and older
-artifacts retain their capabilities. See [details](distribution-scoring.md).
+Student-t, Gaussian-mixture, and discrete `empirical_samples` CRPS (plus
+continuous log density, with `log_score=None` for discrete laws) and saved-cohort
+consistency checks; `robust_scoring.py` and `reporting.py` compare complete
+matching cases without model calls, writing `comparison.md`, `comparison.json`,
+`comparison.png`, and 3-panel `distribution_scores.png` (including mean Murphy
+dominance and Bartlett HAC paired SEs). Point-only and older artifacts retain
+their capabilities. See [details](distribution-scoring.md) and
+[the evaluation and decision tools guide](evaluation-and-decisions.md).
+
+## Saved decision layer boundary
+
+`decisions.py` and `decision_value.py` form a separate saved-only layer
+downstream of frozen forecasts. `issue_decisions_from_run` and
+`issue_decisions_from_probabilities` read only forecast-time artifacts and
+freeze `recommendations.csv` with SHA-256 digests and explicit fallback records.
+`score_decisions` links realized outcomes in a new directory without mutating
+issued records, computing binary cost-loss or continuous asymmetric expenses,
+tail concentration, Brier reliability/resolution/ECE, and Murphy curves.
+`compare_decision_scores` writes `decision_comparison.md`, JSON, and 3-panel
+charts with paired HAC SEs and Murphy dominance. `experiment_review.py`
+optionally links and verifies compatible `decision_evaluation` folders alongside
+forecast, evidence, and calibration sources. See [decision value](decision-value.md).
 
 ## Repository CI boundary
 

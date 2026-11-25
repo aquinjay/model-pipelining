@@ -168,8 +168,10 @@ defines exact region/quantile validation and scoring rules.
 | `fits/NNNNNN/trace.png` | Explicit `plot_fit` or normal-mean CLI trace flag | Saved audit traces/densities against exact references, with warmup separation |
 | `prior_predictive.csv` | Local-level script only | One 200-step simulated latent-level/observation trajectory before conditioning on data |
 | `prior_predictive.json` | Local-level script only | Seed, count, Python version, fixed settings, and pending prior review |
-| `comparison.json` | Explicit `compare_runs` call, in a new comparison directory | Sources, model settings/scores, common cases, and applicable uncertainty comparisons |
+| `comparison.json` | Explicit `compare_runs` call, in a new comparison directory | Sources, model settings/scores, robust point/bias/concentration/Murphy diagnostics, common uncertainty, and paired distribution comparisons with Bartlett HAC SEs |
+| `comparison.md` | Same comparison call | Readable Markdown summary of point/bias/concentration tables, Murphy dominance, CRPS/log-score diagnostics, uncertainty, and linked charts |
 | `comparison.png` | Same comparison call | Saved actuals/means and available regions |
+| `distribution_scores.png` | Same comparison call when both runs declare full predictive distributions | 3-panel chart: per-case CRPS, negative log density (continuous laws), and cumulative CRPS difference |
 
 The library runner does not simulate/save priors or draw a chart. The local-level
 script simulates before fitting but saves its prior files after the backtest
@@ -339,19 +341,47 @@ Calibration rows now optionally preserve left/inclusive CDF bounds, atom randomi
 
 Explicit `scripts/review_experiment.py` writes `report.md`, `report.json`,
 `checks.json` and a new pending `review.json` into a separate unused directory.
-Source folders are unchanged. Reports link existing charts and retain all supplied
-calibration exercises, failures, omissions and source inventories. Current hashes
-record observed bytes; only earlier child receipts verify completion bytes.
+Source folders are unchanged. Reports surface robust point bias/MdAE/concentration,
+CRPS/log-score tails, HPD coverage/width, and pinball loss automatically, and
+link supplied historical evidence, calibration exercises, optional saved decision
+evaluations (`--decision-directories`), existing charts, failures, omissions,
+and source inventories. Current hashes record observed bytes; only earlier child
+receipts verify completion bytes.
 Read [statuses, compatibility and scope](../docs/experiment-review.md).
+
+## Saved decision issuance, scoring, and comparison folders
+
+Explicit `scripts/run_decisions.py` (or library calls in `decisions.py`) writes
+three separate artifact folder kinds without modifying any forecast run:
+
+- **Issuance (`issue`):** `decision_spec.json`, `recommendations.csv`, and
+  `decision_manifest.json` (`kind: "decision_issuance"`, SHA-256 digests). Built
+  from forecast-time files only; never reads realized outcomes.
+- **Outcome scoring (`score`):** `decision_evaluation.csv`,
+  `decision_summary.json` (`kind: "decision_evaluation"`, including tail
+  concentration, Brier reliability/resolution/ECE for binary policies, and Murphy
+  curves), `checks.json`, pending `review.json`, and `decision_scores.png`
+  (cumulative expense, value sensitivity, and reliability diagram; omit with
+  `--no-plot`).
+- **Paired comparison (`compare`):** `decision_comparison.md`,
+  `decision_comparison.json` (`kind: "decision_comparison"`, including win/loss/tie
+  rates, action agreement, worst-5% difference share, Bartlett HAC SEs, and
+  Murphy dominance), and 3-panel `decision_comparison.png`.
+
+See [the evaluation and decision tools guide](../docs/evaluation-and-decisions.md)
+and [cost-loss decisions](../docs/decision-value.md).
 
 ## Full distribution forecasts and losses
 
-For declared distribution models, backtesting automatically freezes every origin
-in `predictive_distributions.json` before selecting scoring actuals, then writes
-`distribution_evaluation.csv` and `scores.json.distribution`. Failed cases stay
-visible and required scoring failures fail the run. Existing point/interval files
-are retained. Explicit matched comparison writes distribution losses/differences
-in `comparison.json` plus `distribution_scores.png` when both runs support them.
+For declared distribution models (`student_t`, `gaussian_mixture`, or discrete
+`empirical_samples`), backtesting automatically freezes every origin in
+`predictive_distributions.json` before selecting scoring actuals, then writes
+`distribution_evaluation.csv` and `scores.json.distribution` (`log_score` is
+`None` for discrete `empirical_samples` laws). Failed cases stay visible and
+required scoring failures fail the run. Existing point/interval files are
+retained. Explicit matched comparison writes `comparison.md`, `comparison.json`
+(with paired CRPS/log-score stability and Bartlett HAC SEs), `comparison.png`,
+and 3-panel `distribution_scores.png` when both runs support full laws.
 Older/point-only runs have no reconstructed distributions. See
 [methods, units and numerical limits](../docs/distribution-scoring.md).
 

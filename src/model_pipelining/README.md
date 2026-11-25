@@ -51,6 +51,8 @@ functions are listed below; names starting with `_` are implementation helpers.
 | [reporting.py](reporting.py) | Read saved artifacts and draw/compare results without fitting |
 | [decision_value.py](decision_value.py) | Binary cost-loss and continuous asymmetric (newsvendor) expenses, relative economic value, and tail-concentration summaries |
 | [decisions.py](decisions.py) | Model-independent `DecisionSpec`, frozen per-origin recommendation issuance, separate outcome scoring, saved-only charts, and paired comparisons |
+| [robust_scoring.py](robust_scoring.py) | Robust error/loss summaries, worst-5% tail concentration, and deterministic Bartlett HAC paired-difference diagnostics |
+| [probabilistic_baselines.py](probabilistic_baselines.py) | Zero-tuning parametric (`GaussianClimatology`, `ResidualPersistence`) and nonparametric (`EmpiricalClimatology`, `EmpiricalResidualPersistence`) probabilistic baseline adapters |
 | [harmonic_regression.py](harmonic_regression.py) | Weekly Fourier-pair least-squares point forecasts for a second model family |
 | [temperature_regression.py](temperature_regression.py) | Scalar annual Fourier and lag regressions with restorable settings |
 | [noaa.py](noaa.py) | Validate a caller-supplied metric NOAA daily TMIN or TMAX archive |
@@ -978,6 +980,11 @@ asymmetric_quantile_level(under_cost, over_cost) -> float
 asymmetric_expense(action, actual, *, under_cost, over_cost) -> float
 evaluate_asymmetric_decisions(cases, *, under_cost, over_cost, baseline_action) -> dict
 summarize_expenses(expenses) -> dict
+brier_decomposition(cases, *, base_rate, bins=10) -> dict
+binary_murphy_curve(cases, *, alphas) -> list[dict]
+quantile_murphy_curve(cases, *, quantile_level, thresholds) -> list[dict]
+mean_murphy_curve(cases, *, thresholds) -> list[dict]
+murphy_dominance(first_curve, second_curve, *, tolerance=1e-12) -> dict
 ```
 
 [decisions.py](decisions.py) separates forecast-time decision issuance from
@@ -1008,3 +1015,44 @@ differences with win/loss/tie rates, action agreement, worst-5% difference share
 and naive plus Bartlett HAC standard errors. Library callers invoke
 `plot_decision_scores` explicitly; `scripts/run_decisions.py score` draws it
 automatically unless `--no-plot` is supplied. See [the decision guide](../../docs/decision-value.md).
+
+## Robust evaluation summaries and probabilistic baselines
+
+[robust_scoring.py](robust_scoring.py) provides deterministic, stdlib-only
+summaries shared by `reporting.py`, `experiment_review.py`, and `decisions.py`:
+
+```text
+linear_quantile(ordered, probability) -> float
+newey_west_se(differences) -> tuple[float | None, float | None, int]
+summarize_loss_series(losses, *, nonnegative=True) -> dict
+summarize_point_errors(rows) -> dict
+summarize_paired_differences(differences) -> dict
+```
+
+`compare_runs` automatically populates `point_comparison` (including mean Murphy
+dominance) and paired CRPS / log-score stability diagnostics (win rates,
+worst-5% difference concentration, and Bartlett HAC SEs), writes a readable
+`comparison.md` alongside `comparison.json`, and plots a cumulative CRPS
+difference panel in `distribution_scores.png`. `compare_decision_scores`
+similarly writes `decision_comparison.md`, `decision_comparison.json`, and a
+3-panel `decision_comparison.png` with a Murphy diagram. `build_experiment_review`
+surfaces robust point, distribution, and uncertainty summaries automatically and
+accepts optional `decision_directories=()` and `require_decisions=False` to
+verify and summarize saved decision evaluations alongside forecast, evidence,
+and calibration runs. See [the evaluation and decision tools guide](../../docs/evaluation-and-decisions.md).
+
+[probabilistic_baselines.py](probabilistic_baselines.py) supplies four
+zero-tuning baseline adapters registered in [adapters.py](adapters.py) and
+`PROBABILISTIC_BENCHMARKS`:
+
+```text
+GaussianClimatology(*, window=None)           # Student-t, df=n-1, HPD+quantiles+distribution
+ResidualPersistence(*, window=None)           # Student-t, df=m matched lead diffs, HPD+quantiles+distribution
+EmpiricalClimatology(*, window=None)          # empirical_samples, quantiles+distribution (no HPD/log_score)
+EmpiricalResidualPersistence(*, window=None)  # empirical_samples of y_last + e_i, quantiles+distribution
+```
+
+Invoke them through `run_backtest` or explicitly via
+`scripts/run_probabilistic_baseline.py --model <name>`. `distribution_scoring.py`
+also exports `empirical_cdf_bounds(record, x)` and `empirical_quantile(record, probability)`
+for validated `empirical_samples` laws (exact $O(k \log k)$ CRPS, `log_score=None`).

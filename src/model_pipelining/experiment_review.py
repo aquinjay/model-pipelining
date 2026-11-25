@@ -14,6 +14,7 @@ from model_pipelining.evidence_workflows import REQUIRED_WORKFLOW_CHECKS, WORKFL
 from model_pipelining.experiments import ExperimentSpec, ForecastCase, ObservationVersion
 from model_pipelining.inference import assess_checks
 from model_pipelining.distribution_scoring import read_saved_distribution_scores
+from model_pipelining.robust_scoring import summarize_loss_series, summarize_point_errors
 
 
 _FORECAST_CHECKS = ("input_schema_and_daily_calendar", "eligible_history_and_target_alignment",
@@ -127,10 +128,20 @@ def _forecast(directory, manifest, specification):
             names.append("all_uncertainty_cases_scored")
     if manifest["model"].get("supports_distribution"):
         names.extend(("full_predictive_distributions_valid", "all_distribution_cases_scored"))
+    evaluations = _csv(directory / "evaluation.csv")
     passed, requirements = _checks(directory, names)
     passed = passed and all(row["status"] == "passed" for row in predictions)
+    robust_point = summarize_point_errors(evaluations) if any(row.get("status") == "passed" for row in evaluations) else None
+    robust_distribution = None
     if manifest["model"].get("supports_distribution") and passed:
-        read_saved_distribution_scores(directory, manifest, predictions, _csv(directory/"evaluation.csv"))
+        dist_summary, dist_rows = read_saved_distribution_scores(directory, manifest, predictions, evaluations)
+        robust_distribution = {
+            "crps": summarize_loss_series([row["crps"] for row in dist_rows], nonnegative=True),
+            "log_score": (
+                summarize_loss_series([row["log_score"] for row in dist_rows], nonnegative=False)
+                if dist_summary["mean_log_score"] is not None else None
+            ),
+        }
     if fit_required:
         fits = _csv(directory / "fit_index.csv")
         if (len(fits) != len(predictions) or len({row["origin_index"] for row in fits}) != len(fits)
@@ -157,9 +168,13 @@ def _forecast(directory, manifest, specification):
                 raise ValueError("Fit model configuration mismatch")
             fit_passed, _ = assess_checks(fit["checks"], required_names=specification.evidence.required_fit_checks)
             passed = passed and fit_passed and fit.get("status") == "completed" and row["status"] == "passed"
+    scores = _json(directory / "scores.json")
     return {"passed": passed and manifest["status"] == "completed", "check_requirements": requirements,
             "case_count": len(predictions), "target_start": predictions[0]["target_time"],
-            "target_end": predictions[-1]["target_time"], "scores": _json(directory / "scores.json")}
+            "target_end": predictions[-1]["target_time"], "scores": scores,
+            "robust_point_summary": robust_point,
+            "robust_distribution_summary": robust_distribution,
+            "uncertainty_summary": scores.get("uncertainty")}
 
 
 def _evidence(directory, manifest, forecast, specification):
@@ -235,23 +250,60 @@ def _calibration(directory, manifest, forecast):
             "scope": "Prior/data model-level exercise; not external-data or every-history-length validation"}
 
 
+def _decision(directory, manifest, forecast, forecast_path):
+    if manifest.get("format_version") != 1 or manifest.get("kind") != "decision_evaluation":
+        raise ValueError("Expected version-1 decision_evaluation summary")
+    for key in ("dataset", "snapshot_id"):
+        if manifest.get("input", {}).get(key) != forecast["input"][key]:
+            raise ValueError(f"Decision {key} differs from forecast input")
+    _model_identity(manifest.get("model"), forecast["model"])
+    passed, requirements = _checks(
+        directory, ("issued_artifacts_valid", "outcomes_matched_complete", "all_decisions_scored"),
+    )
+    rows = _csv(directory / "decision_evaluation.csv")
+    predictions = _csv(forecast_path / "predictions.csv")
+    evaluations = _csv(forecast_path / "evaluation.csv")
+    if (len(rows) != len(predictions)
+            or [row["target_time"] for row in rows] != [row["target_time"] for row in predictions]):
+        raise ValueError("Decision evaluation target cohort differs from forecast")
+    for row, eval_row in zip(rows, evaluations):
+        if row["actual"] != "" and eval_row["actual"] != "":
+            if not math.isclose(float(row["actual"]), float(eval_row["actual"]), rel_tol=1e-12, abs_tol=1e-12):
+                raise ValueError("Decision evaluation actual differs from forecast evaluation")
+    return {
+        "passed": passed and manifest.get("status") == "completed",
+        "check_requirements": requirements,
+        "spec": manifest["spec"],
+        "spec_sha256": manifest["spec_sha256"],
+        "summary": manifest["summary"],
+        "expense_distribution": manifest["expense_distribution"],
+        "baseline_expense_distribution": manifest["baseline_expense_distribution"],
+        "calibration": manifest.get("calibration"),
+        "scope": "Realized decision expense on the matching saved forecast cohort; descriptive only",
+    }
+
+
 def build_experiment_review(*, forecast_directory, output_directory, evidence_directory=None,
-                            calibration_directories=(), require_calibration=False):
+                            calibration_directories=(), require_calibration=False,
+                            decision_directories=(), require_decisions=False):
     """Build JSON/Markdown from saved artifacts; never execute a model or mutate a run.
 
     A version-3 forecast is the identity anchor. Evidence may describe an earlier
     development cutoff, including when the forecast has final role. Calibration
     must match the exact model/configuration but has no observed-input identity.
-    Missing/failed/incompatible supplied evidence stays visible in the report.
+    Optional saved decision evaluations must match the forecast input, model,
+    and target cohort. Missing/failed/incompatible supplied evidence stays visible.
     """
-    if type(require_calibration) is not bool or not isinstance(calibration_directories, (tuple, list)):
-        raise ValueError("Use a boolean calibration requirement and a list/tuple of directories")
+    if (type(require_calibration) is not bool or not isinstance(calibration_directories, (tuple, list))
+            or type(require_decisions) is not bool or not isinstance(decision_directories, (tuple, list))):
+        raise ValueError("Use boolean requirements and list/tuple artifact directories")
     forecast_path = Path(forecast_directory).expanduser().absolute()
     output = Path(output_directory).expanduser().absolute()
     paths = [("forecast", forecast_path)]
     if evidence_directory is not None:
         paths.append(("evidence", Path(evidence_directory).expanduser().absolute()))
     paths.extend((f"calibration-{index}", Path(path).expanduser().absolute()) for index, path in enumerate(calibration_directories))
+    paths.extend((f"decision-{index}", Path(path).expanduser().absolute()) for index, path in enumerate(decision_directories))
     if len({path.resolve() for _, path in paths}) != len(paths):
         raise ValueError("Artifact directories must be distinct")
     if any(output.resolve().is_relative_to(path.resolve()) or path.resolve().is_relative_to(output.resolve()) for _, path in paths):
@@ -273,7 +325,10 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
             inventory = _inventory(directory)
             inventories.append((directory, inventory))
             record["artifact_sha256"] = inventory
-            manifest_name = "manifest.json" if kind == "forecast" else "evidence.json" if kind == "evidence" else "calibration.json"
+            manifest_name = ("manifest.json" if kind == "forecast"
+                             else "evidence.json" if kind == "evidence"
+                             else "decision_summary.json" if kind.startswith("decision-")
+                             else "calibration.json")
             manifest = _json(directory / manifest_name)
             record["computation_status"] = manifest.get("status")
             if manifest.get("status") not in ("completed", "failed"):
@@ -288,6 +343,8 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
                 versions.extend((f"{kind}-child-{index}", child) for index, child in enumerate(children[1:]))
                 record["details"] = {"passed": passed, "workflows": workflow_results, "cutoff": manifest["context"]["issued_at"],
                                      "scope": "Evidence applies to its explicit selected development history/cutoff"}
+            elif kind.startswith("decision-"):
+                record["details"] = _decision(directory, manifest, forecast, forecast_path)
             else:
                 record["details"] = _calibration(directory, manifest, forecast)
             record["validation_status"] = "passed"
@@ -341,6 +398,12 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
     for row in calibrations:
         checks.append({"name": row["kind"], "required": True,
                        "status": "passed" if row["validation_status"] == "passed" and row["details"]["passed"] else "failed"})
+    decisions = [row for row in sources if row["kind"].startswith("decision-")]
+    if require_decisions and not decisions:
+        checks.append({"name": "required_decisions", "required": True, "status": "missing"})
+    for row in decisions:
+        checks.append({"name": row["kind"], "required": True,
+                       "status": "passed" if row["validation_status"] == "passed" and row["details"]["passed"] else "failed"})
     if any(row["status"] == "failed" for row in checks):
         status = "failed"
     elif any(row["status"] == "missing" for row in checks):
@@ -351,11 +414,15 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
         if _inventory(directory) != before:
             raise ValueError("Source artifacts changed during report construction")
     output.mkdir(parents=True, exist_ok=False)
+    omitted_evidence = {"historical_evidence": evidence_directory is None, "calibration": not calibrations}
+    if require_decisions or decisions:
+        omitted_evidence["decisions"] = not decisions
     report = {"format_version": 1, "kind": "experiment_review", "status": status,
               "created_at": datetime.now(UTC).isoformat(), "input": forecast["input"], "model": forecast["model"],
               "experiment": specification.to_dict(), "sources": sources, "checks": checks,
               "version_conflicts": conflicts, "version_omissions": omissions, "human_review_status": "pending",
-              "omitted_evidence": {"historical_evidence": evidence_directory is None, "calibration": not calibrations},
+              "omitted_evidence": omitted_evidence,
+              "decision_evaluation_count": len(decisions),
               "processor_sha256": _digest(Path(__file__)),
               "limitations": ["Ready for review means compatible computations and requested artifacts, not model approval",
                   "Current file hashes snapshot observed bytes; only existing child receipts check earlier completion bytes",
@@ -369,7 +436,7 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
     lines = ["# Experiment review", "", f"Computational readiness: **{status}**. Human review: **pending**.", "",
              f"Model: `{forecast['model']['name']}`", f"Dataset: `{forecast['input']['dataset']}`",
              f"Evaluation role: `{specification.evaluation.role}`",
-             f"Historical evidence supplied: {evidence_directory is not None}. Calibration exercises: {len(calibrations)} (required: {require_calibration}).",
+             f"Historical evidence supplied: {evidence_directory is not None}. Calibration exercises: {len(calibrations)} (required: {require_calibration}). Decision evaluations: {len(decisions)} (required: {require_decisions}).",
              "", "[Complete machine-readable record](report.json)", "", "## Requirements", "",
              "| Requirement | Status |", "|---|---|"]
     lines.extend(f"| {row['name']} | {row['status']} |" for row in checks)
@@ -383,13 +450,71 @@ def build_experiment_review(*, forecast_directory, output_directory, evidence_di
             detail = row["details"]
             if row["kind"] == "forecast":
                 scores = detail["scores"]
-                lines.append(f"  - {detail['case_count']} forecast cases from {detail['target_start']} through {detail['target_end']}; MAE: {scores.get('mae')}; RMSE: {scores.get('rmse')}.")
-                if scores.get("distribution", {}).get("status") == "completed":
+                lines.append(f"  - {detail['case_count']} forecast cases from {detail['target_start']} through {detail['target_end']}.")
+                rp = detail.get("robust_point_summary")
+                if rp:
+                    lines.append(
+                        f"  - Point errors: bias (mean/median) {rp['mean_error']:+.4g} / {rp['median_error']:+.4g}; "
+                        f"MdAE {rp['mdae']:.4g}; MAE {rp['mae']:.4g}; p95 abs error {rp['p95_absolute_error']:.4g} "
+                        f"(worst 5% abs share {rp['top_5pct_abs_error_share']:.1%}); "
+                        f"outlier-sensitive RMSE {rp['rmse']:.4g} (worst 5% squared share {rp['top_5pct_sq_error_share']:.1%})."
+                    )
+                else:
+                    lines.append(f"  - MAE: {scores.get('mae')}; RMSE: {scores.get('rmse')}.")
+                rd = detail.get("robust_distribution_summary")
+                if rd:
+                    crps_s, log_s = rd["crps"], rd["log_score"]
+                    log_text = (
+                        f"outlier-sensitive negative log density: mean {log_s['mean']:.4g}, "
+                        f"median {log_s['median']:.4g}, top-5% mean {log_s['top_5pct_mean']:.4g}"
+                        if log_s is not None
+                        else "negative log density: not applicable (discrete empirical law)"
+                    )
+                    lines.append(
+                        f"  - Full-law CRPS: mean {crps_s['mean']:.4g}, median {crps_s['median']:.4g}, "
+                        f"p95 {crps_s['p95']:.4g} (worst 5% share {crps_s['top_5pct_share']:.1%}); "
+                        f"{log_text} (lower is better)."
+                    )
+                elif scores.get("distribution", {}).get("status") == "completed":
                     loss = scores["distribution"]
                     lines.append(f"  - Mean CRPS: {loss['mean_crps']}; mean negative log density: {loss['mean_log_score']} (lower losses are better).")
+                unc = detail.get("uncertainty_summary") or {}
+                if unc.get("status") == "completed":
+                    hpd_parts = [
+                        f"{int(round(100 * item['level']))}% cov={item['coverage']:.1%}, width={item['mean_total_width']:.4g}"
+                        for item in unc.get("highest_density_regions", [])
+                    ]
+                    if hpd_parts:
+                        lines.append(f"  - Highest-density regions: {'; '.join(hpd_parts)}.")
+                    pinball_parts = [
+                        f"q{item['probability']:g}={item['mean_pinball_loss']:.4g}"
+                        for item in unc.get("quantiles", [])
+                    ]
+                    if pinball_parts:
+                        lines.append(f"  - Mean pinball loss: {', '.join(pinball_parts)}.")
             elif row["kind"] == "evidence":
                 lines.append(f"  - Selected development cutoff: {detail['cutoff']}. This does not assert coverage of every forecast origin.")
                 lines.extend(f"  - {name}: {outcome['status']}" for name, outcome in detail["workflows"].items())
+            elif row["kind"].startswith("decision-"):
+                spec = detail["spec"]
+                ds = detail["summary"]
+                ed = detail["expense_distribution"]
+                baseline_exp = ds.get("mean_climatology_expense", ds.get("mean_baseline_expense"))
+                rv = ds.get("relative_value")
+                rv_text = f"{rv:.4g}" if rv is not None else f"undefined ({ds.get('relative_value_reason')})"
+                lines.append(
+                    f"  - Decision `{spec['name']}` ({spec['policy']}): mean expense {ds['mean_forecast_expense']:.4g} "
+                    f"vs baseline {baseline_exp:.4g} and perfect {ds['mean_perfect_expense']:.4g}; "
+                    f"relative value {rv_text}; median {ed['median_expense']:.4g}, p95 {ed['p95_expense']:.4g}, "
+                    f"worst-5% share {ed['top_5pct_expense_share']:.1%}; fallbacks {ds['fallback_count']}."
+                )
+                cal = detail.get("calibration")
+                if isinstance(cal, dict):
+                    lines.append(
+                        f"  - Event calibration: Brier {cal['brier_score']:.4g} "
+                        f"(reliability {cal['reliability']:.4g}, resolution {cal['resolution']:.4g}, "
+                        f"ECE {cal['ece']:.4g}, prob bias {cal['probability_bias']:+.4g})."
+                    )
             else:
                 lines.extend((f"  - {detail['trials']} prior/data trials of {detail['observation_count']} observations; seed {detail['seed']}.",
                               "", "| Parameter | CDF distance | Uniform reference | Interval coverage | Mean interval mass |",

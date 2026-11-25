@@ -7,7 +7,7 @@ root after [environment setup](../README.md#development-environment):
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 ```
 
-There are currently **499 tests**. They use temporary fixtures/stores rather than
+There are currently **509 tests**. They use temporary fixtures/stores rather than
 requiring the local example data. The harness is standard-library `unittest`.
 NumPy supplies independent batch Gaussian calculations; SciPy supplies independent
 numerical integration, and emcee/ArviZ exercise the optional sampler audit. In a
@@ -40,7 +40,7 @@ missing package fail instead, as the research CI job does.
 | [test_dynamic_evidence.py](test_dynamic_evidence.py) | 11 | Random-walk covariance, joint initial-state/variance posterior replication with fresh innovations, gaps, replay/RNG isolation, numerical failure evidence, dynamic prior comparisons, undefined moments, final isolation and workflow CLIs |
 | [test_evidence_interfaces.py](test_evidence_interfaces.py) | 22 | Provider extension without model dispatch, v1/v2 migration/comparison, caller-required fits/workflows, missing/optional evidence, pinned tags/history/settings, numerical failures, replay/final isolation, saved-only/legacy plots and both new CLI modes |
 | [test_sequential.py](test_sequential.py) | 9 | Full predictive CDFs, freezing, release-aware histories, own-target/final isolation, replay, failures and CLI |
-| [test_adapters.py](test_adapters.py) | 7 | JSON restoration of every adapter (including the weekly harmonic adapter) including MCMC/quadrature settings, catalog names, scenario overrides that keep unchanged settings, invalid restored settings and calibration parameter validation |
+| [test_adapters.py](test_adapters.py) | 7 | JSON restoration of every adapter (including weekly harmonic and probabilistic baseline adapters) including MCMC/quadrature settings, catalog names, scenario overrides that keep unchanged settings, invalid restored settings and calibration parameter validation |
 | [test_artifacts.py](test_artifacts.py) | 6 | JSON/CSV writer bytes unchanged, exclusive creation and explicit manifest replacement, no partial file for nonfinite JSON, single-definition benchmark/workflow tables and the immediate observation reader |
 | [test_harmonic_regression.py](test_harmonic_regression.py) | 4 | Exact recovery of a noiseless weekly curve, rejection of unidentified phases, fixed configuration and the 72-case example command using the package adapter |
 | [test_calibration.py](test_calibration.py) | 10 | Independent CDF references, simulation covariance, recovery, failed trials, seed/prefix isolation and CLI |
@@ -63,6 +63,7 @@ missing package fail instead, as the research CI job does.
 | [test_noaa_range.py](test_noaa_range.py) | 4 | Finite residual pair counts, ties and negative ranges, paired Brier scoring, season selection, frozen archive reuse, replay and future actual isolation |
 | [test_decision_value.py](test_decision_value.py) | 10 | Hand-calculated binary and continuous asymmetric (newsvendor) expenses, pinball identity, expense concentration, tie behavior, calibration-only baselines, reference values, invalid inputs, and saved NOAA outputs |
 | [test_decisions.py](test_decisions.py) | 6 | Exact mixture and Student-t event probabilities/quantiles, `DecisionSpec` validation/round-trip, outcome-free Bayesian and NOAA issuance, byte-for-byte replay, outcome-mutation invariance, fallback visibility, tamper/cohort checks, paired HAC comparison, charts, and CLI |
+| [test_robust_scoring_and_baselines.py](test_robust_scoring_and_baselines.py) | 10 | Bias/MdAE/worst-5% concentration, signed log-score summaries, positive/negative autocorrelation Bartlett HAC SEs, Student-t and empirical-sample baselines, exact $O(k \log k)$ empirical CRPS and discrete tie probabilities, Brier reliability/resolution and Murphy integral/dominance identities, upgraded `compare_runs`, decision-integrated `experiment_review`, and CLIs |
 
 The [Python 3.12 profile](../docs/python312-public-forecast.md) passed 80 targeted
 tests covering the Gaussian local-level adapter, backtests, experiment timing,

@@ -10,8 +10,14 @@ from statistics import NormalDist
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
+from model_pipelining.decision_value import mean_murphy_curve, murphy_dominance
 from model_pipelining.experiments import ExperimentSpec
 from model_pipelining.distribution_scoring import read_saved_distribution_scores
+from model_pipelining.robust_scoring import (
+    summarize_loss_series,
+    summarize_paired_differences,
+    summarize_point_errors,
+)
 from model_pipelining.uncertainty import interval_probabilities
 
 
@@ -273,6 +279,41 @@ def compare_runs(
     ):
         raise ValueError("Comparison inputs, tasks, training selections, and actuals must match")
 
+    point_summaries = [summarize_point_errors(rows) for rows in evaluations]
+    abs_diffs = [
+        abs(float(first["prediction"]) - float(first["actual"]))
+        - abs(float(second["prediction"]) - float(second["actual"]))
+        for first, second in zip(evaluations[0], evaluations[1])
+    ]
+    sq_diffs = [
+        (float(first["prediction"]) - float(first["actual"])) ** 2
+        - (float(second["prediction"]) - float(second["actual"])) ** 2
+        for first, second in zip(evaluations[0], evaluations[1])
+    ]
+    first_pairs = [(float(row["prediction"]), float(row["actual"])) for row in evaluations[0]]
+    second_pairs = [(float(row["prediction"]), float(row["actual"])) for row in evaluations[1]]
+    all_point_values = [value for pairs in (first_pairs, second_pairs) for pair in pairs for value in pair]
+    low_val, high_val = min(all_point_values), max(all_point_values)
+    murphy_grid = (
+        [low_val] if low_val == high_val
+        else [low_val + (high_val - low_val) * i / 40.0 for i in range(41)]
+    )
+    point_murphy = {
+        "kind": "mean_elementary_score",
+        **murphy_dominance(
+            mean_murphy_curve(first_pairs, thresholds=murphy_grid),
+            mean_murphy_curve(second_pairs, thresholds=murphy_grid),
+        ),
+    }
+    point_comparison = {
+        "status": "completed",
+        "difference_direction": "first_minus_second; negative means first has lower error",
+        "runs": point_summaries,
+        "paired_absolute_error_differences": summarize_paired_differences(abs_diffs),
+        "paired_squared_error_differences": summarize_paired_differences(sq_diffs),
+        "murphy_comparison": point_murphy,
+    }
+
     distribution_runs = []
     for run, manifest, rows in zip((first_run, second_run), manifests, evaluations):
         if manifest["model"].get("supports_distribution", False):
@@ -284,16 +325,47 @@ def compare_runs(
     distribution = {"status": "not_applicable", "reason": "Both runs must declare complete full predictive distributions"}
     if all(item is not None for item in distribution_runs):
         summaries, case_scores = zip(*distribution_runs)
-        differences = [{"target_time": first["target_time"],
-                        "crps_first_minus_second": first["crps"]-second["crps"],
-                        "log_score_first_minus_second": first["log_score"]-second["log_score"]}
-                       for first, second in zip(*case_scores)]
-        if any(not math.isfinite(value) for row in differences for key, value in row.items() if key != "target_time"):
+        both_have_log = all(summary["mean_log_score"] is not None for summary in summaries)
+        differences = [
+            {
+                "target_time": first["target_time"],
+                "crps_first_minus_second": first["crps"] - second["crps"],
+                "log_score_first_minus_second": (
+                    first["log_score"] - second["log_score"] if both_have_log else None
+                ),
+            }
+            for first, second in zip(*case_scores)
+        ]
+        if any(
+            value is not None and not math.isfinite(value)
+            for row in differences
+            for key, value in row.items()
+            if key != "target_time"
+        ):
             raise ValueError("Nonfinite distribution score difference")
+        crps_distributions = [summarize_loss_series([row["crps"] for row in rows], nonnegative=True)
+                              for rows in case_scores]
+        log_score_distributions = [
+            summarize_loss_series([row["log_score"] for row in rows], nonnegative=False)
+            if summary["mean_log_score"] is not None else None
+            for summary, rows in zip(summaries, case_scores)
+        ]
+        paired_crps = summarize_paired_differences([row["crps_first_minus_second"] for row in differences])
+        paired_log = (
+            summarize_paired_differences([row["log_score_first_minus_second"] for row in differences])
+            if both_have_log else None
+        )
         distribution = {"status": "completed", "method": summaries[0]["method"], "runs": list(summaries),
+                        "crps_distributions": crps_distributions,
+                        "log_score_distributions": log_score_distributions,
                         "case_differences": differences, "difference_direction": "first_minus_second; lower losses are better",
-                        "mean_crps_first_minus_second": summaries[0]["mean_crps"]-summaries[1]["mean_crps"],
-                        "mean_log_score_first_minus_second": summaries[0]["mean_log_score"]-summaries[1]["mean_log_score"],
+                        "mean_crps_first_minus_second": summaries[0]["mean_crps"] - summaries[1]["mean_crps"],
+                        "mean_log_score_first_minus_second": (
+                            summaries[0]["mean_log_score"] - summaries[1]["mean_log_score"]
+                            if both_have_log else None
+                        ),
+                        "paired_crps_differences": paired_crps,
+                        "paired_log_score_differences": paired_log,
                         "chart": "distribution_scores.png"}
 
     figure = Figure(figsize=(10, 4), layout="constrained")
@@ -334,6 +406,7 @@ def compare_runs(
         "case_count": len(times),
         "runs": [{"path": str(Path(run).expanduser().absolute()), "model": manifest["model"], "scores": score}
                  for run, manifest, score in zip((first_run, second_run), manifests, scores)],
+        "point_comparison": point_comparison,
         "uncertainty_comparison": uncertainty,
         "distribution_comparison": distribution,
         "interpretation": f"Declared {role} comparison; no automatic selection, tuning, or human approval",
@@ -341,17 +414,137 @@ def compare_runs(
     with (output / "comparison.json").open("x", encoding="utf-8") as stream:
         json.dump(summary, stream, indent=2, allow_nan=False)
         stream.write("\n")
+    first_name = manifests[0]["model"]["name"]
+    second_name = manifests[1]["model"]["name"]
+    md_lines = [
+        f"# Saved forecast comparison: `{first_name}` vs `{second_name}`",
+        "",
+        f"Dataset: `{first_input['dataset']}` · Evaluation role: `{role}` · Common cases: **{len(times)}** "
+        f"({evaluations[0][0]['target_time']} to {evaluations[0][-1]['target_time']}).",
+        "",
+        "[Machine-readable comparison](comparison.json) · [Forecast chart](comparison.png)",
+        "",
+        "## Point error & bias summary",
+        "",
+        "| Model | Mean bias | Median bias | MdAE | MAE | p95 abs error | Top-5% abs share | RMSE (sensitive) | Top-5% sq share |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for idx, (label, rp) in enumerate(((f"1: {first_name}", point_summaries[0]), (f"2: {second_name}", point_summaries[1])), 1):
+        md_lines.append(
+            f"| `{label}` | {rp['mean_error']:+.4g} | {rp['median_error']:+.4g} | {rp['mdae']:.4g} | "
+            f"{rp['mae']:.4g} | {rp['p95_absolute_error']:.4g} | {rp['top_5pct_abs_error_share']:.1%} | "
+            f"{rp['rmse']:.4g} | {rp['top_5pct_sq_error_share']:.1%} |"
+        )
+    pa = point_comparison["paired_absolute_error_differences"]
+    ps = point_comparison["paired_squared_error_differences"]
+    pm = point_comparison["murphy_comparison"]
+    md_lines.extend([
+        "",
+        f"- **Paired |error| diff (1 − 2; negative favors 1):** mean `{pa['mean_difference']:+.4g}` "
+        f"(Bartlett HAC SE `{pa['mean_difference_hac_se']:.4g}` at lag {pa['hac_bartlett_lag']}; "
+        f"median `{pa['median_difference']:+.4g}`; 1 won {pa['first_win_rate']:.1%}, 2 won {pa['second_win_rate']:.1%}; "
+        f"top-5% abs diff share {pa['top_5pct_abs_difference_share']:.1%})."
+        if pa["mean_difference_hac_se"] is not None else
+        f"- **Paired |error| diff (1 − 2):** mean `{pa['mean_difference']:+.4g}`, median `{pa['median_difference']:+.4g}`.",
+        f"- **Paired squared-error diff (1 − 2):** mean `{ps['mean_difference']:+.4g}` "
+        f"(Bartlett HAC SE `{ps['mean_difference_hac_se']:.4g}`; top-5% abs diff share {ps['top_5pct_abs_difference_share']:.1%})."
+        if ps["mean_difference_hac_se"] is not None else
+        f"- **Paired squared-error diff (1 − 2):** mean `{ps['mean_difference']:+.4g}`.",
+        f"- **Mean Murphy dominance (41 thresholds):** `{pm['dominance_status']}` "
+        f"(1 better on {pm['first_better_count']}/{pm['threshold_count']}, 2 better on {pm['second_better_count']}/{pm['threshold_count']}).",
+    ])
+    if distribution["status"] == "completed":
+        md_lines.extend([
+            "",
+            "## Full predictive distribution summary",
+            "",
+            "[Distribution & cumulative CRPS chart](distribution_scores.png)",
+            "",
+            "| Model | Mean CRPS | Median CRPS | p95 CRPS | Top-5% CRPS share | Mean log score | Median log score | Top-5% log mean |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
+        ])
+        for idx, label in enumerate((f"1: {first_name}", f"2: {second_name}")):
+            cd = distribution["crps_distributions"][idx]
+            ld = distribution["log_score_distributions"][idx]
+            log_cells = (
+                f"{ld['mean']:.4g} | {ld['median']:.4g} | {ld['top_5pct_mean']:.4g}"
+                if ld is not None else "n/a (empirical) | n/a | n/a"
+            )
+            md_lines.append(
+                f"| `{label}` | {cd['mean']:.4g} | {cd['median']:.4g} | {cd['p95']:.4g} | "
+                f"{cd['top_5pct_share']:.1%} | {log_cells} |"
+            )
+        pc_diff = distribution["paired_crps_differences"]
+        md_lines.append("")
+        md_lines.append(
+            f"- **Paired CRPS diff (1 − 2; negative favors 1):** mean `{pc_diff['mean_difference']:+.4g}` "
+            f"(Bartlett HAC SE `{pc_diff['mean_difference_hac_se']:.4g}` at lag {pc_diff['hac_bartlett_lag']}; "
+            f"median `{pc_diff['median_difference']:+.4g}`; 1 won {pc_diff['first_win_rate']:.1%}, "
+            f"2 won {pc_diff['second_win_rate']:.1%}; top-5% abs diff share {pc_diff['top_5pct_abs_difference_share']:.1%})."
+            if pc_diff["mean_difference_hac_se"] is not None else
+            f"- **Paired CRPS diff (1 − 2):** mean `{pc_diff['mean_difference']:+.4g}`, median `{pc_diff['median_difference']:+.4g}`."
+        )
+        pl_diff = distribution["paired_log_score_differences"]
+        if pl_diff is not None and pl_diff["mean_difference_hac_se"] is not None:
+            md_lines.append(
+                f"- **Paired log-score diff (1 − 2; outlier-sensitive):** mean `{pl_diff['mean_difference']:+.4g}` "
+                f"(Bartlett HAC SE `{pl_diff['mean_difference_hac_se']:.4g}`; median `{pl_diff['median_difference']:+.4g}`; "
+                f"top-5% abs diff share {pl_diff['top_5pct_abs_difference_share']:.1%})."
+            )
+    if uncertainty["status"] == "completed":
+        md_lines.extend(["", "## Common uncertainty summary", ""])
+        for item in uncertainty.get("highest_density_regions", []):
+            r1, r2 = item["runs"]
+            md_lines.append(
+                f"- **{int(round(100 * item['level']))}% HPD:** "
+                f"1 cov={r1['coverage']:.1%} (width {r1['mean_total_width']:.4g}) vs "
+                f"2 cov={r2['coverage']:.1%} (width {r2['mean_total_width']:.4g})."
+            )
+        for item in uncertainty.get("intervals", []):
+            r1, r2 = item["runs"]
+            md_lines.append(
+                f"- **{int(round(100 * item['level']))}% equal-tail:** "
+                f"1 cov={r1['coverage']:.1%} (Winkler {r1['mean_interval_score']:.4g}) vs "
+                f"2 cov={r2['coverage']:.1%} (Winkler {r2['mean_interval_score']:.4g})."
+            )
+    md_lines.extend(["", f"*{summary['interpretation']}.*", ""])
+    with (output / "comparison.md").open("x", encoding="utf-8") as stream:
+        stream.write("\n".join(md_lines))
     with (output / "comparison.png").open("xb") as stream:
         figure.savefig(stream, format="png", dpi=150)
     if distribution["status"] == "completed":
-        score_figure = Figure(figsize=(10, 6), layout="constrained")
+        score_figure = Figure(figsize=(10, 8.2), layout="constrained")
         FigureCanvasAgg(score_figure)
-        for axes, key, label in zip(score_figure.subplots(2, 1, sharex=True),
-                                    ("crps", "log_score"), ("CRPS (target units)", "Negative log density")):
-            for index, (_, rows) in enumerate(distribution_runs):
-                axes.plot(times, [row[key] for row in rows], label=f"{index+1}: {manifests[index]['model']['name']}")
-            axes.set(ylabel=label, title="Saved distribution losses — lower is better")
-            axes.legend()
+        score_axes = score_figure.subplots(3, 1, sharex=True)
+        for index, (_, rows) in enumerate(distribution_runs):
+            score_axes[0].plot(times, [row["crps"] for row in rows], label=f"{index+1}: {manifests[index]['model']['name']}")
+        score_axes[0].set(ylabel="CRPS (target units)", title="Saved distribution losses — lower is better")
+        score_axes[0].legend()
+        plotted_log = False
+        for index, (summary_item, rows) in enumerate(distribution_runs):
+            if summary_item["mean_log_score"] is not None:
+                score_axes[1].plot(times, [row["log_score"] for row in rows],
+                                   label=f"{index+1}: {manifests[index]['model']['name']}")
+                plotted_log = True
+        score_axes[1].set(ylabel="Negative log density", title="Saved negative log density (continuous laws only)")
+        if plotted_log:
+            score_axes[1].legend()
+        else:
+            score_axes[1].text(0.5, 0.5, "Not applicable: discrete empirical_samples laws have no continuous density",
+                               ha="center", va="center", transform=score_axes[1].transAxes)
+        cumulative_crps_diff = []
+        running_total = 0.0
+        for row in distribution["case_differences"]:
+            running_total += row["crps_first_minus_second"]
+            cumulative_crps_diff.append(running_total)
+        score_axes[2].plot(times, cumulative_crps_diff, color="#28547B", linewidth=1.6)
+        score_axes[2].axhline(0.0, color="#485865", linestyle="--", linewidth=1)
+        score_axes[2].set(
+            ylabel="Cumulative CRPS diff",
+            xlabel="Target date (UTC)",
+            title=(f"Cumulative CRPS difference (1: {manifests[0]['model']['name']} minus "
+                   f"2: {manifests[1]['model']['name']}; below 0 favors 1)"),
+        )
         score_figure.autofmt_xdate()
         with (output / "distribution_scores.png").open("xb") as stream:
             score_figure.savefig(stream, format="png", dpi=150)
